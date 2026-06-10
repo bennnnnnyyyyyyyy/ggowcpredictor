@@ -88,7 +88,40 @@ async function seed() {
     console.log(`  committed final batch of ${count}`);
   }
 
-  console.log(`Done. ${matches.length} fixtures seeded.`);
+  // ── TEAMS ──
+  console.log("Seeding teams...");
+  const teamsData = JSON.parse(readFileSync("2026/worldcup.teams.json", "utf8"));
+  batch = writeBatch(db);
+  count = 0;
+
+  for (const team of teamsData) {
+    const teamDoc = {
+      name: team.name,
+      name_normalised: team.name_normalised || team.name,
+      fifa_code: team.fifa_code,
+      flag_icon: team.flag_icon || "🏳",
+      continent: team.continent,
+      group: team.group,
+      confed: team.confed,
+    };
+
+    batch.set(doc(db, "teams", team.fifa_code.toLowerCase()), teamDoc);
+    count++;
+
+    if (count === 499) {
+      await batch.commit();
+      console.log(`  committed batch of ${count}`);
+      batch = writeBatch(db);
+      count = 0;
+    }
+  }
+
+  if (count > 0) {
+    await batch.commit();
+    console.log(`  committed final batch of ${count}`);
+  }
+
+  console.log(`Done. ${matches.length} fixtures seeded, ${teamsData.length} teams seeded.`);
   process.exit(0);
 }
 
