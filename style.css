@@ -515,6 +515,19 @@ main {
   margin-bottom: 8px;
 }
 
+.team-name .team-flag,
+.group-standings-table .team-flag,
+.result-card .team-flag,
+.bracket-match .team-flag {
+  margin-right: 6px;
+}
+
+.team-name .team-flag {
+  font-size: 18px;
+  line-height: 1;
+  vertical-align: -2px;
+}
+
 .team-flag {
   font-size: 32px;
 }

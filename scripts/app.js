@@ -40,16 +40,26 @@ const STATE = {
   predictions: {},
   leaderboard: [],
   users: [],
+  teams: {},
   lastSync: null,
 };
 
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
+  await loadTeamMeta();
   await hydrateLoginUsers();
 
   if (SESSION.token && SESSION.username) {
     showApp();
   }
+
+  window.setInterval(() => {
+    if (document.getElementById("app")?.style.display !== "none") {
+      renderPredictions();
+      renderResults();
+      renderGroupStandings();
+    }
+  }, 30000);
 });
 
 function initFirebase() {
@@ -199,7 +209,11 @@ async function requestSync() {
   if (syncBtn) syncBtn.classList.add("loading");
 
   try {
-    await Promise.all([loadFixtures(), loadResults(), loadPredictions(), loadLeaderboard()]);
+    await loadGameData();
+    if (!STATE.fixtures.length) await loadFixtures();
+    if (!Object.keys(STATE.results).length) await loadResults();
+    if (!STATE.leaderboard.length) await loadLeaderboard();
+    await loadPredictions();
 
     STATE.lastSync = new Date();
     if (dot) dot.className = "status-dot active";
@@ -227,6 +241,12 @@ async function requestSync() {
 
 async function loadFixtures() {
   let fixtures = [];
+
+  const apiFixtures = await loadFixturesFromApi();
+  if (apiFixtures.length) {
+    STATE.fixtures = apiFixtures;
+    return;
+  }
 
   if (db) {
     try {
@@ -268,6 +288,12 @@ async function loadLocalFixtures() {
 async function loadResults() {
   STATE.results = {};
 
+  const apiResults = await loadResultsFromApi();
+  if (Object.keys(apiResults).length) {
+    STATE.results = apiResults;
+    return;
+  }
+
   if (db) {
     try {
       const snap = await db.collection("results").get();
@@ -306,6 +332,12 @@ async function loadPredictions() {
 
 async function loadLeaderboard() {
   STATE.leaderboard = [];
+
+  const apiLeaderboard = await loadLeaderboardFromApi();
+  if (apiLeaderboard.length) {
+    STATE.leaderboard = apiLeaderboard;
+    return;
+  }
 
   if (db) {
     try {
@@ -445,6 +477,8 @@ function renderPredictionCard(match) {
   const result = STATE.results[match.matchId];
   const locked = isLocked(match);
   const status = getMatchStatus(match, result);
+  const team1Flag = getTeamFlag(match.team1);
+  const team2Flag = getTeamFlag(match.team2);
   const points = result && hasResult(result) && hasPrediction(pred)
     ? calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2)
     : null;
@@ -460,7 +494,7 @@ function renderPredictionCard(match) {
       </div>
       <div class="match-teams">
         <div class="team">
-          <div class="team-name">${escapeHtml(match.team1)}</div>
+          <div class="team-name"><span class="team-flag">${escapeHtml(team1Flag)}</span>${escapeHtml(match.team1)}</div>
           <input class="score-input" type="number" min="0" max="20" inputmode="numeric"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
@@ -469,7 +503,7 @@ function renderPredictionCard(match) {
         </div>
         <div class="vs">VS</div>
         <div class="team">
-          <div class="team-name">${escapeHtml(match.team2)}</div>
+          <div class="team-name"><span class="team-flag">${escapeHtml(team2Flag)}</span>${escapeHtml(match.team2)}</div>
           <input class="score-input" type="number" min="0" max="20" inputmode="numeric"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
@@ -478,7 +512,7 @@ function renderPredictionCard(match) {
         </div>
       </div>
       <div class="match-footer">
-        <span>${hasPrediction(pred) ? "Saved prediction" : "No prediction yet"}</span>
+        <span>${locked ? "Locked 15 minutes before kickoff" : hasPrediction(pred) ? "Saved prediction" : "No prediction yet"}</span>
         ${points === null ? "" : `<strong>${points} pts</strong>`}
       </div>
     </article>
@@ -562,7 +596,7 @@ function renderGroupTable(groupName, fixtures) {
               (row, index) => `
                 <tr>
                   <td class="team-rank">${index + 1}</td>
-                  <td>${escapeHtml(row.team)}</td>
+                  <td><span class="team-flag">${escapeHtml(getTeamFlag(row.team))}</span>${escapeHtml(row.team)}</td>
                   <td>${row.played}</td>
                   <td>${row.won}</td>
                   <td>${row.drawn}</td>
@@ -642,9 +676,9 @@ function renderResults() {
         <article class="result-card">
           <div class="match-date">${formatKickoff(fixture)}</div>
           <div class="match-teams">
-            <div class="team"><div class="team-name">${escapeHtml(fixture.team1)}</div></div>
+            <div class="team"><div class="team-name"><span class="team-flag">${escapeHtml(getTeamFlag(fixture.team1))}</span>${escapeHtml(fixture.team1)}</div></div>
             <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}</div>
-            <div class="team"><div class="team-name">${escapeHtml(fixture.team2)}</div></div>
+            <div class="team"><div class="team-name"><span class="team-flag">${escapeHtml(getTeamFlag(fixture.team2))}</span>${escapeHtml(fixture.team2)}</div></div>
           </div>
           <div class="result-status">${escapeHtml(result.status || "NS")}</div>
           <div class="match-footer">
@@ -680,9 +714,9 @@ function renderBracket() {
               const result = STATE.results[match.matchId];
               return `
                 <div class="bracket-match">
-                  <div>${escapeHtml(match.team1)}</div>
+                  <div><span class="team-flag">${escapeHtml(getTeamFlag(match.team1))}</span>${escapeHtml(match.team1)}</div>
                   <strong>${result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs"}</strong>
-                  <div>${escapeHtml(match.team2)}</div>
+                  <div><span class="team-flag">${escapeHtml(getTeamFlag(match.team2))}</span>${escapeHtml(match.team2)}</div>
                 </div>
               `;
             })
@@ -774,6 +808,116 @@ function parseKickoff(date, time, kickoffUTC) {
   const minute = Number(match[2]);
   const offset = Number(match[3]);
   return new Date(Date.UTC(...date.split("-").map(Number).map((part, index) => index === 1 ? part - 1 : part), hour - offset, minute));
+}
+
+async function loadTeamMeta() {
+  try {
+    const response = await fetch("2026/worldcup.teams.json", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const teams = await response.json();
+    STATE.teams = (teams || []).reduce((acc, team) => {
+      const flag = team.flag_icon || "🏳";
+      [team.name, team.name_normalised, team.fifa_code].filter(Boolean).forEach((key) => {
+        acc[normalizeTeamKey(key)] = flag;
+      });
+      return acc;
+    }, {});
+  } catch (error) {
+    console.warn("Team flags unavailable.", error.message);
+    STATE.teams = {};
+  }
+}
+
+async function loadGameData() {
+  if (!CONFIG.appsScriptUrl) return;
+
+  try {
+    const response = await fetch(`${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+
+    if (Array.isArray(data.fixtures) && data.fixtures.length) {
+      STATE.fixtures = data.fixtures.map(normalizeFixture);
+    }
+    if (data.results) {
+      STATE.results = normalizeResultsPayload(data.results);
+    }
+    if (Array.isArray(data.leaderboard)) {
+      STATE.leaderboard = data.leaderboard;
+    }
+    if (Array.isArray(data.users)) {
+      STATE.users = data.users;
+    }
+  } catch (error) {
+    console.warn("Game data API sync failed.", error.message);
+  }
+}
+
+async function loadFixturesFromApi() {
+  if (!CONFIG.appsScriptUrl) return [];
+  try {
+    const response = await fetch(`${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=fixtures`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (Array.isArray(data.fixtures)) {
+      return data.fixtures.map(normalizeFixture);
+    }
+  } catch (error) {
+    console.warn("Fixtures API unavailable.", error.message);
+  }
+  return [];
+}
+
+async function loadResultsFromApi() {
+  if (!CONFIG.appsScriptUrl) return {};
+  try {
+    const response = await fetch(`${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return normalizeResultsPayload(data.results);
+  } catch (error) {
+    return {};
+  }
+}
+
+async function loadLeaderboardFromApi() {
+  if (!CONFIG.appsScriptUrl) return [];
+  try {
+    const response = await fetch(`${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=leaderboard`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return Array.isArray(data.leaderboard) ? data.leaderboard : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function normalizeResultsPayload(results) {
+  if (Array.isArray(results)) {
+    return results.reduce((acc, item) => {
+      const normalized = normalizeResult(item);
+      acc[normalized.matchId] = normalized;
+      return acc;
+    }, {});
+  }
+
+  if (results && typeof results === "object") {
+    return Object.entries(results).reduce((acc, [key, item]) => {
+      const normalized = normalizeResult({ matchId: key, ...item });
+      acc[normalized.matchId] = normalized;
+      return acc;
+    }, {});
+  }
+
+  return {};
 }
 
 function getStageFromRound(round = "") {
@@ -927,6 +1071,26 @@ function getInitials(name) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+}
+
+function normalizeTeamKey(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function normalizeText(value) {
+  const text = String(value ?? "");
+  try {
+    return decodeURIComponent(escape(text));
+  } catch {
+    return text;
+  }
+}
+
+function getTeamFlag(teamName) {
+  const key = normalizeTeamKey(teamName);
+  return STATE.teams[key] || "🏳";
 }
 
 function groupBy(items, getKey) {

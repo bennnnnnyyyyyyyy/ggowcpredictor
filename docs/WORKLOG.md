@@ -54,3 +54,26 @@
 - Read back all new docs with `Get-Content -Raw`.
 - Reviewed README diff to confirm it points to the new docs.
 - No app runtime tests were run because this change only adds documentation.
+
+## 2026-06-10 - Flags, lock timing, and game data API
+
+### What changed
+
+- Added country flags sourced from `2026/worldcup.teams.json`.
+- Rendered flags in prediction cards, results, standings, and bracket views.
+- Kept prediction inputs disabled when the match is inside the 15-minute lock window.
+- Added a 30-second UI refresh so lock state updates without a hard reload.
+- Switched the browser app to prefer the configured Game Data API URL for `?action=sync`, `?action=fixtures`, and `?action=leaderboard`, with local/Firestore fallback.
+- Renamed the settings label from `Apps Script / Firebase URL` to `Game Data API URL`.
+
+### Verification
+
+- Ran `node --check scripts/app.js`.
+- Started a temporary static server from `C:\tmp` to verify the app loads over HTTP.
+- Confirmed `http://127.0.0.1:4173/` returned `200`.
+- Confirmed `http://127.0.0.1:4173/2026/worldcup.teams.json` returned `200`.
+
+### Notes
+
+- The app still falls back to Firestore/local JSON if the configured API URL is empty or unreachable.
+- No browser screenshot was captured in this run because the browser automation tool was not available in this session.
