@@ -113,30 +113,48 @@ function seedFixturesFromJSON() {
  * Called by scheduled trigger every 60 seconds
  */
 function fetchAndUpdateLiveScores() {
-  try {
-    Logger.log("Fetching live scores...");
-    
-    // TODO: Implement API-Football integration
-    // - Call API-Football endpoint for 2026 WC matches
-    // - Filter for matches with status "live" or recently completed
-    // - Update Firebase results collection with scores
-    
-    return {
-      success: true,
-      scoresUpdated: 0,
-      timestamp: new Date().toISOString(),
-      nextStep: "API-Football integration required"
-    };
-    
-  } catch (error) {
-    return {
-      success: false,
-      error: error.toString(),
-      timestamp: new Date().toISOString()
-    };
-  }
-}
+  const apiKey = PropertiesService.getScriptProperties().getProperty("API_FOOTBALL_KEY");
+  if (!apiKey) return { success: false, error: "API_FOOTBALL_KEY not set in Script Properties" };
 
+  const projectId = "ggowcpredictor";
+  const fbKey = firebaseConfig.apiKey;
+  const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+
+  // Fetch today's WC 2026 fixtures from API-Football
+  const resp = UrlFetchApp.fetch(
+    "https://v3.football.api-sports.io/fixtures?league=1&season=2026&timezone=UTC",
+    { headers: { "x-apisports-key": apiKey }, muteHttpExceptions: true }
+  );
+  const data = JSON.parse(resp.getContentText());
+  const apiFixtures = data.response || [];
+
+  let updated = 0;
+  apiFixtures.forEach(item => {
+    const status = item.fixture.status.short; // NS, 1H, HT, 2H, FT, AET, PEN
+    const score1 = item.goals.home;
+    const score2 = item.goals.away;
+    const apiId   = String(item.fixture.id);
+
+    // We use the API fixture ID as the matchId key in results
+    const url = `${base}/results/api_${apiId}?key=${fbKey}`;
+    const payload = {
+      fields: {
+        matchId:     { stringValue: apiId },
+        score1:      score1 !== null ? { integerValue: String(score1) } : { nullValue: null },
+        score2:      score2 !== null ? { integerValue: String(score2) } : { nullValue: null },
+        status:      { stringValue: status },
+        lastUpdated: { stringValue: new Date().toISOString() },
+      }
+    };
+    UrlFetchApp.fetch(url, {
+      method: "patch", contentType: "application/json",
+      payload: JSON.stringify(payload), muteHttpExceptions: true
+    });
+    updated++;
+  });
+
+  return { success: true, scoresUpdated: updated, timestamp: new Date().toISOString() };
+}
 /**
  * Parse worldcup.json structure and extract match details
  * Expected format from openfootball/worldcup.json
