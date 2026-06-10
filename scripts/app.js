@@ -47,6 +47,12 @@ const STATE = {
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
   await loadTeamMeta();
+  
+  // DEBUG: Verify emoji loading
+  console.log("🇲🇽 Teams loaded count:", Object.keys(STATE.teams).length);
+  console.log("🇲🇽 Mexico flag:", getTeamFlag("Mexico"));
+  console.log("🇿🇦 South Africa flag:", getTeamFlag("South Africa"));
+  
   await hydrateLoginUsers();
 
   if (SESSION.token && SESSION.username) {
@@ -172,6 +178,13 @@ function showApp() {
   document.getElementById("admin-nav-btn").style.display = SESSION.isAdmin
     ? ""
     : "none";
+  
+  // DEBUG: Add emoji test to verify they render
+  const testDiv = document.createElement("div");
+  testDiv.id = "emoji-test";
+  testDiv.style.cssText = "position: fixed; top: 80px; right: 10px; background: rgba(0,61,165,0.8); color: white; padding: 10px 15px; border-radius: 6px; font-size: 18px; z-index: 9999; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;";
+  testDiv.innerHTML = "TEST EMOJIS: 🇲🇽 🇿🇦 🇰🇷 🇨🇿";
+  document.body.appendChild(testDiv);
 
   requestSync();
 }

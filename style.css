@@ -1,5 +1,7 @@
 /* GGO WC 2026 Predictor - Main Stylesheet */
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+
 :root {
   --wc-blue: #003DA5;
   --wc-red: #C8102E;
@@ -520,12 +522,14 @@ main {
 .result-card .team-flag,
 .bracket-match .team-flag {
   margin-right: 6px;
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
   font-size: 1em;
   line-height: 1;
   letter-spacing: 0;
   font-variant-ligatures: none;
   font-feature-settings: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .team-name .team-flag {
@@ -534,6 +538,9 @@ main {
 
 .team-flag {
   font-size: 32px;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .vs {
