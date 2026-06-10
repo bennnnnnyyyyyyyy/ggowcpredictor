@@ -399,13 +399,45 @@ async function savePrediction(matchId, pred1, pred2) {
   if (!fixture) return;
   if (isLocked(fixture)) {
     alert("This match is locked. Predictions close 15 minutes before kickoff.");
-    renderPredictions();
+    STATE.predictions[String(matchId)] = prediction;
+  writeLocalObject(`ggo_wc_predictions_${SESSION.username || "demo"}`, STATE.predictions);
+  showToast(`Saved: ${match.team1} ${score1} – ${score2} ${match.team2}`);
+
+  if (db && SESSION.username) {
+    try {
+      await db.collection("predictions").doc(`${SESSION.username}_${matchId}`).set(
+        { ...prediction, submittedAt: firebase.firestore.FieldValue.serverTimestamp() },
+        { merge: true }
+      );
+      showToast(`✓ ${match.team1} ${score1} – ${score2} ${match.team2}`);
+    } catch (error) {
+      showToast("Save failed — stored locally", "error");
+      console.error("Could not save prediction to Firestore.", error);
+    }
+  }
+
+  renderPredictions();
+  renderGroupStandings();
+  renderLeaderboard();
     return;
   }
   if (!Number.isInteger(score1) || !Number.isInteger(score2) || score1 < 0 || score2 < 0) {
+    showToast("Please enter valid scores.", "error");
     return;
   }
-
+  
+function showToast(message, type = "success") {
+  let toast = document.getElementById("toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.className = `toast toast-${type} show`;
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
+}
   const prediction = {
     matchId: String(matchId),
     username: SESSION.username,
@@ -596,7 +628,7 @@ function renderGroupTable(groupName, fixtures) {
               (row, index) => `
                 <tr>
                   <td class="team-rank">${index + 1}</td>
-                  <td><span class="team-flag">${escapeHtml(getTeamFlag(row.team))}</span>${escapeHtml(row.team)}</td>
+                  <td><span class="team-flag">${getTeamFlag(row.team)}</span>${escapeHtml(row.team)}</td>
                   <td>${row.played}</td>
                   <td>${row.won}</td>
                   <td>${row.drawn}</td>
@@ -676,9 +708,9 @@ function renderResults() {
         <article class="result-card">
           <div class="match-date">${formatKickoff(fixture)}</div>
           <div class="match-teams">
-            <div class="team"><div class="team-name"><span class="team-flag">${escapeHtml(getTeamFlag(fixture.team1))}</span>${escapeHtml(fixture.team1)}</div></div>
+            <div class="team"><div class="team-name"><span class="team-flag">${getTeamFlag(fixture.team1)}</span>${escapeHtml(fixture.team1)}</div></div>
             <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}</div>
-            <div class="team"><div class="team-name"><span class="team-flag">${escapeHtml(getTeamFlag(fixture.team2))}</span>${escapeHtml(fixture.team2)}</div></div>
+            <div class="team"><div class="team-name"><span class="team-flag">${getTeamFlag(fixture.team2)}</span>${escapeHtml(fixture.team2)}</div></div>
           </div>
           <div class="result-status">${escapeHtml(result.status || "NS")}</div>
           <div class="match-footer">
@@ -714,9 +746,9 @@ function renderBracket() {
               const result = STATE.results[match.matchId];
               return `
                 <div class="bracket-match">
-                  <div><span class="team-flag">${escapeHtml(getTeamFlag(match.team1))}</span>${escapeHtml(match.team1)}</div>
+                  <div><span class="team-flag">${getTeamFlag(match.team1)}</span>${escapeHtml(match.team1)}</div>
                   <strong>${result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs"}</strong>
-                  <div><span class="team-flag">${escapeHtml(getTeamFlag(match.team2))}</span>${escapeHtml(match.team2)}</div>
+                  <div><span class="team-flag">${getTeamFlag(match.team2)}</span>${escapeHtml(match.team2)}</div>
                 </div>
               `;
             })

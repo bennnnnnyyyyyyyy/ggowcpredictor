@@ -71,22 +71,29 @@
     <div id="app" style="display: none">
       <!-- HEADER -->
       <header>
-        <div class="logo">
-          <img
-            src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png"
-            alt="GGO"
-          />
-          <span class="logo-next">next</span>
-          <div class="logo-divider"></div>
-          <div class="logo-text">
-            <h1>GGO <span>WC</span> 2026</h1>
-            <p>Prediction Game</p>
-          </div>
-          <div class="wc-badge">
-            <span class="trophy-icon">🏆</span>
-            <span class="trophy-label">FIFA World Cup</span>
-          </div>
+      <div class="logo">
+        <img
+          src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png"
+          alt="GGO"
+          class="header-logo"
+        />
+        
+        <span class="logo-next">next</span>
+        
+        <div class="logo-divider"></div>
+        
+        <div class="logo-text">
+          <h1>GGO <span>WC</span> 2026</h1>
+          <p>Prediction Game</p>
         </div>
+        
+        <img 
+          src="fifa-world-cup-2026-logo-white.png" 
+          alt="FIFA World Cup 2026" 
+          class="header-logo"
+        />
+        </div>
+        </logo-header-container>
 
         <nav id="main-nav">
           <button
@@ -276,11 +283,11 @@
           <button class="close-modal" onclick="toggleSettings(false)">✕</button>
         </div>
         <div class="form-group">
-          <label>Game Data API URL</label>
+          <label>Apps Script / Firebase URL</label>
           <input
             type="text"
             id="setting-api-url"
-            placeholder="https://script.google.com/macros/s/… or your game data API"
+            placeholder="https://script.google.com/macros/s/…"
           />
         </div>
         <div class="form-group">
