@@ -15,6 +15,9 @@
     @import "style.css";
   </style>
   <body>
+    <!-- Firebase SDK (CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js"></script>
     <!-- ════════════════════════════════════════
        LOGIN SCREEN
   ════════════════════════════════════════ -->
@@ -32,29 +35,33 @@
           Invalid name or code. Try again.
         </div>
 
-        <div class="form-group">
-          <label>Your Name</label>
-          <input
-            type="text"
-            id="login-name"
-            placeholder="Enter your username"
-            autocomplete="off"
-          />
-        </div>
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Your Name</label>
+            <input
+              type="text"
+              id="login-name"
+              placeholder="Enter your username"
+              autocomplete="username"
+              required
+            />
+          </div>
 
-        <div class="form-group">
-          <label>Secret Code</label>
-          <input
-            type="password"
-            id="login-code"
-            placeholder="Enter your code"
-            autocomplete="off"
-          />
-        </div>
+          <div class="form-group">
+            <label>Secret Code</label>
+            <input
+              type="password"
+              id="login-code"
+              placeholder="Enter your code"
+              autocomplete="current-password"
+              required
+            />
+          </div>
 
-        <button class="btn-primary" onclick="handleLogin()">
-          Enter Predictor
-        </button>
+          <button type="submit" class="btn-primary">
+            Enter Predictor
+          </button>
+        </form>
       </div>
     </div>
 
