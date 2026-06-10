@@ -1,6 +1,5 @@
 // ── FIREBASE ───────────────────────────────────────────────────────────
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, where } from "firebase/firestore";
+// Firebase is loaded from CDN in index.html, using global firebase object
 
 // Firebase configuration
 const firebaseConfig = {
@@ -16,8 +15,8 @@ const firebaseConfig = {
 let db = null;
 
 try {
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
+  const app = firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
   console.log("✅ Firebase initialized successfully");
 } catch (error) {
   console.warn("⚠️ Firebase initialization failed (may be offline):", error.message);
