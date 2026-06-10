@@ -47,12 +47,12 @@ const STATE = {
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
   await loadTeamMeta();
-  
+
   // DEBUG: Verify emoji loading
   console.log("🇲🇽 Teams loaded count:", Object.keys(STATE.teams).length);
   console.log("🇲🇽 Mexico flag:", getTeamFlag("Mexico"));
   console.log("🇿🇦 South Africa flag:", getTeamFlag("South Africa"));
-  
+
   await hydrateLoginUsers();
 
   if (SESSION.token && SESSION.username) {
@@ -70,7 +70,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 function initFirebase() {
   if (!window.firebase || !firebase.initializeApp || !firebase.firestore) {
-    console.warn("Firebase compat SDK not available. Using local fallback mode.");
+    console.warn(
+      "Firebase compat SDK not available. Using local fallback mode.",
+    );
     return;
   }
 
@@ -79,7 +81,10 @@ function initFirebase() {
     db = firebase.firestore();
     console.log("Firebase initialized");
   } catch (error) {
-    console.warn("Firebase init failed. Using local fallback mode.", error.message);
+    console.warn(
+      "Firebase init failed. Using local fallback mode.",
+      error.message,
+    );
   }
 }
 
@@ -178,13 +183,6 @@ function showApp() {
   document.getElementById("admin-nav-btn").style.display = SESSION.isAdmin
     ? ""
     : "none";
-  
-  // DEBUG: Add emoji test to verify they render
-  const testDiv = document.createElement("div");
-  testDiv.id = "emoji-test";
-  testDiv.style.cssText = "position: fixed; top: 80px; right: 10px; background: rgba(0,61,165,0.8); color: white; padding: 10px 15px; border-radius: 6px; font-size: 18px; z-index: 9999; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;";
-  testDiv.innerHTML = "TEST EMOJIS: 🇲🇽 🇿🇦 🇰🇷 🇨🇿";
-  document.body.appendChild(testDiv);
 
   requestSync();
 }
@@ -264,7 +262,9 @@ async function loadFixtures() {
   if (db) {
     try {
       const snap = await db.collection("fixtures").get();
-      fixtures = snap.docs.map((doc) => normalizeFixture({ id: doc.id, ...doc.data() }));
+      fixtures = snap.docs.map((doc) =>
+        normalizeFixture({ id: doc.id, ...doc.data() }),
+      );
     } catch (error) {
       console.warn("Could not load Firestore fixtures.", error.message);
     }
@@ -290,7 +290,7 @@ async function loadLocalFixtures() {
       normalizeFixture({
         ...match,
         matchId: match.num || index + 1,
-      })
+      }),
     );
   } catch (error) {
     console.warn("Local fixture JSON unavailable.", error.message);
@@ -313,19 +313,27 @@ async function loadResults() {
       snap.docs.forEach((doc) => {
         const result = doc.data();
         const matchId = String(result.matchId || doc.id.replace(/^match_/, ""));
-        STATE.results[matchId] = normalizeResult({ id: doc.id, ...result, matchId });
+        STATE.results[matchId] = normalizeResult({
+          id: doc.id,
+          ...result,
+          matchId,
+        });
       });
     } catch (error) {
       console.warn("Could not load Firestore results.", error.message);
     }
   }
 
-  const localResults = readLocalObject(`ggo_wc_results_${SESSION.username || "demo"}`);
+  const localResults = readLocalObject(
+    `ggo_wc_results_${SESSION.username || "demo"}`,
+  );
   STATE.results = { ...localResults, ...STATE.results };
 }
 
 async function loadPredictions() {
-  STATE.predictions = readLocalObject(`ggo_wc_predictions_${SESSION.username || "demo"}`);
+  STATE.predictions = readLocalObject(
+    `ggo_wc_predictions_${SESSION.username || "demo"}`,
+  );
 
   if (!db || !SESSION.username) return;
 
@@ -336,7 +344,8 @@ async function loadPredictions() {
       .get();
     snap.docs.forEach((doc) => {
       const prediction = doc.data();
-      STATE.predictions[String(prediction.matchId)] = normalizePrediction(prediction);
+      STATE.predictions[String(prediction.matchId)] =
+        normalizePrediction(prediction);
     });
   } catch (error) {
     console.warn("Could not load Firestore predictions.", error.message);
@@ -369,7 +378,11 @@ async function loadLeaderboard() {
 
 function normalizeFixture(fixture) {
   const matchId = String(fixture.matchId || fixture.num || fixture.id || "");
-  const kickoffDate = parseKickoff(fixture.date, fixture.time, fixture.kickoffUTC);
+  const kickoffDate = parseKickoff(
+    fixture.date,
+    fixture.time,
+    fixture.kickoffUTC,
+  );
   const stage = fixture.stage || getStageFromRound(fixture.round);
 
   return {
@@ -377,7 +390,9 @@ function normalizeFixture(fixture) {
     matchId,
     group: fixture.group || stageLabel(stage),
     stage,
-    kickoffUTC: kickoffDate ? kickoffDate.toISOString() : fixture.kickoffUTC || "",
+    kickoffUTC: kickoffDate
+      ? kickoffDate.toISOString()
+      : fixture.kickoffUTC || "",
     kickoffDate,
     team1: fixture.team1 || fixture.homeTeam || "TBD",
     team2: fixture.team2 || fixture.awayTeam || "TBD",
@@ -405,7 +420,9 @@ function normalizeResult(result) {
 }
 
 async function savePrediction(matchId, pred1, pred2) {
-  const fixture = STATE.fixtures.find((match) => match.matchId === String(matchId));
+  const fixture = STATE.fixtures.find(
+    (match) => match.matchId === String(matchId),
+  );
   const score1 = Number(pred1);
   const score2 = Number(pred2);
 
@@ -413,44 +430,58 @@ async function savePrediction(matchId, pred1, pred2) {
   if (isLocked(fixture)) {
     alert("This match is locked. Predictions close 15 minutes before kickoff.");
     STATE.predictions[String(matchId)] = prediction;
-  writeLocalObject(`ggo_wc_predictions_${SESSION.username || "demo"}`, STATE.predictions);
-  showToast(`Saved: ${match.team1} ${score1} – ${score2} ${match.team2}`);
+    writeLocalObject(
+      `ggo_wc_predictions_${SESSION.username || "demo"}`,
+      STATE.predictions,
+    );
+    showToast(`Saved: ${match.team1} ${score1} – ${score2} ${match.team2}`);
 
-  if (db && SESSION.username) {
-    try {
-      await db.collection("predictions").doc(`${SESSION.username}_${matchId}`).set(
-        { ...prediction, submittedAt: firebase.firestore.FieldValue.serverTimestamp() },
-        { merge: true }
-      );
-      showToast(`✓ ${match.team1} ${score1} – ${score2} ${match.team2}`);
-    } catch (error) {
-      showToast("Save failed — stored locally", "error");
-      console.error("Could not save prediction to Firestore.", error);
+    if (db && SESSION.username) {
+      try {
+        await db
+          .collection("predictions")
+          .doc(`${SESSION.username}_${matchId}`)
+          .set(
+            {
+              ...prediction,
+              submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        showToast(`✓ ${match.team1} ${score1} – ${score2} ${match.team2}`);
+      } catch (error) {
+        showToast("Save failed — stored locally", "error");
+        console.error("Could not save prediction to Firestore.", error);
+      }
     }
-  }
 
-  renderPredictions();
-  renderGroupStandings();
-  renderLeaderboard();
+    renderPredictions();
+    renderGroupStandings();
+    renderLeaderboard();
     return;
   }
-  if (!Number.isInteger(score1) || !Number.isInteger(score2) || score1 < 0 || score2 < 0) {
+  if (
+    !Number.isInteger(score1) ||
+    !Number.isInteger(score2) ||
+    score1 < 0 ||
+    score2 < 0
+  ) {
     showToast("Please enter valid scores.", "error");
     return;
   }
-  
-function showToast(message, type = "success") {
-  let toast = document.getElementById("toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "toast";
-    document.body.appendChild(toast);
+
+  function showToast(message, type = "success") {
+    let toast = document.getElementById("toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.className = `toast toast-${type} show`;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
   }
-  toast.textContent = message;
-  toast.className = `toast toast-${type} show`;
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
-}
   const prediction = {
     matchId: String(matchId),
     username: SESSION.username,
@@ -462,17 +493,23 @@ function showToast(message, type = "success") {
   };
 
   STATE.predictions[String(matchId)] = prediction;
-  writeLocalObject(`ggo_wc_predictions_${SESSION.username || "demo"}`, STATE.predictions);
+  writeLocalObject(
+    `ggo_wc_predictions_${SESSION.username || "demo"}`,
+    STATE.predictions,
+  );
 
   if (db && SESSION.username) {
     try {
-      await db.collection("predictions").doc(`${SESSION.username}_${matchId}`).set(
-        {
-          ...prediction,
-          submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+      await db
+        .collection("predictions")
+        .doc(`${SESSION.username}_${matchId}`)
+        .set(
+          {
+            ...prediction,
+            submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
     } catch (error) {
       console.error("Could not save prediction to Firestore.", error);
     }
@@ -496,12 +533,15 @@ function renderPredictions() {
   if (!visibleFixtures.length) {
     container.innerHTML = emptyState(
       "Fixtures are not loaded yet.",
-      "Run the app from a local server or seed Firestore fixtures."
+      "Run the app from a local server or seed Firestore fixtures.",
     );
     return;
   }
 
-  const groups = groupBy(visibleFixtures, (fixture) => fixture.group || fixture.round || "Matches");
+  const groups = groupBy(
+    visibleFixtures,
+    (fixture) => fixture.group || fixture.round || "Matches",
+  );
 
   container.innerHTML = Object.entries(groups)
     .map(([groupName, fixtures]) => {
@@ -524,9 +564,15 @@ function renderPredictionCard(match) {
   const status = getMatchStatus(match, result);
   const team1Flag = getTeamFlag(match.team1);
   const team2Flag = getTeamFlag(match.team2);
-  const points = result && hasResult(result) && hasPrediction(pred)
-    ? calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2)
-    : null;
+  const points =
+    result && hasResult(result) && hasPrediction(pred)
+      ? calculateMatchPoints(
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+        )
+      : null;
 
   return `
     <article class="match-card ${locked ? "locked" : "open"}">
@@ -566,10 +612,10 @@ function renderPredictionCard(match) {
 
 function handleScoreChange(matchId) {
   const input1 = document.querySelector(
-    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="1"]`
+    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="1"]`,
   );
   const input2 = document.querySelector(
-    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="2"]`
+    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="2"]`,
   );
 
   if (!input1 || !input2 || input1.value === "" || input2.value === "") return;
@@ -580,11 +626,16 @@ function renderGroupStandings() {
   const container = document.getElementById("group-standings");
   if (!container) return;
 
-  const groupFixtures = STATE.fixtures.filter((fixture) => fixture.stage === "group" && fixture.group);
+  const groupFixtures = STATE.fixtures.filter(
+    (fixture) => fixture.stage === "group" && fixture.group,
+  );
   const groups = groupBy(groupFixtures, (fixture) => fixture.group);
 
   if (!Object.keys(groups).length) {
-    container.innerHTML = emptyState("Group tables need group-stage fixtures.", "");
+    container.innerHTML = emptyState(
+      "Group tables need group-stage fixtures.",
+      "",
+    );
     return;
   }
 
@@ -616,7 +667,12 @@ function renderGroupTable(groupName, fixtures) {
     const pred = STATE.predictions[fixture.matchId];
     if (!hasPrediction(pred)) return;
 
-    applyTableResult(teamMap.get(fixture.team1), teamMap.get(fixture.team2), pred.pred1, pred.pred2);
+    applyTableResult(
+      teamMap.get(fixture.team1),
+      teamMap.get(fixture.team2),
+      pred.pred1,
+      pred.pred2,
+    );
   });
 
   const standings = Array.from(teamMap.values()).sort((a, b) => {
@@ -649,7 +705,7 @@ function renderGroupTable(groupName, fixtures) {
                   <td>${row.gd > 0 ? "+" : ""}${row.gd}</td>
                   <td><strong>${row.points}</strong></td>
                 </tr>
-              `
+              `,
             )
             .join("")}
         </tbody>
@@ -662,7 +718,9 @@ function renderLeaderboard() {
   const tbody = document.getElementById("leaderboard-body");
   if (!tbody) return;
 
-  const rows = STATE.leaderboard.length ? STATE.leaderboard : buildLocalLeaderboard();
+  const rows = STATE.leaderboard.length
+    ? STATE.leaderboard
+    : buildLocalLeaderboard();
 
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="table-empty">No predictions yet.</td></tr>`;
@@ -672,7 +730,8 @@ function renderLeaderboard() {
   tbody.innerHTML = rows
     .map((player, index) => {
       const rank = player.rank || index + 1;
-      const name = player.displayName || player.playerName || player.username || "Player";
+      const name =
+        player.displayName || player.playerName || player.username || "Player";
       return `
         <tr class="${player.username === SESSION.username ? "current-user" : ""}">
           <td><span class="rank-badge ${rankClass(rank)}">${rank}</span></td>
@@ -696,16 +755,25 @@ function renderResults() {
   const container = document.getElementById("results-list");
   if (!container) return;
 
-  let fixtures = STATE.fixtures.filter((fixture) => STATE.results[fixture.matchId]);
+  let fixtures = STATE.fixtures.filter(
+    (fixture) => STATE.results[fixture.matchId],
+  );
   if (activeResultFilter === "live") {
-    fixtures = fixtures.filter((fixture) => isLiveStatus(STATE.results[fixture.matchId].status));
+    fixtures = fixtures.filter((fixture) =>
+      isLiveStatus(STATE.results[fixture.matchId].status),
+    );
   }
   if (activeResultFilter === "ft") {
-    fixtures = fixtures.filter((fixture) => isFinalStatus(STATE.results[fixture.matchId].status));
+    fixtures = fixtures.filter((fixture) =>
+      isFinalStatus(STATE.results[fixture.matchId].status),
+    );
   }
 
   if (!fixtures.length) {
-    container.innerHTML = emptyState("No results synced yet.", "Results will appear after Apps Script writes them to Firestore.");
+    container.innerHTML = emptyState(
+      "No results synced yet.",
+      "Results will appear after Apps Script writes them to Firestore.",
+    );
     return;
   }
 
@@ -713,9 +781,15 @@ function renderResults() {
     .map((fixture) => {
       const result = STATE.results[fixture.matchId];
       const pred = STATE.predictions[fixture.matchId];
-      const points = hasPrediction(pred) && hasResult(result)
-        ? calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2)
-        : null;
+      const points =
+        hasPrediction(pred) && hasResult(result)
+          ? calculateMatchPoints(
+              pred.pred1,
+              pred.pred2,
+              result.score1,
+              result.score2,
+            )
+          : null;
 
       return `
         <article class="result-card">
@@ -740,8 +814,17 @@ function renderBracket() {
   const bracket = document.getElementById("bracket");
   if (!bracket) return;
 
-  const rounds = ["Round of 32", "Round of 16", "Quarter-final", "Semi-final", "Match for third place", "Final"];
-  const knockout = STATE.fixtures.filter((fixture) => fixture.stage !== "group");
+  const rounds = [
+    "Round of 32",
+    "Round of 16",
+    "Quarter-final",
+    "Semi-final",
+    "Match for third place",
+    "Final",
+  ];
+  const knockout = STATE.fixtures.filter(
+    (fixture) => fixture.stage !== "group",
+  );
 
   if (!knockout.length) {
     bracket.innerHTML = emptyState("Knockout fixtures are not loaded yet.", "");
@@ -797,9 +880,11 @@ function renderAdmin() {
 
 function filterMatches(type, btn) {
   activeMatchFilter = type;
-  document.querySelectorAll("#view-predictions .filter-btn").forEach((button) => {
-    button.classList.remove("active");
-  });
+  document
+    .querySelectorAll("#view-predictions .filter-btn")
+    .forEach((button) => {
+      button.classList.remove("active");
+    });
   if (btn) btn.classList.add("active");
   renderPredictions();
 }
@@ -827,7 +912,9 @@ function toggleSettings(show) {
 }
 
 function saveSettings() {
-  CONFIG.appsScriptUrl = document.getElementById("setting-api-url").value.trim();
+  CONFIG.appsScriptUrl = document
+    .getElementById("setting-api-url")
+    .value.trim();
   CONFIG.apiKey = document.getElementById("setting-api-key").value.trim();
   localStorage.setItem("ggo_wc_url", CONFIG.appsScriptUrl);
   localStorage.setItem("ggo_wc_key", CONFIG.apiKey);
@@ -852,7 +939,16 @@ function parseKickoff(date, time, kickoffUTC) {
   const hour = Number(match[1]);
   const minute = Number(match[2]);
   const offset = Number(match[3]);
-  return new Date(Date.UTC(...date.split("-").map(Number).map((part, index) => index === 1 ? part - 1 : part), hour - offset, minute));
+  return new Date(
+    Date.UTC(
+      ...date
+        .split("-")
+        .map(Number)
+        .map((part, index) => (index === 1 ? part - 1 : part)),
+      hour - offset,
+      minute,
+    ),
+  );
 }
 
 async function loadTeamMeta() {
@@ -877,15 +973,19 @@ async function loadTeamMeta() {
         console.error("Firestore team load failed:", firestoreError.message);
       }
     }
-    
-    const response = await fetch("2026/worldcup.teams.json", { cache: "no-store" });
+
+    const response = await fetch("2026/worldcup.teams.json", {
+      cache: "no-store",
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const teams = await response.json();
     STATE.teams = (teams || []).reduce((acc, team) => {
       const flag = team.flag_icon || "🏳";
-      [team.name, team.name_normalised, team.fifa_code].filter(Boolean).forEach((key) => {
-        acc[normalizeTeamKey(key)] = flag;
-      });
+      [team.name, team.name_normalised, team.fifa_code]
+        .filter(Boolean)
+        .forEach((key) => {
+          acc[normalizeTeamKey(key)] = flag;
+        });
       return acc;
     }, {});
   } catch (error) {
@@ -898,9 +998,12 @@ async function loadGameData() {
   if (!CONFIG.appsScriptUrl) return;
 
   try {
-    const response = await fetch(`${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
@@ -924,9 +1027,12 @@ async function loadGameData() {
 async function loadFixturesFromApi() {
   if (!CONFIG.appsScriptUrl) return [];
   try {
-    const response = await fetch(`${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=fixtures`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=fixtures`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (Array.isArray(data.fixtures)) {
@@ -941,9 +1047,12 @@ async function loadFixturesFromApi() {
 async function loadResultsFromApi() {
   if (!CONFIG.appsScriptUrl) return {};
   try {
-    const response = await fetch(`${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     return normalizeResultsPayload(data.results);
@@ -955,9 +1064,12 @@ async function loadResultsFromApi() {
 async function loadLeaderboardFromApi() {
   if (!CONFIG.appsScriptUrl) return [];
   try {
-    const response = await fetch(`${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=leaderboard`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=leaderboard`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     return Array.isArray(data.leaderboard) ? data.leaderboard : [];
@@ -999,15 +1111,17 @@ function getStageFromRound(round = "") {
 }
 
 function stageLabel(stage) {
-  return {
-    group: "Group Stage",
-    r32: "Round of 32",
-    r16: "Round of 16",
-    qf: "Quarter-final",
-    sf: "Semi-final",
-    third: "Third Place",
-    final: "Final",
-  }[stage] || "Matches";
+  return (
+    {
+      group: "Group Stage",
+      r32: "Round of 32",
+      r16: "Round of 16",
+      qf: "Quarter-final",
+      sf: "Semi-final",
+      third: "Third Place",
+      final: "Final",
+    }[stage] || "Matches"
+  );
 }
 
 function isLocked(match) {
@@ -1016,18 +1130,26 @@ function isLocked(match) {
 }
 
 function getMatchStatus(match, result) {
-  if (result && isFinalStatus(result.status)) return { label: "Final", className: "locked" };
-  if (result && isLiveStatus(result.status)) return { label: "Live", className: "live" };
+  if (result && isFinalStatus(result.status))
+    return { label: "Final", className: "locked" };
+  if (result && isLiveStatus(result.status))
+    return { label: "Live", className: "live" };
   if (isLocked(match)) return { label: "Locked", className: "locked" };
   return { label: "Open", className: "open" };
 }
 
 function hasPrediction(prediction) {
-  return prediction && Number.isInteger(prediction.pred1) && Number.isInteger(prediction.pred2);
+  return (
+    prediction &&
+    Number.isInteger(prediction.pred1) &&
+    Number.isInteger(prediction.pred2)
+  );
 }
 
 function hasResult(result) {
-  return result && Number.isInteger(result.score1) && Number.isInteger(result.score2);
+  return (
+    result && Number.isInteger(result.score1) && Number.isInteger(result.score2)
+  );
 }
 
 function calculateMatchPoints(pred1, pred2, actual1, actual2) {
@@ -1040,7 +1162,7 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
     return close ? 3 : 0;
   }
 
-  const diffGap = Math.abs((pred1 - pred2) - (actual1 - actual2));
+  const diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
   return diffGap <= 1 ? 8 : 5;
 }
 
@@ -1058,7 +1180,12 @@ function buildLocalLeaderboard() {
     const result = STATE.results[String(prediction.matchId)];
     if (!hasResult(result)) return;
 
-    const points = calculateMatchPoints(prediction.pred1, prediction.pred2, result.score1, result.score2);
+    const points = calculateMatchPoints(
+      prediction.pred1,
+      prediction.pred2,
+      result.score1,
+      result.score2,
+    );
     totalPoints += points;
     if (points === 15) exactScores += 1;
     if (points > 0) correctOutcomes += 1;
@@ -1105,7 +1232,8 @@ function applyTableResult(team1, team2, score1, score2) {
 }
 
 function formatKickoff(match) {
-  if (!match.kickoffDate) return `${match.date || ""} ${match.time || ""}`.trim();
+  if (!match.kickoffDate)
+    return `${match.date || ""} ${match.time || ""}`.trim();
   return match.kickoffDate.toLocaleString([], {
     month: "short",
     day: "numeric",
@@ -1115,11 +1243,15 @@ function formatKickoff(match) {
 }
 
 function isLiveStatus(status = "") {
-  return ["1H", "HT", "2H", "ET", "P", "LIVE"].includes(String(status).toUpperCase());
+  return ["1H", "HT", "2H", "ET", "P", "LIVE"].includes(
+    String(status).toUpperCase(),
+  );
 }
 
 function isFinalStatus(status = "") {
-  return ["FT", "AET", "PEN", "COMPLETED", "FINAL"].includes(String(status).toUpperCase());
+  return ["FT", "AET", "PEN", "COMPLETED", "FINAL"].includes(
+    String(status).toUpperCase(),
+  );
 }
 
 function rankClass(rank) {
