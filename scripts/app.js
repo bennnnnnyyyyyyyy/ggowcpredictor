@@ -844,32 +844,30 @@ function parseKickoff(date, time, kickoffUTC) {
 
 async function loadTeamMeta() {
   try {
-    console.log("Loading team meta from Firestore...");
     if (db) {
-      const snap = await db.collection("teams").get();
-      if (!snap.empty) {
-        STATE.teams = {};
-        snap.docs.forEach((doc) => {
-          const team = doc.data();
-          const flag = team.flag_icon || "🏳";
-          // Store by normalized keys for lookup
-          [team.name, team.name_normalised, team.fifa_code]
-            .filter(Boolean)
-            .forEach((key) => {
-              STATE.teams[normalizeTeamKey(key)] = flag;
-            });
-        });
-        console.log("Teams loaded from Firestore:", Object.keys(STATE.teams).length, "entries");
-        return;
+      try {
+        const snap = await db.collection("teams").get();
+        if (!snap.empty) {
+          STATE.teams = {};
+          snap.docs.forEach((doc) => {
+            const team = doc.data();
+            const flag = team.flag_icon || "🏳";
+            [team.name, team.name_normalised, team.fifa_code]
+              .filter(Boolean)
+              .forEach((key) => {
+                STATE.teams[normalizeTeamKey(key)] = flag;
+              });
+          });
+          return;
+        }
+      } catch (firestoreError) {
+        console.error("Firestore team load failed:", firestoreError.message);
       }
     }
     
-    console.log("Firestore empty or unavailable, loading from local JSON...");
     const response = await fetch("2026/worldcup.teams.json", { cache: "no-store" });
-    console.log("Fetch response status:", response.status, response.ok);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const teams = await response.json();
-    console.log("Loaded teams count:", teams?.length);
     STATE.teams = (teams || []).reduce((acc, team) => {
       const flag = team.flag_icon || "🏳";
       [team.name, team.name_normalised, team.fifa_code].filter(Boolean).forEach((key) => {
@@ -877,18 +875,12 @@ async function loadTeamMeta() {
       });
       return acc;
     }, {});
-    console.log("STATE.teams populated with", Object.keys(STATE.teams).length, "entries");
   } catch (error) {
-    console.error("Team flags unavailable.", error.message, error);
+    console.error("Team flags unavailable.", error.message);
     STATE.teams = {};
   }
 }
-console.log("STATE.teams keys:", Object.keys(STATE.teams).slice(0, 20));
-console.log("STATE.teams full:", STATE.teams);
-console.log("Mexico flag:", STATE.teams["mexico"]);
-console.log("South Africa flag:", STATE.teams["southafrica"]);
-console.log("South Korea flag:", STATE.teams["southkorea"]);
-console.log("Czech Republic flag:", STATE.teams["czechrepublic"]);
+
 async function loadGameData() {
   if (!CONFIG.appsScriptUrl) return;
 
