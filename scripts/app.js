@@ -2,13 +2,28 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, where } from "firebase/firestore";
 
-const firebaseApp = initializeApp(
-  authDomain: "your-auth-domain.firebaseapp.com",
-  projectId: "your-project-id",
-});
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAVBLnjdM4cV9vBwV27dl6bEc4ZqVjuFBw",
+  authDomain: "ggowcpredictor.firebaseapp.com",
+  projectId: "ggowcpredictor",
+  storageBucket: "ggowcpredictor.firebasestorage.app",
+  messagingSenderId: "126058028551",
+  appId: "1:126058028551:web:e60b6e211c3e2e56e154a2",
+  measurementId: "G-YQLEYQ386D"
+};
 
-const firestore = getFirestore(firebaseApp);
-const apikey = process.env.FIREBASE_API_KEY; // Ensure this is set in your environment variables
+let db = null;
+
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  console.log("✅ Firebase initialized successfully");
+} catch (error) {
+  console.warn("⚠️ Firebase initialization failed (may be offline):", error.message);
+  console.log("Using fallback mock authentication");
+}
+
 // ── SESSION ──────────────────────────────────────────────────────────
 const SESSION = {
   token: sessionStorage.getItem("ggo_wc_token") || null,
@@ -22,9 +37,6 @@ const CONFIG = {
   appsScriptUrl: localStorage.getItem("ggo_wc_url") || "",
   apiKey: localStorage.getItem("ggo_wc_key") || "",
 };
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-window.firebaseDB = db;
 
 // ── STATE ────────────────────────────────────────────────────────────
 const STATE = {
@@ -59,30 +71,72 @@ async function handleLogin() {
     return;
   }
 
-  // TODO: replace with real Firestore / Apps Script validation
-  // Placeholder: accept any non-empty combo (remove before deploy)
-  const mockResult = {
-    ok: true,
-    displayName: document.getElementById("login-name").selectedOptions[0].text,
-    isAdmin: false,
-  };
+  try {
+    // Validate against Firestore if available
+    if (db) {
+      const userRef = doc(db, "users", username);
+      const userSnap = await getDoc(userRef);
+      
+      if (!userSnap.exists()) {
+        errEl.textContent = "User not found.";
+        errEl.classList.add("show");
+        return;
+      }
 
-  if (mockResult.ok) {
-    const token = btoa(username + ":" + Date.now());
-    sessionStorage.setItem("ggo_wc_token", token);
-    sessionStorage.setItem("ggo_wc_user", username);
-    sessionStorage.setItem("ggo_wc_displayname", username);
-    sessionStorage.setItem("ggo_wc_admin", mockResult.isAdmin);
+      const userData = userSnap.data();
+      if (userData.secretCode !== code) {
+        errEl.textContent = "Invalid code. Try again.";
+        errEl.classList.add("show");
+        return;
+      }
 
-    SESSION.token = token;
-    SESSION.username = username;
-    SESSION.displayName = mockResult.displayName;
-    SESSION.isAdmin = mockResult.isAdmin;
+      // Login successful
+      const token = btoa(username + ":" + Date.now());
+      sessionStorage.setItem("ggo_wc_token", token);
+      sessionStorage.setItem("ggo_wc_user", username);
+      sessionStorage.setItem("ggo_wc_displayname", userData.displayName);
+      sessionStorage.setItem("ggo_wc_admin", userData.isAdmin);
 
-    errEl.classList.remove("show");
-    showApp();
-  } else {
-    errEl.textContent = "Invalid name or code. Try again.";
+      SESSION.token = token;
+      SESSION.username = username;
+      SESSION.displayName = userData.displayName;
+      SESSION.isAdmin = userData.isAdmin;
+
+      errEl.classList.remove("show");
+      showApp();
+    } else {
+      // Fallback: mock validation (for development)
+      const validUsers = {
+        ben_arthur: { displayName: "Ben Arthur", isAdmin: true, code: "GGO2026" },
+        jimmy: { displayName: "Jimmy", isAdmin: false, code: "GGO2026" },
+        jane: { displayName: "Jane", isAdmin: false, code: "GGO2026" },
+        selene: { displayName: "Selene", isAdmin: false, code: "GGO2026" }
+      };
+
+      const user = validUsers[username];
+      if (!user || user.code !== code) {
+        errEl.textContent = "Invalid name or code. Try again.";
+        errEl.classList.add("show");
+        return;
+      }
+
+      const token = btoa(username + ":" + Date.now());
+      sessionStorage.setItem("ggo_wc_token", token);
+      sessionStorage.setItem("ggo_wc_user", username);
+      sessionStorage.setItem("ggo_wc_displayname", user.displayName);
+      sessionStorage.setItem("ggo_wc_admin", user.isAdmin);
+
+      SESSION.token = token;
+      SESSION.username = username;
+      SESSION.displayName = user.displayName;
+      SESSION.isAdmin = user.isAdmin;
+
+      errEl.classList.remove("show");
+      showApp();
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+    errEl.textContent = "Login failed. Please try again.";
     errEl.classList.add("show");
   }
 }

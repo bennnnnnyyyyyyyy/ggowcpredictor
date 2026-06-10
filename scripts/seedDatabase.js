@@ -111,9 +111,9 @@ const sampleResults = [
 async function seedCollection(collectionName, documents, idField = "id") {
   console.log(`\n🌱 Seeding ${collectionName}...`);
   try {
-    for (const doc of documents) {
-      const docId = doc[idField];
-      const docData = { ...doc };
+    for (const document of documents) {
+      const docId = document[idField];
+      const docData = { ...document };
       delete docData[idField]; // Remove ID field from data
 
       await setDoc(doc(db, collectionName, docId), docData);
