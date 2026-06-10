@@ -188,8 +188,31 @@ async function requestSync() {
   syncBtn.classList.add("loading");
 
   try {
-    // TODO: replace stub with real fetch to Apps Script / Firebase
-    await new Promise((r) => setTimeout(r, 800)); // simulate
+    // Load fixtures from Firestore
+    if (db) {
+      const fixturesSnap = await db.collection("fixtures").get();
+      STATE.fixtures = fixturesSnap.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      
+      // Load user's predictions
+      const predsSnap = await db
+        .collection("predictions")
+        .where("username", "==", SESSION.username)
+        .get();
+      
+      predsSnap.forEach((doc) => {
+        const pred = doc.data();
+        STATE.predictions[pred.matchId] = pred;
+      });
+
+      // Load leaderboard
+      const leaderboardSnap = await db.collection("leaderboard").doc("current").get();
+      if (leaderboardSnap.exists) {
+        STATE.leaderboard = leaderboardSnap.data().players || [];
+      }
+    }
 
     STATE.lastSync = new Date();
     dot.className = "status-dot active";
@@ -201,9 +224,8 @@ async function requestSync() {
       });
 
     renderPredictions();
+    renderGroupStandings();
     renderLeaderboard();
-    renderResults();
-    renderBracket();
   } catch (e) {
     dot.className = "status-dot";
     timeEl.textContent = "Sync failed";
@@ -213,46 +235,250 @@ async function requestSync() {
   syncBtn.classList.remove("loading");
 }
 
+// ── SAVE PREDICTION ──────────────────────────────────────────────────
+async function savePrediction(matchId, pred1, pred2) {
+  if (!db) {
+    STATE.predictions[matchId] = { matchId, pred1: parseInt(pred1), pred2: parseInt(pred2), username: SESSION.username };
+    renderGroupStandings();
+    return;
+  }
+
+  const docId = `${SESSION.username}_${matchId}`;
+  try {
+    await db.collection("predictions").doc(docId).set({
+      matchId,
+      username: SESSION.username,
+      pred1: parseInt(pred1),
+      pred2: parseInt(pred2),
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    STATE.predictions[matchId] = { matchId, pred1: parseInt(pred1), pred2: parseInt(pred2) };
+    renderGroupStandings();
+  } catch (error) {
+    console.error("Error saving prediction:", error);
+  }
+}
+
 // ── RENDER STUBS (filled in Phase 2) ────────────────────────────────
 function renderPredictions() {
+  // Group fixtures by group
+  const byGroup = {};
+  STATE.fixtures.forEach((f) => {
+    if (!byGroup[f.group]) byGroup[f.group] = [];
+    byGroup[f.group].push(f);
+  });
+
   const el = document.getElementById("predictions-list");
   if (STATE.fixtures.length === 0) {
     el.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">📋</div>
-            <p>Fixtures will load here once the backend is connected.<br>
-            Each match card will have score inputs, a countdown, and a lock indicator.</p>
-          </div>`;
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p>Fixtures will load here. Each match card has score inputs and a countdown.</p>
+      </div>`;
     return;
   }
-  // TODO: render fixture cards with pred-inputs
-}
 
-function renderLeaderboard() {
-  const tbody = document.getElementById("leaderboard-body");
-  if (STATE.leaderboard.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);font-family:'DM Sans',sans-serif">No predictions scored yet.</td></tr>`;
-    return;
+  let html = "";
+  for (const [groupName, fixtures] of Object.entries(byGroup)) {
+    html += `<div class="group-section"><h3>${groupName}</h3>`;
+    html += fixtures
+      .map(
+        (match) => {
+          const pred = STATE.predictions[match.matchId] || {};
+          const pred1 = pred.pred1 !== undefined ? pred.pred1 : "";
+          const pred2 = pred.pred2 !== undefined ? pred.pred2 : "";
+          const matchDate = new Date(match.date);
+          const now = new Date();
+          const isLocked = matchDate < now;
+
+          return `
+      <div class="match-card" data-matchid="${match.matchId}">
+        <div class="match-header">
+          <div class="match-date">${matchDate.toLocaleDateString()} ${match.time || ""}</div>
+          <div class="match-ground">${match.ground || "TBD"}</div>
+        </div>
+        
+        <div class="match-teams">
+          <div class="team team1">
+            <div class="team-name">${match.team1}</div>
+            <input 
+              type="number" 
+              class="score-input" 
+              data-matchid="${match.matchId}" 
+              data-team="1"
+              value="${pred1}" 
+              min="0" 
+              max="9"
+              ${isLocked ? "disabled" : ""}
+              onchange="savePrediction('${match.matchId}', this.value, document.querySelector('[data-matchid=\"${match.matchId}\"][data-team=\"2\"]').value)"
+              placeholder="0"
+            />
+          </div>
+          
+          <div class="vs">VS</div>
+          
+          <div class="team team2">
+            <div class="team-name">${match.team2}</div>
+            <input 
+              type="number" 
+              class="score-input" 
+              data-matchid="${match.matchId}" 
+              data-team="2"
+              value="${pred2}" 
+              min="0" 
+              max="9"
+              ${isLocked ? "disabled" : ""}
+              onchange="savePrediction('${match.matchId}', document.querySelector('[data-matchid=\"${match.matchId}\"][data-team=\"1\"]').value, this.value)"
+              placeholder="0"
+            />
+          </div>
+        </div>
+      </div>
+    `;
+        }
+      )
+      .join("");
+    html += "</div>";
   }
-  // TODO: render leaderboard rows
+
+  el.innerHTML = html;
 }
 
-function renderResults() {
-  const el = document.getElementById("results-list");
-  if (Object.keys(STATE.results).length === 0) {
-    el.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">⚽</div>
-            <p>Results will appear here once matches kick off.<br>
-            Live scores update every 60 seconds via API-Football.</p>
-          </div>`;
-    return;
+function renderGroupStandings() {
+  const container = document.getElementById("group-standings");
+  if (!container) return;
+
+  const GroupStandings = class {
+    constructor(groupName, teams) {
+      this.groupName = groupName;
+      this.standings = teams.map((team) => ({
+        team,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        gf: 0,
+        ga: 0,
+        gd: 0,
+        points: 0,
+      }));
+    }
+    
+    addMatch(team1, team2, score1, score2) {
+      const t1 = this.standings.find((t) => t.team === team1);
+      const t2 = this.standings.find((t) => t.team === team2);
+      if (!t1 || !t2) return;
+      
+      t1.played++;
+      t2.played++;
+      t1.gf += score1;
+      t1.ga += score2;
+      t2.gf += score2;
+      t2.ga += score1;
+
+      if (score1 > score2) {
+        t1.won++;
+        t1.points += 3;
+        t2.lost++;
+      } else if (score2 > score1) {
+        t2.won++;
+        t2.points += 3;
+        t1.lost++;
+      } else {
+        t1.drawn++;
+        t1.points += 1;
+        t2.drawn++;
+        t2.points += 1;
+      }
+
+      t1.gd = t1.gf - t1.ga;
+      t2.gd = t2.gf - t2.ga;
+    }
+
+    getStandings() {
+      return this.standings.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.gd !== a.gd) return b.gd - a.gd;
+        return b.gf - a.gf;
+      });
+    }
+  };
+
+  const GROUPS = {
+    "Group A": ["Mexico", "South Africa", "South Korea", "Czech Republic"],
+    "Group B": ["Canada", "Bosnia & Herzegovina", "Qatar", "Switzerland"],
+    "Group C": ["Brazil", "Morocco", "Haiti", "Scotland"],
+    "Group D": ["USA", "Paraguay", "Australia", "Turkey"],
+    "Group E": ["Germany", "Curaçao", "Ivory Coast", "Ecuador"],
+    "Group F": ["Netherlands", "Senegal", "Tunisia", "Jamaica"],
+    "Group G": ["Belgium", "Croatia", "France", "Portugal"],
+    "Group H": ["Italy", "Spain", "Switzerland", "Poland"],
+    "Group I": ["Argentina", "Uzbekistan", "Paraguay", "Bolivia"],
+    "Group J": ["England", "Iran", "Wales", "Costa Rica"],
+    "Group K": ["Japan", "Spain", "Germany", "Costa Rica"],
+    "Group L": ["Russia", "Belgium", "Wales", "Iran"],
+  };
+
+  let html = "";
+
+  for (const [groupName, teams] of Object.entries(GROUPS)) {
+    const standings = new GroupStandings(groupName, teams);
+
+    const groupMatches = STATE.fixtures.filter(
+      (m) => m.group === groupName
+    );
+
+    groupMatches.forEach((match) => {
+      const pred = STATE.predictions[match.matchId];
+      if (pred) {
+        standings.addMatch(match.team1, match.team2, pred.pred1, pred.pred2);
+      }
+    });
+
+    const table = standings.getStandings();
+
+    html += `
+      <div class="group-table">
+        <h3>${groupName}</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>P</th>
+              <th>W</th>
+              <th>D</th>
+              <th>L</th>
+              <th>GF</th>
+              <th>GA</th>
+              <th>GD</th>
+              <th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${table
+              .map(
+                (row, idx) => `
+              <tr class="position-${idx + 1}">
+                <td class="team-name">${idx + 1}. ${row.team}</td>
+                <td>${row.played}</td>
+                <td>${row.won}</td>
+                <td>${row.drawn}</td>
+                <td>${row.lost}</td>
+                <td>${row.gf}</td>
+                <td>${row.ga}</td>
+                <td>${row.gd > 0 ? "+" : ""}${row.gd}</td>
+                <td class="points"><strong>${row.points}</strong></td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
   }
-  // TODO: render result cards
-}
 
-function renderBracket() {
-  // TODO: render knockout bracket from STATE
+  container.innerHTML = html;
 }
 
 // ── FILTER STUBS ─────────────────────────────────────────────────────
