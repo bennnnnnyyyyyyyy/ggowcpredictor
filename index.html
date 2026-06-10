@@ -16,8 +16,8 @@
   </style>
   <body>
     <!-- Firebase SDK (CDN) -->
-    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
     <!-- ════════════════════════════════════════
        LOGIN SCREEN
   ════════════════════════════════════════ -->
@@ -120,6 +120,7 @@
             <span class="status-dot" id="sync-dot"></span>
             <span id="last-sync-time">Not synced</span>
           </div>
+          <button class="sync-btn" type="button" onclick="requestSync()">Sync</button>
 
           <!-- User pill -->
           <div class="user-pill" id="user-pill">

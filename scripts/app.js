@@ -1,7 +1,6 @@
-// ── FIREBASE ───────────────────────────────────────────────────────────
-// Firebase is loaded from CDN in index.html, using global firebase object
+// GGO WC 2026 Predictor - browser app
+// Uses Firestore when available, with local JSON/localStorage fallback for development.
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAVBLnjdM4cV9vBwV27dl6bEc4ZqVjuFBw",
   authDomain: "ggowcpredictor.firebaseapp.com",
@@ -9,21 +8,20 @@ const firebaseConfig = {
   storageBucket: "ggowcpredictor.firebasestorage.app",
   messagingSenderId: "126058028551",
   appId: "1:126058028551:web:e60b6e211c3e2e56e154a2",
-  measurementId: "G-YQLEYQ386D"
+  measurementId: "G-YQLEYQ386D",
+};
+
+const DEMO_USERS = {
+  ben_arthur: { displayName: "Ben Arthur", isAdmin: true, code: "GGO2026" },
+  jimmy: { displayName: "Jimmy", isAdmin: false, code: "GGO2026" },
+  jane: { displayName: "Jane", isAdmin: false, code: "GGO2026" },
+  selene: { displayName: "Selene", isAdmin: false, code: "GGO2026" },
 };
 
 let db = null;
+let activeMatchFilter = "all";
+let activeResultFilter = "all";
 
-try {
-  const app = firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-  console.log("✅ Firebase initialized successfully");
-} catch (error) {
-  console.warn("⚠️ Firebase initialization failed (may be offline):", error.message);
-  console.log("Using fallback mock authentication");
-}
-
-// ── SESSION ──────────────────────────────────────────────────────────
 const SESSION = {
   token: sessionStorage.getItem("ggo_wc_token") || null,
   username: sessionStorage.getItem("ggo_wc_user") || null,
@@ -31,492 +29,953 @@ const SESSION = {
   isAdmin: sessionStorage.getItem("ggo_wc_admin") === "true",
 };
 
-// ── CONFIG (will be populated from settings / hardcoded before deploy) ──
 const CONFIG = {
   appsScriptUrl: localStorage.getItem("ggo_wc_url") || "",
   apiKey: localStorage.getItem("ggo_wc_key") || "",
 };
 
-// ── STATE ────────────────────────────────────────────────────────────
 const STATE = {
-  fixtures: [], // all 104 fixtures (seeded)
-  results: {}, // matchId → { score1, score2, status }
-  predictions: {}, // matchId → { pred1, pred2, points }
+  fixtures: [],
+  results: {},
+  predictions: {},
   leaderboard: [],
+  users: [],
   lastSync: null,
 };
 
-// ── INIT ─────────────────────────────────────────────────────────────
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  initFirebase();
+  await hydrateLoginUsers();
+
   if (SESSION.token && SESSION.username) {
     showApp();
   }
 });
 
-// ── LOGIN ────────────────────────────────────────────────────────────
+function initFirebase() {
+  if (!window.firebase || !firebase.initializeApp || !firebase.firestore) {
+    console.warn("Firebase compat SDK not available. Using local fallback mode.");
+    return;
+  }
+
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log("Firebase initialized");
+  } catch (error) {
+    console.warn("Firebase init failed. Using local fallback mode.", error.message);
+  }
+}
+
+async function hydrateLoginUsers() {
+  STATE.users = Object.entries(DEMO_USERS).map(([username, user]) => ({
+    username,
+    displayName: user.displayName,
+    isAdmin: user.isAdmin,
+  }));
+
+  if (!db) return;
+
+  try {
+    const snap = await db.collection("users").get();
+    if (!snap.empty) {
+      STATE.users = snap.docs.map((doc) => ({
+        username: doc.id,
+        ...doc.data(),
+      }));
+    }
+  } catch (error) {
+    console.warn("Could not load Firestore users.", error.message);
+  }
+}
+
 async function handleLogin(event) {
   if (event) event.preventDefault();
-  
+
   const username = document.getElementById("login-name").value.trim();
   const code = document.getElementById("login-code").value.trim();
   const errEl = document.getElementById("login-error");
 
   if (!username || !code) {
-    errEl.textContent = "Please enter your name and code.";
-    errEl.classList.add("show");
+    showLoginError("Please enter your username and secret code.");
     return;
   }
 
   try {
-    // Validate against Firestore if available
+    let userData = null;
+
     if (db) {
-      const userRef = firebase.firestore().collection("users").doc(username);
-      const userSnap = await userRef.get();
-      
-      if (!userSnap.exists) {
-        errEl.textContent = "User not found.";
-        errEl.classList.add("show");
-        return;
-      }
-
-      const userData = userSnap.data();
-      if (userData.secretCode !== code) {
-        errEl.textContent = "Invalid code. Try again.";
-        errEl.classList.add("show");
-        return;
-      }
-
-      // Login successful
-      const token = btoa(username + ":" + Date.now());
-      sessionStorage.setItem("ggo_wc_token", token);
-      sessionStorage.setItem("ggo_wc_user", username);
-      sessionStorage.setItem("ggo_wc_displayname", userData.displayName);
-      sessionStorage.setItem("ggo_wc_admin", userData.isAdmin);
-
-      SESSION.token = token;
-      SESSION.username = username;
-      SESSION.displayName = userData.displayName;
-      SESSION.isAdmin = userData.isAdmin;
-
-      errEl.classList.remove("show");
-      showApp();
-    } else {
-      // Fallback: mock validation (for development/offline)
-      const validUsers = {
-        ben_arthur: { displayName: "Ben Arthur", isAdmin: true, code: "GGO2026" },
-        jimmy: { displayName: "Jimmy", isAdmin: false, code: "GGO2026" },
-        jane: { displayName: "Jane", isAdmin: false, code: "GGO2026" },
-        selene: { displayName: "Selene", isAdmin: false, code: "GGO2026" }
-      };
-
-      const user = validUsers[username];
-      if (!user || user.code !== code) {
-        errEl.textContent = "Invalid name or code. Try again.";
-        errEl.classList.add("show");
-        return;
-      }
-
-      const token = btoa(username + ":" + Date.now());
-      sessionStorage.setItem("ggo_wc_token", token);
-      sessionStorage.setItem("ggo_wc_user", username);
-      sessionStorage.setItem("ggo_wc_displayname", user.displayName);
-      sessionStorage.setItem("ggo_wc_admin", user.isAdmin);
-
-      SESSION.token = token;
-      SESSION.username = username;
-      SESSION.displayName = user.displayName;
-      SESSION.isAdmin = user.isAdmin;
-
-      errEl.classList.remove("show");
-      showApp();
+      const userSnap = await db.collection("users").doc(username).get();
+      if (userSnap.exists) userData = userSnap.data();
     }
+
+    if (!userData && DEMO_USERS[username]) {
+      userData = {
+        displayName: DEMO_USERS[username].displayName,
+        secretCode: DEMO_USERS[username].code,
+        isAdmin: DEMO_USERS[username].isAdmin,
+      };
+    }
+
+    if (!userData) {
+      showLoginError("User not found. Ask the admin to add your username.");
+      return;
+    }
+
+    if (String(userData.secretCode || "") !== code) {
+      showLoginError("Invalid code. Try again.");
+      return;
+    }
+
+    SESSION.token = btoa(`${username}:${Date.now()}`);
+    SESSION.username = username;
+    SESSION.displayName = userData.displayName || username;
+    SESSION.isAdmin = Boolean(userData.isAdmin);
+
+    sessionStorage.setItem("ggo_wc_token", SESSION.token);
+    sessionStorage.setItem("ggo_wc_user", SESSION.username);
+    sessionStorage.setItem("ggo_wc_displayname", SESSION.displayName);
+    sessionStorage.setItem("ggo_wc_admin", String(SESSION.isAdmin));
+
+    errEl.classList.remove("show");
+    showApp();
   } catch (error) {
     console.error("Login error:", error);
-    errEl.textContent = "Login failed. Please try again.";
-    errEl.classList.add("show");
+    showLoginError("Login failed. Check your connection and try again.");
   }
+}
+
+function showLoginError(message) {
+  const errEl = document.getElementById("login-error");
+  errEl.textContent = message;
+  errEl.classList.add("show");
 }
 
 function showApp() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
 
-  // Set user pill
-  const initials = (SESSION.displayName || "?")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = getInitials(SESSION.displayName || SESSION.username || "?");
   document.getElementById("user-avatar").textContent = initials;
   document.getElementById("user-display-name").textContent =
     SESSION.displayName || SESSION.username;
-
-  // Show admin nav if applicable
-  if (SESSION.isAdmin) {
-    document.getElementById("admin-nav-btn").style.display = "";
-  }
+  document.getElementById("admin-nav-btn").style.display = SESSION.isAdmin
+    ? ""
+    : "none";
 
   requestSync();
 }
 
 function handleLogout() {
   sessionStorage.clear();
-  location.reload();
+  window.location.reload();
 }
 
-// ── VIEW SWITCHER ────────────────────────────────────────────────────
 function showView(id, btn) {
-  document
-    .querySelectorAll(".view")
-    .forEach((v) => v.classList.remove("active"));
-  document
-    .querySelectorAll(".nav-btn")
-    .forEach((b) => b.classList.remove("active"));
-  document.getElementById("view-" + id).classList.add("active");
+  document.querySelectorAll(".view").forEach((view) => {
+    view.classList.remove("active");
+  });
+  document.querySelectorAll(".nav-btn").forEach((navBtn) => {
+    navBtn.classList.remove("active");
+  });
+
+  const view = document.getElementById(`view-${id}`);
+  if (view) view.classList.add("active");
   if (btn) btn.classList.add("active");
+
+  if (id === "results") renderResults();
+  if (id === "bracket") renderBracket();
+  if (id === "leaderboard") renderLeaderboard();
+  if (id === "admin") renderAdmin();
 }
 
-// ── SYNC ─────────────────────────────────────────────────────────────
 async function requestSync() {
   const dot = document.getElementById("sync-dot");
   const timeEl = document.getElementById("last-sync-time");
   const syncBtn = document.querySelector(".sync-btn");
 
-  dot.className = "status-dot loading";
-  timeEl.textContent = "Syncing…";
-  syncBtn.classList.add("loading");
+  if (dot) dot.className = "status-dot loading";
+  if (timeEl) timeEl.textContent = "Syncing...";
+  if (syncBtn) syncBtn.classList.add("loading");
 
   try {
-    // Load fixtures from Firestore
-    if (db) {
-      const fixturesSnap = await db.collection("fixtures").get();
-      STATE.fixtures = fixturesSnap.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      
-      // Load user's predictions
-      const predsSnap = await db
-        .collection("predictions")
-        .where("username", "==", SESSION.username)
-        .get();
-      
-      predsSnap.forEach((doc) => {
-        const pred = doc.data();
-        STATE.predictions[pred.matchId] = pred;
-      });
-
-      // Load leaderboard
-      const leaderboardSnap = await db.collection("leaderboard").doc("current").get();
-      if (leaderboardSnap.exists) {
-        STATE.leaderboard = leaderboardSnap.data().players || [];
-      }
-    }
+    await Promise.all([loadFixtures(), loadResults(), loadPredictions(), loadLeaderboard()]);
 
     STATE.lastSync = new Date();
-    dot.className = "status-dot active";
-    timeEl.textContent =
-      "Live · " +
-      STATE.lastSync.toLocaleTimeString([], {
+    if (dot) dot.className = "status-dot active";
+    if (timeEl) {
+      timeEl.textContent = `Live - ${STATE.lastSync.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
-      });
+      })}`;
+    }
 
     renderPredictions();
     renderGroupStandings();
     renderLeaderboard();
-  } catch (e) {
-    dot.className = "status-dot";
-    timeEl.textContent = "Sync failed";
-    console.error("Sync error:", e);
+    renderResults();
+    renderBracket();
+    renderAdmin();
+  } catch (error) {
+    console.error("Sync error:", error);
+    if (dot) dot.className = "status-dot";
+    if (timeEl) timeEl.textContent = "Sync failed";
+  } finally {
+    if (syncBtn) syncBtn.classList.remove("loading");
   }
-
-  syncBtn.classList.remove("loading");
 }
 
-// ── SAVE PREDICTION ──────────────────────────────────────────────────
+async function loadFixtures() {
+  let fixtures = [];
+
+  if (db) {
+    try {
+      const snap = await db.collection("fixtures").get();
+      fixtures = snap.docs.map((doc) => normalizeFixture({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("Could not load Firestore fixtures.", error.message);
+    }
+  }
+
+  if (!fixtures.length) {
+    fixtures = await loadLocalFixtures();
+  }
+
+  STATE.fixtures = fixtures.sort((a, b) => {
+    const aTime = a.kickoffDate ? a.kickoffDate.getTime() : 0;
+    const bTime = b.kickoffDate ? b.kickoffDate.getTime() : 0;
+    return aTime - bTime || Number(a.matchId) - Number(b.matchId);
+  });
+}
+
+async function loadLocalFixtures() {
+  try {
+    const response = await fetch("2026/worldcup.json", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return (data.matches || []).map((match, index) =>
+      normalizeFixture({
+        ...match,
+        matchId: match.num || index + 1,
+      })
+    );
+  } catch (error) {
+    console.warn("Local fixture JSON unavailable.", error.message);
+    return [];
+  }
+}
+
+async function loadResults() {
+  STATE.results = {};
+
+  if (db) {
+    try {
+      const snap = await db.collection("results").get();
+      snap.docs.forEach((doc) => {
+        const result = doc.data();
+        const matchId = String(result.matchId || doc.id.replace(/^match_/, ""));
+        STATE.results[matchId] = normalizeResult({ id: doc.id, ...result, matchId });
+      });
+    } catch (error) {
+      console.warn("Could not load Firestore results.", error.message);
+    }
+  }
+
+  const localResults = readLocalObject(`ggo_wc_results_${SESSION.username || "demo"}`);
+  STATE.results = { ...localResults, ...STATE.results };
+}
+
+async function loadPredictions() {
+  STATE.predictions = readLocalObject(`ggo_wc_predictions_${SESSION.username || "demo"}`);
+
+  if (!db || !SESSION.username) return;
+
+  try {
+    const snap = await db
+      .collection("predictions")
+      .where("username", "==", SESSION.username)
+      .get();
+    snap.docs.forEach((doc) => {
+      const prediction = doc.data();
+      STATE.predictions[String(prediction.matchId)] = normalizePrediction(prediction);
+    });
+  } catch (error) {
+    console.warn("Could not load Firestore predictions.", error.message);
+  }
+}
+
+async function loadLeaderboard() {
+  STATE.leaderboard = [];
+
+  if (db) {
+    try {
+      const current = await db.collection("leaderboard").doc("current").get();
+      if (current.exists && Array.isArray(current.data().players)) {
+        STATE.leaderboard = current.data().players;
+        return;
+      }
+    } catch (error) {
+      console.warn("Could not load Firestore leaderboard.", error.message);
+    }
+  }
+
+  STATE.leaderboard = buildLocalLeaderboard();
+}
+
+function normalizeFixture(fixture) {
+  const matchId = String(fixture.matchId || fixture.num || fixture.id || "");
+  const kickoffDate = parseKickoff(fixture.date, fixture.time, fixture.kickoffUTC);
+  const stage = fixture.stage || getStageFromRound(fixture.round);
+
+  return {
+    ...fixture,
+    matchId,
+    group: fixture.group || stageLabel(stage),
+    stage,
+    kickoffUTC: kickoffDate ? kickoffDate.toISOString() : fixture.kickoffUTC || "",
+    kickoffDate,
+    team1: fixture.team1 || fixture.homeTeam || "TBD",
+    team2: fixture.team2 || fixture.awayTeam || "TBD",
+    ground: fixture.ground || fixture.venue || "TBD",
+  };
+}
+
+function normalizePrediction(prediction) {
+  return {
+    ...prediction,
+    matchId: String(prediction.matchId),
+    pred1: Number(prediction.pred1),
+    pred2: Number(prediction.pred2),
+  };
+}
+
+function normalizeResult(result) {
+  return {
+    ...result,
+    matchId: String(result.matchId),
+    score1: nullableNumber(result.score1 ?? result.team1Score),
+    score2: nullableNumber(result.score2 ?? result.team2Score),
+    status: result.status || "NS",
+  };
+}
+
 async function savePrediction(matchId, pred1, pred2) {
-  if (!db) {
-    STATE.predictions[matchId] = { matchId, pred1: parseInt(pred1), pred2: parseInt(pred2), username: SESSION.username };
-    renderGroupStandings();
+  const fixture = STATE.fixtures.find((match) => match.matchId === String(matchId));
+  const score1 = Number(pred1);
+  const score2 = Number(pred2);
+
+  if (!fixture) return;
+  if (isLocked(fixture)) {
+    alert("This match is locked. Predictions close 15 minutes before kickoff.");
+    renderPredictions();
+    return;
+  }
+  if (!Number.isInteger(score1) || !Number.isInteger(score2) || score1 < 0 || score2 < 0) {
     return;
   }
 
-  const docId = `${SESSION.username}_${matchId}`;
-  try {
-    await db.collection("predictions").doc(docId).set({
-      matchId,
-      username: SESSION.username,
-      pred1: parseInt(pred1),
-      pred2: parseInt(pred2),
-      submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-    STATE.predictions[matchId] = { matchId, pred1: parseInt(pred1), pred2: parseInt(pred2) };
-    renderGroupStandings();
-  } catch (error) {
-    console.error("Error saving prediction:", error);
+  const prediction = {
+    matchId: String(matchId),
+    username: SESSION.username,
+    pred1: score1,
+    pred2: score2,
+    submittedAt: new Date().toISOString(),
+    pointsAwarded: null,
+    scoredAt: null,
+  };
+
+  STATE.predictions[String(matchId)] = prediction;
+  writeLocalObject(`ggo_wc_predictions_${SESSION.username || "demo"}`, STATE.predictions);
+
+  if (db && SESSION.username) {
+    try {
+      await db.collection("predictions").doc(`${SESSION.username}_${matchId}`).set(
+        {
+          ...prediction,
+          submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Could not save prediction to Firestore.", error);
+    }
   }
+
+  renderPredictions();
+  renderGroupStandings();
+  renderLeaderboard();
 }
 
-// ── RENDER STUBS (filled in Phase 2) ────────────────────────────────
 function renderPredictions() {
-  // Group fixtures by group
-  const byGroup = {};
-  STATE.fixtures.forEach((f) => {
-    if (!byGroup[f.group]) byGroup[f.group] = [];
-    byGroup[f.group].push(f);
+  const container = document.getElementById("predictions-list");
+  if (!container) return;
+
+  const visibleFixtures = STATE.fixtures.filter((fixture) => {
+    if (activeMatchFilter === "open") return !isLocked(fixture);
+    if (activeMatchFilter === "locked") return isLocked(fixture);
+    return true;
   });
 
-  const el = document.getElementById("predictions-list");
-  if (STATE.fixtures.length === 0) {
-    el.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <p>Fixtures will load here. Each match card has score inputs and a countdown.</p>
-      </div>`;
+  if (!visibleFixtures.length) {
+    container.innerHTML = emptyState(
+      "Fixtures are not loaded yet.",
+      "Run the app from a local server or seed Firestore fixtures."
+    );
     return;
   }
 
-  let html = "";
-  for (const [groupName, fixtures] of Object.entries(byGroup)) {
-    html += `<div class="group-section"><h3>${groupName}</h3>`;
-    html += fixtures
-      .map(
-        (match) => {
-          const pred = STATE.predictions[match.matchId] || {};
-          const pred1 = pred.pred1 !== undefined ? pred.pred1 : "";
-          const pred2 = pred.pred2 !== undefined ? pred.pred2 : "";
-          const matchDate = new Date(match.date);
-          const now = new Date();
-          const isLocked = matchDate < now;
+  const groups = groupBy(visibleFixtures, (fixture) => fixture.group || fixture.round || "Matches");
 
-          return `
-      <div class="match-card" data-matchid="${match.matchId}">
-        <div class="match-header">
-          <div class="match-date">${matchDate.toLocaleDateString()} ${match.time || ""}</div>
-          <div class="match-ground">${match.ground || "TBD"}</div>
+  container.innerHTML = Object.entries(groups)
+    .map(([groupName, fixtures]) => {
+      return `
+        <section class="group-section">
+          <h3>${escapeHtml(groupName)}</h3>
+          <div class="group-matches">
+            ${fixtures.map(renderPredictionCard).join("")}
+          </div>
+        </section>
+      `;
+    })
+    .join("");
+}
+
+function renderPredictionCard(match) {
+  const pred = STATE.predictions[match.matchId] || {};
+  const result = STATE.results[match.matchId];
+  const locked = isLocked(match);
+  const status = getMatchStatus(match, result);
+  const points = result && hasResult(result) && hasPrediction(pred)
+    ? calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2)
+    : null;
+
+  return `
+    <article class="match-card ${locked ? "locked" : "open"}">
+      <div class="match-header">
+        <div>
+          <div class="match-date">${formatKickoff(match)}</div>
+          <div class="match-ground">${escapeHtml(match.ground)}</div>
         </div>
-        
-        <div class="match-teams">
-          <div class="team team1">
-            <div class="team-name">${match.team1}</div>
-            <input 
-              type="number" 
-              class="score-input" 
-              data-matchid="${match.matchId}" 
-              data-team="1"
-              value="${pred1}" 
-              min="0" 
-              max="9"
-              ${isLocked ? "disabled" : ""}
-              onchange="savePrediction('${match.matchId}', this.value, document.querySelector('[data-matchid=\"${match.matchId}\"][data-team=\"2\"]').value)"
-              placeholder="0"
-            />
-          </div>
-          
-          <div class="vs">VS</div>
-          
-          <div class="team team2">
-            <div class="team-name">${match.team2}</div>
-            <input 
-              type="number" 
-              class="score-input" 
-              data-matchid="${match.matchId}" 
-              data-team="2"
-              value="${pred2}" 
-              min="0" 
-              max="9"
-              ${isLocked ? "disabled" : ""}
-              onchange="savePrediction('${match.matchId}', document.querySelector('[data-matchid=\"${match.matchId}\"][data-team=\"1\"]').value, this.value)"
-              placeholder="0"
-            />
-          </div>
+        <span class="match-status ${status.className}">${status.label}</span>
+      </div>
+      <div class="match-teams">
+        <div class="team">
+          <div class="team-name">${escapeHtml(match.team1)}</div>
+          <input class="score-input" type="number" min="0" max="20" inputmode="numeric"
+            value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
+            ${locked ? "disabled" : ""}
+            data-matchid="${match.matchId}" data-team="1"
+            onchange="handleScoreChange('${match.matchId}')">
+        </div>
+        <div class="vs">VS</div>
+        <div class="team">
+          <div class="team-name">${escapeHtml(match.team2)}</div>
+          <input class="score-input" type="number" min="0" max="20" inputmode="numeric"
+            value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
+            ${locked ? "disabled" : ""}
+            data-matchid="${match.matchId}" data-team="2"
+            onchange="handleScoreChange('${match.matchId}')">
         </div>
       </div>
-    `;
-        }
-      )
-      .join("");
-    html += "</div>";
-  }
+      <div class="match-footer">
+        <span>${hasPrediction(pred) ? "Saved prediction" : "No prediction yet"}</span>
+        ${points === null ? "" : `<strong>${points} pts</strong>`}
+      </div>
+    </article>
+  `;
+}
 
-  el.innerHTML = html;
+function handleScoreChange(matchId) {
+  const input1 = document.querySelector(
+    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="1"]`
+  );
+  const input2 = document.querySelector(
+    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="2"]`
+  );
+
+  if (!input1 || !input2 || input1.value === "" || input2.value === "") return;
+  savePrediction(matchId, input1.value, input2.value);
 }
 
 function renderGroupStandings() {
   const container = document.getElementById("group-standings");
   if (!container) return;
 
-  const GroupStandings = class {
-    constructor(groupName, teams) {
-      this.groupName = groupName;
-      this.standings = teams.map((team) => ({
-        team,
-        played: 0,
-        won: 0,
-        drawn: 0,
-        lost: 0,
-        gf: 0,
-        ga: 0,
-        gd: 0,
-        points: 0,
-      }));
-    }
-    
-    addMatch(team1, team2, score1, score2) {
-      const t1 = this.standings.find((t) => t.team === team1);
-      const t2 = this.standings.find((t) => t.team === team2);
-      if (!t1 || !t2) return;
-      
-      t1.played++;
-      t2.played++;
-      t1.gf += score1;
-      t1.ga += score2;
-      t2.gf += score2;
-      t2.ga += score1;
+  const groupFixtures = STATE.fixtures.filter((fixture) => fixture.stage === "group" && fixture.group);
+  const groups = groupBy(groupFixtures, (fixture) => fixture.group);
 
-      if (score1 > score2) {
-        t1.won++;
-        t1.points += 3;
-        t2.lost++;
-      } else if (score2 > score1) {
-        t2.won++;
-        t2.points += 3;
-        t1.lost++;
-      } else {
-        t1.drawn++;
-        t1.points += 1;
-        t2.drawn++;
-        t2.points += 1;
-      }
+  if (!Object.keys(groups).length) {
+    container.innerHTML = emptyState("Group tables need group-stage fixtures.", "");
+    return;
+  }
 
-      t1.gd = t1.gf - t1.ga;
-      t2.gd = t2.gf - t2.ga;
-    }
+  container.innerHTML = Object.entries(groups)
+    .map(([groupName, fixtures]) => renderGroupTable(groupName, fixtures))
+    .join("");
+}
 
-    getStandings() {
-      return this.standings.sort((a, b) => {
-        if (b.points !== a.points) return b.points - a.points;
-        if (b.gd !== a.gd) return b.gd - a.gd;
-        return b.gf - a.gf;
-      });
-    }
-  };
+function renderGroupTable(groupName, fixtures) {
+  const teamMap = new Map();
 
-  const GROUPS = {
-    "Group A": ["Mexico", "South Africa", "South Korea", "Czech Republic"],
-    "Group B": ["Canada", "Bosnia & Herzegovina", "Qatar", "Switzerland"],
-    "Group C": ["Brazil", "Morocco", "Haiti", "Scotland"],
-    "Group D": ["USA", "Paraguay", "Australia", "Turkey"],
-    "Group E": ["Germany", "Curaçao", "Ivory Coast", "Ecuador"],
-    "Group F": ["Netherlands", "Senegal", "Tunisia", "Jamaica"],
-    "Group G": ["Belgium", "Croatia", "France", "Portugal"],
-    "Group H": ["Italy", "Spain", "Switzerland", "Poland"],
-    "Group I": ["Argentina", "Uzbekistan", "Paraguay", "Bolivia"],
-    "Group J": ["England", "Iran", "Wales", "Costa Rica"],
-    "Group K": ["Japan", "Spain", "Germany", "Costa Rica"],
-    "Group L": ["Russia", "Belgium", "Wales", "Iran"],
-  };
-
-  let html = "";
-
-  for (const [groupName, teams] of Object.entries(GROUPS)) {
-    const standings = new GroupStandings(groupName, teams);
-
-    const groupMatches = STATE.fixtures.filter(
-      (m) => m.group === groupName
-    );
-
-    groupMatches.forEach((match) => {
-      const pred = STATE.predictions[match.matchId];
-      if (pred) {
-        standings.addMatch(match.team1, match.team2, pred.pred1, pred.pred2);
+  fixtures.forEach((fixture) => {
+    [fixture.team1, fixture.team2].forEach((team) => {
+      if (!teamMap.has(team)) {
+        teamMap.set(team, {
+          team,
+          played: 0,
+          won: 0,
+          drawn: 0,
+          lost: 0,
+          gf: 0,
+          ga: 0,
+          gd: 0,
+          points: 0,
+        });
       }
     });
 
-    const table = standings.getStandings();
+    const pred = STATE.predictions[fixture.matchId];
+    if (!hasPrediction(pred)) return;
 
-    html += `
-      <div class="group-table">
-        <h3>${groupName}</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th>P</th>
-              <th>W</th>
-              <th>D</th>
-              <th>L</th>
-              <th>GF</th>
-              <th>GA</th>
-              <th>GD</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${table
-              .map(
-                (row, idx) => `
-              <tr class="position-${idx + 1}">
-                <td class="team-name">${idx + 1}. ${row.team}</td>
-                <td>${row.played}</td>
-                <td>${row.won}</td>
-                <td>${row.drawn}</td>
-                <td>${row.lost}</td>
-                <td>${row.gf}</td>
-                <td>${row.ga}</td>
-                <td>${row.gd > 0 ? "+" : ""}${row.gd}</td>
-                <td class="points"><strong>${row.points}</strong></td>
-              </tr>
-            `
-              )
-              .join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
+    applyTableResult(teamMap.get(fixture.team1), teamMap.get(fixture.team2), pred.pred1, pred.pred2);
+  });
 
-  container.innerHTML = html;
+  const standings = Array.from(teamMap.values()).sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return a.team.localeCompare(b.team);
+  });
+
+  return `
+    <article class="group-table">
+      <div class="group-header">${escapeHtml(groupName)}</div>
+      <table class="group-standings-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${standings
+            .map(
+              (row, index) => `
+                <tr>
+                  <td class="team-rank">${index + 1}</td>
+                  <td>${escapeHtml(row.team)}</td>
+                  <td>${row.played}</td>
+                  <td>${row.won}</td>
+                  <td>${row.drawn}</td>
+                  <td>${row.lost}</td>
+                  <td>${row.gd > 0 ? "+" : ""}${row.gd}</td>
+                  <td><strong>${row.points}</strong></td>
+                </tr>
+              `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </article>
+  `;
 }
 
-// ── FILTER STUBS ─────────────────────────────────────────────────────
+function renderLeaderboard() {
+  const tbody = document.getElementById("leaderboard-body");
+  if (!tbody) return;
+
+  const rows = STATE.leaderboard.length ? STATE.leaderboard : buildLocalLeaderboard();
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="table-empty">No predictions yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows
+    .map((player, index) => {
+      const rank = player.rank || index + 1;
+      const name = player.displayName || player.playerName || player.username || "Player";
+      return `
+        <tr class="${player.username === SESSION.username ? "current-user" : ""}">
+          <td><span class="rank-badge ${rankClass(rank)}">${rank}</span></td>
+          <td>
+            <div class="player-info">
+              <span class="player-avatar">${getInitials(name)}</span>
+              <span class="player-name">${escapeHtml(name)}</span>
+            </div>
+          </td>
+          <td><strong>${player.totalPoints || 0}</strong></td>
+          <td>${player.exactScores || player.exactCount || 0}</td>
+          <td>${player.correctOutcomes || player.outcomeCount || 0}</td>
+          <td>${player.predicted || 0}</td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderResults() {
+  const container = document.getElementById("results-list");
+  if (!container) return;
+
+  let fixtures = STATE.fixtures.filter((fixture) => STATE.results[fixture.matchId]);
+  if (activeResultFilter === "live") {
+    fixtures = fixtures.filter((fixture) => isLiveStatus(STATE.results[fixture.matchId].status));
+  }
+  if (activeResultFilter === "ft") {
+    fixtures = fixtures.filter((fixture) => isFinalStatus(STATE.results[fixture.matchId].status));
+  }
+
+  if (!fixtures.length) {
+    container.innerHTML = emptyState("No results synced yet.", "Results will appear after Apps Script writes them to Firestore.");
+    return;
+  }
+
+  container.innerHTML = fixtures
+    .map((fixture) => {
+      const result = STATE.results[fixture.matchId];
+      const pred = STATE.predictions[fixture.matchId];
+      const points = hasPrediction(pred) && hasResult(result)
+        ? calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2)
+        : null;
+
+      return `
+        <article class="result-card">
+          <div class="match-date">${formatKickoff(fixture)}</div>
+          <div class="match-teams">
+            <div class="team"><div class="team-name">${escapeHtml(fixture.team1)}</div></div>
+            <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}</div>
+            <div class="team"><div class="team-name">${escapeHtml(fixture.team2)}</div></div>
+          </div>
+          <div class="result-status">${escapeHtml(result.status || "NS")}</div>
+          <div class="match-footer">
+            <span>Your pick: ${hasPrediction(pred) ? `${pred.pred1}-${pred.pred2}` : "none"}</span>
+            ${points === null ? "" : `<strong>${points} pts</strong>`}
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderBracket() {
+  const bracket = document.getElementById("bracket");
+  if (!bracket) return;
+
+  const rounds = ["Round of 32", "Round of 16", "Quarter-final", "Semi-final", "Match for third place", "Final"];
+  const knockout = STATE.fixtures.filter((fixture) => fixture.stage !== "group");
+
+  if (!knockout.length) {
+    bracket.innerHTML = emptyState("Knockout fixtures are not loaded yet.", "");
+    return;
+  }
+
+  bracket.innerHTML = rounds
+    .map((round) => {
+      const matches = knockout.filter((fixture) => fixture.round === round);
+      return `
+        <section class="bracket-round">
+          <h3>${escapeHtml(round)}</h3>
+          ${matches
+            .map((match) => {
+              const result = STATE.results[match.matchId];
+              return `
+                <div class="bracket-match">
+                  <div>${escapeHtml(match.team1)}</div>
+                  <strong>${result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs"}</strong>
+                  <div>${escapeHtml(match.team2)}</div>
+                </div>
+              `;
+            })
+            .join("")}
+        </section>
+      `;
+    })
+    .join("");
+}
+
+function renderAdmin() {
+  const container = document.getElementById("admin-content");
+  if (!container || !SESSION.isAdmin) return;
+
+  container.innerHTML = `
+    <div class="admin-grid">
+      <button class="btn-primary sync-btn" type="button" onclick="requestSync()">Refresh Data</button>
+      <div class="admin-card">
+        <strong>${STATE.fixtures.length}</strong>
+        <span>fixtures loaded</span>
+      </div>
+      <div class="admin-card">
+        <strong>${Object.keys(STATE.predictions).length}</strong>
+        <span>your predictions</span>
+      </div>
+      <div class="admin-card">
+        <strong>${Object.keys(STATE.results).length}</strong>
+        <span>results synced</span>
+      </div>
+    </div>
+  `;
+}
+
 function filterMatches(type, btn) {
-  document
-    .querySelectorAll("#view-predictions .filter-btn")
-    .forEach((b) => b.classList.remove("active"));
-  btn.classList.add("active");
-  // TODO: filter STATE.fixtures and re-render
+  activeMatchFilter = type;
+  document.querySelectorAll("#view-predictions .filter-btn").forEach((button) => {
+    button.classList.remove("active");
+  });
+  if (btn) btn.classList.add("active");
+  renderPredictions();
 }
 
 function filterResults(type, btn) {
-  document
-    .querySelectorAll("#view-results .filter-btn")
-    .forEach((b) => b.classList.remove("active"));
-  btn.classList.add("active");
-  // TODO: filter STATE.results and re-render
+  activeResultFilter = type;
+  document.querySelectorAll("#view-results .filter-btn").forEach((button) => {
+    button.classList.remove("active");
+  });
+  if (btn) btn.classList.add("active");
+  renderResults();
 }
 
-// ── SETTINGS ─────────────────────────────────────────────────────────
 function toggleSettings(show) {
   const modal = document.getElementById("settings-modal");
+  if (!modal) return;
+
   if (show) {
     document.getElementById("setting-api-url").value = CONFIG.appsScriptUrl;
     document.getElementById("setting-api-key").value = CONFIG.apiKey;
-    modal.classList.add("active");
+    modal.classList.add("show");
   } else {
-    modal.classList.remove("active");
+    modal.classList.remove("show");
   }
 }
 
 function saveSettings() {
-  CONFIG.appsScriptUrl = document
-    .getElementById("setting-api-url")
-    .value.trim();
+  CONFIG.appsScriptUrl = document.getElementById("setting-api-url").value.trim();
   CONFIG.apiKey = document.getElementById("setting-api-key").value.trim();
   localStorage.setItem("ggo_wc_url", CONFIG.appsScriptUrl);
   localStorage.setItem("ggo_wc_key", CONFIG.apiKey);
   toggleSettings(false);
   requestSync();
+}
+
+function parseKickoff(date, time, kickoffUTC) {
+  if (kickoffUTC) {
+    const parsed = new Date(kickoffUTC);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
+  if (!date || !time) return null;
+
+  const match = String(time).match(/(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2})/i);
+  if (!match) {
+    const fallback = new Date(`${date}T00:00:00Z`);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const offset = Number(match[3]);
+  return new Date(Date.UTC(...date.split("-").map(Number).map((part, index) => index === 1 ? part - 1 : part), hour - offset, minute));
+}
+
+function getStageFromRound(round = "") {
+  const value = String(round).toLowerCase();
+  if (value.includes("group") || value.includes("matchday")) return "group";
+  if (value.includes("32")) return "r32";
+  if (value.includes("16")) return "r16";
+  if (value.includes("quarter")) return "qf";
+  if (value.includes("semi")) return "sf";
+  if (value.includes("third")) return "third";
+  if (value.includes("final")) return "final";
+  return "group";
+}
+
+function stageLabel(stage) {
+  return {
+    group: "Group Stage",
+    r32: "Round of 32",
+    r16: "Round of 16",
+    qf: "Quarter-final",
+    sf: "Semi-final",
+    third: "Third Place",
+    final: "Final",
+  }[stage] || "Matches";
+}
+
+function isLocked(match) {
+  if (!match.kickoffDate) return false;
+  return Date.now() >= match.kickoffDate.getTime() - 15 * 60 * 1000;
+}
+
+function getMatchStatus(match, result) {
+  if (result && isFinalStatus(result.status)) return { label: "Final", className: "locked" };
+  if (result && isLiveStatus(result.status)) return { label: "Live", className: "live" };
+  if (isLocked(match)) return { label: "Locked", className: "locked" };
+  return { label: "Open", className: "open" };
+}
+
+function hasPrediction(prediction) {
+  return prediction && Number.isInteger(prediction.pred1) && Number.isInteger(prediction.pred2);
+}
+
+function hasResult(result) {
+  return result && Number.isInteger(result.score1) && Number.isInteger(result.score2);
+}
+
+function calculateMatchPoints(pred1, pred2, actual1, actual2) {
+  if (pred1 === actual1 && pred2 === actual2) return 15;
+
+  const predOutcome = Math.sign(pred1 - pred2);
+  const actualOutcome = Math.sign(actual1 - actual2);
+  if (predOutcome !== actualOutcome) {
+    const close = Math.abs(pred1 - actual1) + Math.abs(pred2 - actual2) <= 2;
+    return close ? 3 : 0;
+  }
+
+  const diffGap = Math.abs((pred1 - pred2) - (actual1 - actual2));
+  return diffGap <= 1 ? 8 : 5;
+}
+
+function buildLocalLeaderboard() {
+  if (!SESSION.username) return [];
+
+  let totalPoints = 0;
+  let exactScores = 0;
+  let correctOutcomes = 0;
+  let predicted = 0;
+
+  Object.values(STATE.predictions).forEach((prediction) => {
+    if (!hasPrediction(prediction)) return;
+    predicted += 1;
+    const result = STATE.results[String(prediction.matchId)];
+    if (!hasResult(result)) return;
+
+    const points = calculateMatchPoints(prediction.pred1, prediction.pred2, result.score1, result.score2);
+    totalPoints += points;
+    if (points === 15) exactScores += 1;
+    if (points > 0) correctOutcomes += 1;
+  });
+
+  return [
+    {
+      rank: 1,
+      username: SESSION.username,
+      displayName: SESSION.displayName || SESSION.username,
+      totalPoints,
+      exactScores,
+      correctOutcomes,
+      predicted,
+    },
+  ];
+}
+
+function applyTableResult(team1, team2, score1, score2) {
+  team1.played += 1;
+  team2.played += 1;
+  team1.gf += score1;
+  team1.ga += score2;
+  team2.gf += score2;
+  team2.ga += score1;
+
+  if (score1 > score2) {
+    team1.won += 1;
+    team1.points += 3;
+    team2.lost += 1;
+  } else if (score2 > score1) {
+    team2.won += 1;
+    team2.points += 3;
+    team1.lost += 1;
+  } else {
+    team1.drawn += 1;
+    team2.drawn += 1;
+    team1.points += 1;
+    team2.points += 1;
+  }
+
+  team1.gd = team1.gf - team1.ga;
+  team2.gd = team2.gf - team2.ga;
+}
+
+function formatKickoff(match) {
+  if (!match.kickoffDate) return `${match.date || ""} ${match.time || ""}`.trim();
+  return match.kickoffDate.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function isLiveStatus(status = "") {
+  return ["1H", "HT", "2H", "ET", "P", "LIVE"].includes(String(status).toUpperCase());
+}
+
+function isFinalStatus(status = "") {
+  return ["FT", "AET", "PEN", "COMPLETED", "FINAL"].includes(String(status).toUpperCase());
+}
+
+function rankClass(rank) {
+  if (rank === 1) return "gold";
+  if (rank === 2) return "silver";
+  if (rank === 3) return "bronze";
+  return "";
+}
+
+function getInitials(name) {
+  return String(name)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function groupBy(items, getKey) {
+  return items.reduce((groups, item) => {
+    const key = getKey(item) || "Other";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(item);
+    return groups;
+  }, {});
+}
+
+function readLocalObject(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalObject(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function nullableNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function emptyState(title, subtitle) {
+  return `
+    <div class="empty-state">
+      <div class="empty-icon">WC</div>
+      <p>${escapeHtml(title)}</p>
+      ${subtitle ? `<small>${escapeHtml(subtitle)}</small>` : ""}
+    </div>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function cssEscape(value) {
+  if (window.CSS && CSS.escape) return CSS.escape(String(value));
+  return String(value).replace(/"/g, '\\"');
 }
