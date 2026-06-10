@@ -520,11 +520,15 @@ main {
 .result-card .team-flag,
 .bracket-match .team-flag {
   margin-right: 6px;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1em;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-ligatures: none;
+  font-feature-settings: normal;
 }
 
 .team-name .team-flag {
-  font-size: 18px;
-  line-height: 1;
   vertical-align: -2px;
 }
 
