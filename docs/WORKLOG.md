@@ -55,6 +55,40 @@
 - Reviewed README diff to confirm it points to the new docs.
 - No app runtime tests were run because this change only adds documentation.
 
+## 2026-06-11 - Full audit, canonical docs, and project visualizer
+
+### What changed
+
+- Ran a deep technical audit across all source files (`app.js`, `style.css`, `src/main.js`, `src/leaderboard.js`, `src/fixtures.js`, `src/firebase.js`).
+- Identified 1 P0 bug, 6 P1 bugs, 6 P2 issues, 2 P3 polish items.
+- Created `docs/SCORING.md` — canonical scoring system (15/8/5/3/0 + round multipliers + mini tourney ¼-point variant).
+- Created `docs/ARCHITECTURE.md` — full system diagram, Firestore schema, backend file status.
+- Created `docs/SETUP.md` — step-by-step admin setup guide.
+- Created `docs/project-tracker.html` — self-contained interactive project dashboard (open in browser).
+- Locked the scoring system: 15 exact / 8 correct+GD≤1 / 5 correct outcome / 3 close wrong / 0 miss × round multipliers.
+- Confirmed game flow: players predict ALL 104 matches (group + knockout); predicted bracket auto-advances. Mini tourney activates post-group-stage with ¼ points.
+
+### Key decisions logged
+
+- Scoring: app.js variant (15/8/5/3/0) confirmed as canonical, plus stage multipliers (×1/1/2/3/4/5).
+- Mini tourney: separate leaderboard, knockout only, activates after 2026-06-27.
+- matchId: must be a consistent string throughout all layers.
+
+### Verification
+
+- All new docs read back after creation.
+- project-tracker.html is self-contained and requires no server to open.
+
+### Blockers still open
+
+- `savePrediction` P0 crash (locked branch references undefined vars)
+- `main.js` ReferenceError (`FIREBASE_CONFIG` vs `firebaseConfig`)
+- `leaderboard.js` stub — never fetches data
+- matchId mismatch between fixtures (sequential int) and API-Football results (API fixture ID)
+- `seedFixturesFromJSON` reads from wrong Drive location
+
+---
+
 ## 2026-06-10 - Flags, lock timing, and game data API
 
 ### What changed
