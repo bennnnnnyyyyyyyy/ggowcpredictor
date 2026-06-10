@@ -1,3 +1,14 @@
+// ── FIREBASE ───────────────────────────────────────────────────────────
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, where } from "firebase/firestore";
+
+const firebaseApp = initializeApp(
+  authDomain: "your-auth-domain.firebaseapp.com",
+  projectId: "your-project-id",
+});
+
+const firestore = getFirestore(firebaseApp);
+const apikey = process.env.FIREBASE_API_KEY; // Ensure this is set in your environment variables
 // ── SESSION ──────────────────────────────────────────────────────────
 const SESSION = {
   token: sessionStorage.getItem("ggo_wc_token") || null,
@@ -11,6 +22,9 @@ const CONFIG = {
   appsScriptUrl: localStorage.getItem("ggo_wc_url") || "",
   apiKey: localStorage.getItem("ggo_wc_key") || "",
 };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window.firebaseDB = db;
 
 // ── STATE ────────────────────────────────────────────────────────────
 const STATE = {
@@ -26,21 +40,6 @@ window.addEventListener("DOMContentLoaded", () => {
   if (SESSION.token && SESSION.username) {
     showApp();
   }
-  // Populate name dropdown (placeholder — replace with Firestore/Sheets fetch)
-  const sel = document.getElementById("login-name");
-  const demoNames = [
-    "Ben Arthur",
-    "Jimmy",
-    "Jane",
-    "Selene",
-    // Add full employee list here
-  ];
-  demoNames.forEach((n) => {
-    const o = document.createElement("option");
-    o.value = n.toLowerCase().replace(/\s/g, "_");
-    o.textContent = n;
-    sel.appendChild(o);
-  });
 
   // Enter key on code input
   document.getElementById("login-code").addEventListener("keydown", (e) => {
@@ -72,7 +71,7 @@ async function handleLogin() {
     const token = btoa(username + ":" + Date.now());
     sessionStorage.setItem("ggo_wc_token", token);
     sessionStorage.setItem("ggo_wc_user", username);
-    sessionStorage.setItem("ggo_wc_displayname", mockResult.displayName);
+    sessionStorage.setItem("ggo_wc_displayname", username);
     sessionStorage.setItem("ggo_wc_admin", mockResult.isAdmin);
 
     SESSION.token = token;
