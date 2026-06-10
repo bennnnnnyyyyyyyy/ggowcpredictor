@@ -17,46 +17,89 @@ function seedFixturesFromJSON() {
     let fixturesToCreate = [];
     let matchId = 1;
     
-    // Process each round
-    if (data.rounds) {
-      data.rounds.forEach(round => {
-        if (round.matches) {
-          round.matches.forEach(match => {
-            const fixture = {
-              matchId: matchId++,
-              date: match.date,
-              time: match.time,
-              stage: round.name,
-              team1: match.team1?.name || match.team1,
-              team2: match.team2?.name || match.team2,
-              group: match.group || null,
-              venue: match.venue || null,
-              result: null,
-              score1: null,
-              score2: null,
-              status: "scheduled" // scheduled, live, completed
-            };
-            fixturesToCreate.push(fixture);
-          });
-        }
+    // Process each match from the JSON structure
+    if (data.matches) {
+      data.matches.forEach(match => {
+        const fixture = {
+          matchId: matchId,
+          date: match.date,
+          time: match.time,
+          round: match.round,
+          team1: match.team1,
+          team2: match.team2,
+          group: match.group || null,
+          venue: match.ground || null,
+          result: null,
+          score1: null,
+          score2: null,
+          status: "scheduled" // scheduled, live, completed
+        };
+        fixturesToCreate.push(fixture);
+        matchId++;
       });
     }
     
     Logger.log(`Prepared ${fixturesToCreate.length} fixtures for seeding`);
     
-    // TODO: Write to Firebase Firestore collection "fixtures"
-    // Once Firebase REST API integration is ready:
-    // - POST each fixture to Firebase fixtures collection
-    // - Set matchId as document ID
+    // Write all fixtures to Firebase Firestore using REST API
+    const projectId = "ggowcpredictor";
+    const apiKey = firebaseConfig.apiKey;
+    let successCount = 0;
+    let errorCount = 0;
+    
+    fixturesToCreate.forEach(fixture => {
+      try {
+        const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/fixtures?key=${apiKey}`;
+        
+        const payload = {
+          fields: {
+            matchId: { integerValue: fixture.matchId },
+            date: { stringValue: fixture.date },
+            time: { stringValue: fixture.time },
+            round: { stringValue: fixture.round },
+            team1: { stringValue: fixture.team1 },
+            team2: { stringValue: fixture.team2 },
+            group: { stringValue: fixture.group || "" },
+            venue: { stringValue: fixture.venue || "" },
+            score1: { nullValue: null },
+            score2: { nullValue: null },
+            status: { stringValue: fixture.status },
+            createdAt: { timestampValue: new Date().toISOString() }
+          }
+        };
+        
+        const options = {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify(payload),
+          muteHttpExceptions: true
+        };
+        
+        const response = UrlFetchApp.fetch(url, options);
+        if (response.getResponseCode() === 201) {
+          successCount++;
+        } else {
+          Logger.log(`Error creating fixture ${fixture.matchId}: ${response.getContentText()}`);
+          errorCount++;
+        }
+      } catch (e) {
+        Logger.log(`Exception for fixture ${fixture.matchId}: ${e}`);
+        errorCount++;
+      }
+    });
+    
+    Logger.log(`Seeding complete: ${successCount} created, ${errorCount} failed`);
     
     return {
       success: true,
-      fixturesSeeded: fixturesToCreate.length,
-      timestamp: new Date().toISOString(),
-      nextStep: "Firebase integration required"
+      fixturesSeeded: successCount,
+      errors: errorCount,
+      total: fixturesToCreate.length,
+      timestamp: new Date().toISOString()
     };
     
   } catch (error) {
+    Logger.log(`Seed error: ${error}`);
     return {
       success: false,
       error: error.toString(),

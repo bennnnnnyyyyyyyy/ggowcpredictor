@@ -2,7 +2,7 @@
 // Main deployment endpoint for the web app
 
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyC5-xxxxxxxxxxxxxxxxxxxxxxxx", // Update with actual key
+  apiKey: "AIzaSyAVBLnjdM4cV9vBwV27dl6bEc4ZqVjuFBw", // Update with actual key
   projectId: "ggowcpredictor",
   databaseURL: "https://ggowcpredictor.firebaseio.com"
 };
