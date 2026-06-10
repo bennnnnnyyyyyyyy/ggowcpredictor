@@ -51,21 +51,18 @@ window.addEventListener("DOMContentLoaded", () => {
   if (SESSION.token && SESSION.username) {
     showApp();
   }
-
-  // Enter key on code input
-  document.getElementById("login-code").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") handleLogin();
-  });
 });
 
 // ── LOGIN ────────────────────────────────────────────────────────────
-async function handleLogin() {
+async function handleLogin(event) {
+  if (event) event.preventDefault();
+  
   const username = document.getElementById("login-name").value.trim();
   const code = document.getElementById("login-code").value.trim();
   const errEl = document.getElementById("login-error");
 
   if (!username || !code) {
-    errEl.textContent = "Please select your name and enter your code.";
+    errEl.textContent = "Please enter your name and code.";
     errEl.classList.add("show");
     return;
   }
@@ -73,10 +70,10 @@ async function handleLogin() {
   try {
     // Validate against Firestore if available
     if (db) {
-      const userRef = doc(db, "users", username);
-      const userSnap = await getDoc(userRef);
+      const userRef = firebase.firestore().collection("users").doc(username);
+      const userSnap = await userRef.get();
       
-      if (!userSnap.exists()) {
+      if (!userSnap.exists) {
         errEl.textContent = "User not found.";
         errEl.classList.add("show");
         return;
@@ -104,7 +101,7 @@ async function handleLogin() {
       errEl.classList.remove("show");
       showApp();
     } else {
-      // Fallback: mock validation (for development)
+      // Fallback: mock validation (for development/offline)
       const validUsers = {
         ben_arthur: { displayName: "Ben Arthur", isAdmin: true, code: "GGO2026" },
         jimmy: { displayName: "Jimmy", isAdmin: false, code: "GGO2026" },
