@@ -7,6 +7,38 @@ const LIVESCORE_LIVE_URL =
   "https://livescore-api.com/api-client/matches/live.json?competition_id=362";
 
 export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (url.pathname === "/seed" || url.searchParams.get("action") === "seed") {
+      if (!isAuthorized(request, env)) {
+        return jsonResponse({ success: false, error: "Unauthorized" }, 401);
+      }
+      try {
+        const result = await syncLiveResults(env);
+        return jsonResponse({ ...result, mode: "manual-seed" });
+      } catch (error) {
+        return jsonResponse({ success: false, error: error.message }, 500);
+      }
+    }
+
+    if (url.pathname === "/sync" || url.searchParams.get("action") === "sync") {
+      if (!isAuthorized(request, env)) {
+        return jsonResponse({ success: false, error: "Unauthorized" }, 401);
+      }
+      try {
+        const result = await syncLiveResults(env);
+        return jsonResponse({ ...result, mode: "manual-sync" });
+      } catch (error) {
+        return jsonResponse({ success: false, error: error.message }, 500);
+      }
+    }
+
+    return jsonResponse({
+      ok: true,
+      routes: ["/seed", "/sync"],
+      message: "Use /seed once for initial population or /sync for a manual update.",
+    });
+  },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(syncLiveResults(env));
   },
@@ -65,6 +97,14 @@ async function syncLiveResults(env) {
     matched: matchedUpdates.length,
     updated: matchedUpdates.length,
   });
+}
+
+function isAuthorized(request, env) {
+  const token = env.SEED_TOKEN;
+  if (!token) return false;
+  const header = request.headers.get("Authorization") || "";
+  const queryToken = new URL(request.url).searchParams.get("token") || "";
+  return header === `Bearer ${token}` || queryToken === token;
 }
 
 async function fetchPrimaryOrBackupMatches(zafronixKey, livescoreApiKey, livescoreApiSecret) {

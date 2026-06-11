@@ -90,6 +90,7 @@ Required secret:
 Optional secret:
 
 - `FIREBASE_PROJECT_ID`
+- `SEED_TOKEN` for manual `/seed` and `/sync` requests
 
 Default project:
 
@@ -114,8 +115,15 @@ In Cloudflare dashboard:
    - `ZAFRONIX_API_KEY`
    - `LIVESCORE_API_KEY`
    - `LIVESCORE_API_SECRET`
+   - `SEED_TOKEN`
 4. Go to `Trigger events`.
 5. Enable the cron schedule.
+
+To seed once manually, call the Worker with:
+
+```bash
+curl -H "Authorization: Bearer YOUR_SEED_TOKEN" https://YOUR-WORKER_URL/seed
+```
 
 The current schedule is:
 

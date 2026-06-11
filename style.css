@@ -36,20 +36,23 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--dark) 0%, #0f1419 100%);
+  background:
+    linear-gradient(180deg, rgba(6, 8, 15, 0.96) 0%, rgba(6, 8, 15, 0.98) 100%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 11px);
   padding: 20px;
 }
 
 .login-card {
-  background: rgba(30, 40, 60, 0.8);
-  border: 1px solid rgba(0, 209, 94, 0.3);
-  border-radius: 16px;
-  padding: 40px;
-  max-width: 400px;
+  background:
+    linear-gradient(145deg, rgba(12, 17, 24, 0.98) 0%, rgba(6, 36, 24, 0.78) 100%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 9px);
+  border: 2px solid rgba(0, 209, 94, 0.32);
+  border-radius: 8px;
+  padding: 34px;
+  max-width: 430px;
   width: 100%;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.26);
 }
 
 .login-logo {
@@ -73,11 +76,12 @@ body {
 }
 
 .login-logo h2 {
-  font-family: "Barlow Condensed", sans-serif;
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  letter-spacing: 1px;
+  font-family: var(--font-ggo-display);
+  font-size: 30px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 .login-logo h2 span {
@@ -86,21 +90,22 @@ body {
 
 .login-logo p {
   color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 0.5px;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 .login-divider {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--wc-blue), transparent);
-  margin: 25px 0;
+  height: 1px;
+  background: rgba(0, 209, 94, 0.35);
+  margin: 22px 0;
 }
 
 .login-error {
   display: none;
-  background: rgba(239, 68, 68, 0.1);
-  border-left: 3px solid var(--danger);
-  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #fecaca;
   padding: 12px 15px;
   border-radius: 6px;
   font-size: 13px;
@@ -120,7 +125,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   margin-bottom: 8px;
   color: var(--muted);
 }
@@ -130,7 +135,7 @@ body {
   padding: 12px 15px;
   border: 1px solid rgba(0, 209, 94, 0.3);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.38);
   color: var(--light);
   font-size: 14px;
   transition: all 0.3s ease;
@@ -139,8 +144,8 @@ body {
 .form-group input:focus {
   outline: none;
   border-color: var(--wc-blue);
-  background: rgba(0, 209, 94, 0.1);
-  box-shadow: 0 0 0 3px rgba(0, 209, 94, 0.1);
+  background: rgba(0, 209, 94, 0.08);
+  box-shadow: 0 0 0 3px rgba(0, 209, 94, 0.12);
 }
 
 .username-suggestions {
@@ -157,7 +162,7 @@ body {
   padding: 10px 12px;
   border: 1px solid rgba(0, 209, 94, 0.2);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.3);
   color: var(--light);
   font: inherit;
   cursor: pointer;
@@ -177,9 +182,9 @@ body {
   color: white;
   border: none;
   border-radius: 8px;
-  font-family: "Barlow Condensed", sans-serif;
-  font-size: 14px;
-  font-weight: 700;
+  font-family: var(--font-ggo-display);
+  font-size: 15px;
+  font-weight: 900;
   letter-spacing: 0.5px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -1608,10 +1613,14 @@ main {
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 10px;
+  text-transform: uppercase;
+  font-family: var(--font-ggo-display);
+  font-weight: 900;
+  letter-spacing: 0.5px;
 }
 
 .login-ghost-btn {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .btn-secondary:hover {
