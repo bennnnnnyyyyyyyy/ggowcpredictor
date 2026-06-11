@@ -1231,7 +1231,7 @@ function hasResult(result) {
 }
 
 /**
- * Client-side scoring — mirrors canonical scoreMatch on the backend.
+ * Client-side scoring - mirrors canonical scoreMatch on the backend.
  * Points: exact=15, correct result plus close goal difference=8,
  * correct result=5, close score with wrong result=3, otherwise 0.
  */
@@ -1246,7 +1246,7 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
     return diffGap <= 1 ? 8 : 5;
   }
 
-  // Wrong outcome — partial credit if total goal gap ≤ 2
+  // Wrong outcome - partial credit if total goal gap <= 2
   const totalGap = Math.abs(pred1 - actual1) + Math.abs(pred2 - actual2);
   return totalGap <= 2 ? 3 : 0;
 }
