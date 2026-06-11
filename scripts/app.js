@@ -346,6 +346,15 @@ async function loadResults() {
     `ggo_wc_results_${SESSION.username || "demo"}`,
   );
   STATE.results = { ...localResults, ...STATE.results };
+
+  // Inject mock results for local development/testing if no database or API is connected
+  if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
+    STATE.results = {
+      "1": { matchId: "1", score1: 2, score2: 1, status: "FT" },
+      "2": { matchId: "2", score1: 1, score2: 1, status: "1H" },
+      "3": { matchId: "3", score1: 0, score2: 2, status: "FT" }
+    };
+  }
 }
 
 async function loadPredictions() {
@@ -601,7 +610,7 @@ function renderPredictionCard(match) {
   const resultScoreHtml = hasRes
     ? `
       <div class="mc-result-block">
-        <div class="mc-result-label">Result</div>
+        <div class="mc-result-label">${isLive ? "Live Score" : "Result"}</div>
         <div class="mc-result-score">${result.score1} <span class="mc-dash">-</span> ${result.score2}</div>
         ${
           hasPred
@@ -1204,8 +1213,10 @@ function isLocked(match) {
 function getMatchStatus(match, result) {
   if (result && isFinalStatus(result.status))
     return { label: "Final", className: "locked" };
-  if (result && isLiveStatus(result.status))
-    return { label: "Live", className: "live" };
+  if (result && isLiveStatus(result.status)) {
+    const statusLabel = String(result.status).toUpperCase();
+    return { label: `Live${statusLabel && statusLabel !== "LIVE" ? ` - ${statusLabel}` : ""}`, className: "live" };
+  }
   if (isLocked(match)) return { label: "Locked", className: "locked" };
   return { label: "Open", className: "open" };
 }

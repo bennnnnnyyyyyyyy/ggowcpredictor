@@ -120,6 +120,46 @@ function fetchAndUpdateLiveScores() {
   const fbKey = firebaseConfig.apiKey;
   const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
 
+  // Helper function to normalize team names for matching
+  function cleanTeamName(name) {
+    let clean = String(name || "")
+      .toLowerCase()
+      .replace(/\band\b/g, "")
+      .replace(/&/g, "")
+      .replace(/[^a-z0-9]/g, "");
+
+    // Resolve aliases
+    if (clean === "korearepublic" || clean === "repofkorea" || clean === "koreasouth") return "southkorea";
+    if (clean === "unitedstates" || clean === "unitedstatesofamerica") return "usa";
+    if (clean === "czechia") return "czechrepublic";
+    if (clean === "cotedivoire" || clean === "ivorycoast") return "ivorycoast";
+    if (clean === "curaao" || clean === "curacao") return "curacao";
+    if (clean === "drcongo" || clean === "congodr" || clean === "democraticrepublicofcongo" || clean === "congodemocraticrepublic") return "drcongo";
+    if (clean === "capeverde" || clean === "caboverde") return "capeverde";
+
+    return clean;
+  }
+
+  // Fetch all fixtures from Firestore to map team names to matchIds
+  let dbFixtures = [];
+  try {
+    const fixturesResp = UrlFetchApp.fetch(`${base}/fixtures?pageSize=200&key=${fbKey}`, { method: "get", muteHttpExceptions: true });
+    const fixturesData = JSON.parse(fixturesResp.getContentText());
+    if (fixturesData && fixturesData.documents) {
+      dbFixtures = fixturesData.documents.map(doc => {
+        const fields = doc.fields || {};
+        const get = (k) => fields[k] ? (fields[k].stringValue ?? fields[k].integerValue ?? null) : null;
+        return {
+          matchId: get("matchId"),
+          team1: get("team1"),
+          team2: get("team2")
+        };
+      }).filter(f => f.matchId);
+    }
+  } catch (err) {
+    Logger.log("Error loading DB fixtures for matching: " + err.toString());
+  }
+
   // Fetch today's WC 2026 fixtures from API-Football
   const resp = UrlFetchApp.fetch(
     "https://v3.football.api-sports.io/fixtures?league=1&season=2026&timezone=UTC",
@@ -134,12 +174,27 @@ function fetchAndUpdateLiveScores() {
     const score1 = item.goals.home;
     const score2 = item.goals.away;
     const apiId   = String(item.fixture.id);
+    const homeTeam = cleanTeamName(item.teams.home.name);
+    const awayTeam = cleanTeamName(item.teams.away.name);
 
-    // We use the API fixture ID as the matchId key in results
-    const url = `${base}/results/api_${apiId}?key=${fbKey}`;
+    // Find the matching fixture in our DB
+    let targetMatchId = apiId; // Fallback
+    const matched = dbFixtures.find(f => {
+      const dbHome = cleanTeamName(f.team1);
+      const dbAway = cleanTeamName(f.team2);
+      return (dbHome === homeTeam && dbAway === awayTeam) ||
+             (dbHome === awayTeam && dbAway === homeTeam);
+    });
+
+    if (matched) {
+      targetMatchId = String(matched.matchId);
+    }
+
+    const docId = `match_${targetMatchId}`;
+    const url = `${base}/results/${docId}?key=${fbKey}`;
     const payload = {
       fields: {
-        matchId:     { stringValue: apiId },
+        matchId:     { stringValue: targetMatchId },
         score1:      score1 !== null ? { integerValue: String(score1) } : { nullValue: null },
         score2:      score2 !== null ? { integerValue: String(score2) } : { nullValue: null },
         status:      { stringValue: status },
