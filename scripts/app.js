@@ -592,6 +592,12 @@ function renderPredictionCard(match) {
 
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
+  const statusLineHtml =
+    locked && !hasRes
+      ? '<div class="mc-status-line"><span class="status-token">LOCK</span><span>Locked - predictions closed</span></div>'
+      : hasPred && !locked && !hasRes
+        ? '<div class="mc-status-line"><span class="status-token">SAVED</span><span>Prediction saved</span></div>'
+        : "";
   const resultScoreHtml = hasRes
     ? `
       <div class="mc-result-block">
@@ -658,19 +664,7 @@ function renderPredictionCard(match) {
         </div>
       </div>
 
-      <div class="mc-footer">
-        <div class="mc-status-line">
-          ${
-            locked && !hasRes
-              ? '<span class="status-token">LOCK</span><span>Locked - predictions closed</span>'
-              : hasPred && !locked && !hasRes
-                ? '<span class="status-token">SAVED</span><span>Prediction saved</span>'
-                : !hasPred && !locked
-                  ? '<span class="status-token">PICK</span><span>Enter your score prediction above</span>'
-                  : ""
-          }
-        </div>
-      </div>
+      ${statusLineHtml ? `<div class="mc-footer">${statusLineHtml}</div>` : ""}
     </article>
   `;
 }

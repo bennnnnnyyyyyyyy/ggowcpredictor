@@ -1424,14 +1424,19 @@ main {
     min-width: 0;
   }
 
-  /* Hide the FIFA WC logo on mobile to save space */
   .wc-logo {
-    display: none;
+    display: block;
+    max-width: 42px;
+    object-fit: contain;
   }
 
   .logo img.header-logo {
     height: 34px;
     flex-shrink: 0;
+  }
+
+  .logo img.header-logo.wc-logo {
+    height: 34px;
   }
 
   .logo-text h1 {
@@ -1502,6 +1507,11 @@ main {
 
   .logo img.header-logo {
     height: 28px;
+  }
+
+  .logo img.header-logo.wc-logo {
+    height: 30px;
+    max-width: 34px;
   }
 
   .logo-text h1 {
