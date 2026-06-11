@@ -1300,8 +1300,8 @@ main {
   /* The parent wrapper needs a block context and defined bounds */
   .login-logo .trophy {
     display: inline-block;
-    width: 80px; /* Adjust width to fit your design */
-    height: 80px; /* Adjust height to fit your design */
+    width: 20px; /* Adjust width to fit your design */
+    height: 20px; /* Adjust height to fit your design */
     margin-bottom: 12px;
     vertical-align: middle;
   }
