@@ -109,13 +109,10 @@ function seedFixturesFromJSON() {
 }
 
 /**
- * Fetch live scores from API-Football and update Firebase
+ * Fetch live scores from Zafronix and update Firebase
  * Called by scheduled trigger every 60 seconds
  */
 function fetchAndUpdateLiveScores() {
-  const apiKey = PropertiesService.getScriptProperties().getProperty("API_FOOTBALL_KEY");
-  if (!apiKey) return { success: false, error: "API_FOOTBALL_KEY not set in Script Properties" };
-
   const projectId = "ggowcpredictor";
   const fbKey = firebaseConfig.apiKey;
   const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
@@ -160,31 +157,51 @@ function fetchAndUpdateLiveScores() {
     Logger.log("Error loading DB fixtures for matching: " + err.toString());
   }
 
-  // Fetch today's WC 2026 fixtures from API-Football
+  // Fetch WC 2026 matches from Zafronix
+  const zafronixKey = "zwc_free_fcfb3caab7da86ec4e708942";
   const resp = UrlFetchApp.fetch(
-    "https://v3.football.api-sports.io/fixtures?league=1&season=2026&timezone=UTC",
-    { headers: { "x-apisports-key": apiKey }, muteHttpExceptions: true }
+    "https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026/matches",
+    {
+      headers: { "X-API-Key": zafronixKey, "Accept": "application/json" },
+      muteHttpExceptions: true
+    }
   );
-  const data = JSON.parse(resp.getContentText());
-  
-  if (data.errors && (Array.isArray(data.errors) ? data.errors.length > 0 : Object.keys(data.errors).length > 0)) {
-    Logger.log("API-Football errors: " + JSON.stringify(data.errors));
-    return { success: false, error: data.errors, scoresUpdated: 0, timestamp: new Date().toISOString() };
+
+  if (resp.getResponseCode() !== 200) {
+    const errText = resp.getContentText();
+    Logger.log("Zafronix error: " + errText);
+    return { success: false, error: "Zafronix HTTP " + resp.getResponseCode(), scoresUpdated: 0, timestamp: new Date().toISOString() };
   }
 
-  const apiFixtures = data.response || [];
+  const data = JSON.parse(resp.getContentText());
+  // Zafronix returns { matches: [...] } or an array directly
+  const apiMatches = Array.isArray(data) ? data : (data.matches || []);
+
+  // Map Zafronix status strings to our short codes
+  function mapStatus(zStatus) {
+    if (!zStatus) return "NS";
+    const s = String(zStatus).toLowerCase();
+    if (s === "completed" || s === "finished" || s === "ft" || s === "full-time") return "FT";
+    if (s === "halftime" || s === "ht" || s === "half-time") return "HT";
+    if (s === "live" || s === "in_play" || s === "inplay" || s === "1h" || s === "first half") return "1H";
+    if (s === "second half" || s === "2h") return "2H";
+    if (s === "aet" || s === "extra time") return "AET";
+    if (s === "pen" || s === "penalties") return "PEN";
+    return "NS";
+  }
 
   let updated = 0;
-  apiFixtures.forEach(item => {
-    const status = item.fixture.status.short; // NS, 1H, HT, 2H, FT, AET, PEN
-    const score1 = item.goals.home;
-    const score2 = item.goals.away;
-    const apiId   = String(item.fixture.id);
-    const homeTeam = cleanTeamName(item.teams.home.name);
-    const awayTeam = cleanTeamName(item.teams.away.name);
+  apiMatches.forEach(item => {
+    // Zafronix field names (confirmed from test output)
+    const homeTeam = cleanTeamName(item.homeTeam || item.team1 || "");
+    const awayTeam = cleanTeamName(item.awayTeam || item.team2 || "");
+    const score1   = item.homeScore !== undefined ? item.homeScore : (item.score1 !== undefined ? item.score1 : null);
+    const score2   = item.awayScore !== undefined ? item.awayScore : (item.score2 !== undefined ? item.score2 : null);
+    const status   = mapStatus(item.status);
+
+    if (!homeTeam || !awayTeam) return;
 
     // Find the matching fixture in our DB
-    let targetMatchId = apiId; // Fallback
     const matched = dbFixtures.find(f => {
       const dbHome = cleanTeamName(f.team1);
       const dbAway = cleanTeamName(f.team2);
@@ -192,10 +209,9 @@ function fetchAndUpdateLiveScores() {
              (dbHome === awayTeam && dbAway === homeTeam);
     });
 
-    if (matched) {
-      targetMatchId = String(matched.matchId);
-    }
+    if (!matched) return; // Skip if we can't match to our fixture
 
+    const targetMatchId = String(matched.matchId);
     const docId = `match_${targetMatchId}`;
     const url = `${base}/results/${docId}?key=${fbKey}`;
     const payload = {

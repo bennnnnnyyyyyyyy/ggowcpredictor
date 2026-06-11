@@ -108,3 +108,37 @@ function runZafronixTests() {
   testZafronix("https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026/matches");
   testZafronix("https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026/live");
 }
+
+function logZafronixKeys() {
+  const apiKey = "zwc_free_fcfb3caab7da86ec4e708942";
+
+  // Let's test 1986 which is a completed tournament
+  const url1986 = "https://api.zafronix.com/fifa/worldcup/v1/tournaments/1986";
+  Logger.log("Testing 1986 keys...");
+  const resp1986 = UrlFetchApp.fetch(url1986, {
+    headers: { "X-API-Key": apiKey, "Accept": "application/json" },
+    muteHttpExceptions: true
+  });
+  const data1986 = JSON.parse(resp1986.getContentText());
+  Logger.log("1986 top-level keys: " + Object.keys(data1986).join(", "));
+  if (data1986.matches) {
+    Logger.log("1986 matches count: " + data1986.matches.length);
+    Logger.log("1986 first match: " + JSON.stringify(data1986.matches[0]));
+  }
+
+  // Let's test 2026
+  const url2026 = "https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026";
+  Logger.log("Testing 2026 keys...");
+  const resp2026 = UrlFetchApp.fetch(url2026, {
+    headers: { "X-API-Key": apiKey, "Accept": "application/json" },
+    muteHttpExceptions: true
+  });
+  const data2026 = JSON.parse(resp2026.getContentText());
+  Logger.log("2026 top-level keys: " + Object.keys(data2026).join(", "));
+  if (data2026.matches) {
+    Logger.log("2026 matches count: " + data2026.matches.length);
+    if (data2026.matches.length > 0) {
+      Logger.log("2026 first match: " + JSON.stringify(data2026.matches[0]));
+    }
+  }
+}
