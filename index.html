@@ -105,7 +105,7 @@
           <!-- User pill (top-right on desktop, stays in row 1 on mobile) -->
           <div class="user-pill" id="user-pill">
             <div class="user-avatar" id="user-avatar">?</div>
-            <span id="user-display-name">Loading…</span>
+            <span id="user-display-name">Loading...</span>
             <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">X</button>
           </div>
         </div>
@@ -166,7 +166,7 @@
           <div class="matches-list" id="predictions-list">
             <div class="empty-state">
               <div class="empty-icon">⏳</div>
-              <p>Loading fixtures…</p>
+              <p>Loading fixtures...</p>
             </div>
           </div>
 
@@ -177,7 +177,7 @@
           <div id="group-standings">
             <div class="empty-state">
               <div class="empty-icon">STATS</div>
-              <p>Make predictions to see group standings…</p>
+              <p>Make predictions to see group standings...</p>
             </div>
           </div>
         </div>
@@ -209,7 +209,7 @@
                     font-family: &quot;DM Sans&quot;, sans-serif;
                   "
                 >
-                  Loading leaderboard…
+                  Loading leaderboard...
                 </td>
               </tr>
             </tbody>
@@ -269,7 +269,7 @@
           <div id="admin-content">
             <div class="empty-state">
               <div class="empty-icon">LOCK</div>
-              <p>Admin panel — coming soon.</p>
+              <p>Admin panel - coming soon.</p>
             </div>
           </div>
         </div>
@@ -294,7 +294,7 @@
           <input
             type="text"
             id="setting-api-url"
-            placeholder="https://script.google.com/macros/s/…"
+            placeholder="https://script.google.com/macros/s/..."
           />
         </div>
         <div class="form-group">
@@ -330,7 +330,7 @@
             World Cup 2026 matches!
           </p>
 
-          <div class="modal-section-title">📝 Rules & Guidelines</div>
+          <div class="modal-section-title">Rules & Guidelines</div>
           <ul class="rules-list">
             <li>
               Go to the <strong>Predictions</strong> tab to enter your
@@ -342,27 +342,27 @@
             </li>
           </ul>
 
-          <div class="modal-section-title">⚡ Points Allocation</div>
+          <div class="modal-section-title">Points Allocation</div>
           <div class="scoring-grid">
             <div class="score-rule-card pts-exact">
               <span class="pts-val">15 pts</span>
               <strong>Exact Score</strong>
-              <p>Correct scoreline (e.g. predicted 2-1, ended 2-1).</p>
+              <p>Your prediction matches the final score exactly.</p>
             </div>
             <div class="score-rule-card pts-good">
               <span class="pts-val">8 pts</span>
-              <strong>Close Outcome</strong>
-              <p>Correct winner/draw with goal diff gap ≤ 1.</p>
+              <strong>Correct Result + Close Difference</strong>
+              <p>You picked the right winner or draw, and the goal difference is within 1.</p>
             </div>
             <div class="score-rule-card pts-partial">
               <span class="pts-val">5 pts</span>
-              <strong>Correct Outcome</strong>
-              <p>Correct winner/draw with larger goal diff gap.</p>
+              <strong>Correct Result</strong>
+              <p>You picked the right winner or draw, but the goal difference was not close.</p>
             </div>
             <div class="score-rule-card pts-close-guess">
               <span class="pts-val">3 pts</span>
-              <strong>Close Guess</strong>
-              <p>Wrong outcome, but total goal gap is ≤ 2 goals.</p>
+              <strong>Close Score, Wrong Result</strong>
+              <p>Your scores were close to the final score, but the winner or draw was wrong.</p>
             </div>
           </div>
 
@@ -377,7 +377,7 @@
     </div>
 
     <!-- ════════════════════════════════════════
-       SCAFFOLD JS — wire-up only, no data yet
+       SCAFFOLD JS - wire-up only, no data yet
   ════════════════════════════════════════ -->
   </body>
   <script src="scripts/app.js"></script>

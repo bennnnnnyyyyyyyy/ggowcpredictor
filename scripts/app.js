@@ -490,7 +490,7 @@ async function savePrediction(matchId, pred1, pred2) {
     `ggo_wc_predictions_${SESSION.username || "demo"}`,
     STATE.predictions,
   );
-  showToast(`✓ ${fixture.team1} ${score1} – ${score2} ${fixture.team2}`);
+  showToast(`Saved: ${fixture.team1} ${score1}-${score2} ${fixture.team2}`);
 
   if (db && SESSION.username) {
     try {
@@ -505,7 +505,7 @@ async function savePrediction(matchId, pred1, pred2) {
           { merge: true },
         );
     } catch (error) {
-      showToast("Save failed — stored locally", "error");
+      showToast("Save failed - stored locally", "error");
       console.error("Could not save prediction to Firestore.", error);
     }
   }
@@ -596,10 +596,10 @@ function renderPredictionCard(match) {
     ? `
       <div class="mc-result-block">
         <div class="mc-result-label">Result</div>
-        <div class="mc-result-score">${result.score1} <span class="mc-dash">–</span> ${result.score2}</div>
+        <div class="mc-result-score">${result.score1} <span class="mc-dash">-</span> ${result.score2}</div>
         ${
           hasPred
-            ? `<div class="mc-pick-line">Your pick ${pred.pred1}–${pred.pred2}</div>`
+            ? `<div class="mc-pick-line">Your pick ${pred.pred1}-${pred.pred2}</div>`
             : ""
         }
       </div>`
@@ -627,9 +627,9 @@ function renderPredictionCard(match) {
           <div class="mc-name">${escapeHtml(match.team1)}</div>
           ${
             hasRes
-              ? `<div class="mc-pred-score">${Number.isInteger(pred.pred1) ? pred.pred1 : "–"}</div>`
+              ? `<div class="mc-pred-score">${Number.isInteger(pred.pred1) ? pred.pred1 : "-"}</div>`
               : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
-            inputmode="numeric" placeholder="–"
+            inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
@@ -647,9 +647,9 @@ function renderPredictionCard(match) {
           <div class="mc-name">${escapeHtml(match.team2)}</div>
           ${
             hasRes
-              ? `<div class="mc-pred-score">${Number.isInteger(pred.pred2) ? pred.pred2 : "–"}</div>`
+              ? `<div class="mc-pred-score">${Number.isInteger(pred.pred2) ? pred.pred2 : "-"}</div>`
               : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
-            inputmode="numeric" placeholder="–"
+            inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
@@ -1232,7 +1232,8 @@ function hasResult(result) {
 
 /**
  * Client-side scoring — mirrors canonical scoreMatch on the backend.
- * Points: exact=15, correct result + diff≤1=8, correct result=5, wrong result=3 (if total gap≤2) or 0.
+ * Points: exact=15, correct result plus close goal difference=8,
+ * correct result=5, close score with wrong result=3, otherwise 0.
  */
 function calculateMatchPoints(pred1, pred2, actual1, actual2) {
   if (pred1 === actual1 && pred2 === actual2) return 15;

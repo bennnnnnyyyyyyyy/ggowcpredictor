@@ -1,66 +1,37 @@
-function updateFlags() {
-const flags = {
-alg: "🇩🇿",
-arg: "🇦🇷",
-aus: "🇦🇺",
-aut: "🇦🇹",
-bel: "🇧🇪",
-bih: "🇧🇦",
-bra: "🇧🇷",
-can: "🇨🇦",
-civ: "🇨🇮",
-cod: "🇨🇩",
-col: "🇨🇴",
-cpv: "🇨🇻",
-cro: "🇭🇷",
-cuw: "🇨🇼",
-cze: "🇨🇿",
-ecu: "🇪🇨",
-egy: "🇪🇬",
-eng: "🏴",
-esp: "🇪🇸",
-fra: "🇫🇷",
-ger: "🇩🇪",
-gha: "🇬🇭",
-hai: "🇭🇹",
-irn: "🇮🇷",
-irq: "🇮🇶",
-jor: "🇯🇴",
-jpn: "🇯🇵",
-kor: "🇰🇷",
-ksa: "🇸🇦",
-mar: "🇲🇦",
-mex: "🇲🇽",
-ned: "🇳🇱",
-nor: "🇳🇴",
-nzl: "🇳🇿",
-pan: "🇵🇦",
-par: "🇵🇾",
-por: "🇵🇹",
-qat: "🇶🇦",
-rsa: "🇿🇦",
-sco: "🏴",
-sen: "🇸🇳",
-sui: "🇨🇭",
-swe: "🇸🇪"
-};
+// Apps Script test helpers
+// Run these from the Apps Script editor or the Executions panel.
 
-const batch = db.batch();
+function testAppScriptBackend() {
+  const results = {
+    firebase: testFirebaseConnection(),
+    teamsSync: syncTeamFlags(),
+    fixtures: getFixtures(),
+    leaderboard: calculateLeaderboard(),
+  };
 
-Object.entries(flags).forEach(([id, flag]) => {
-const ref = db.collection("teams").doc(id);
+  Logger.log(JSON.stringify(results, null, 2));
+  return results;
+}
 
-```
-batch.set(
-  ref,
-  {
-    flag_icon: flag
-  },
-  { merge: true }
-);
-```
+function testTeamFlagsOnly() {
+  const result = syncTeamFlags();
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
+}
 
-});
+function testSingleTeamFlag(teamDocId) {
+  const id = String(teamDocId || "mex").toLowerCase();
+  const map = getTeamFlagsMap();
+  const team = map[id];
 
-return batch.commit();
+  if (!team) {
+    return {
+      ok: false,
+      message: `Unknown team id: ${id}`,
+    };
+  }
+
+  const result = updateTeamsCollection({ [id]: team });
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
 }
