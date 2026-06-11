@@ -30,9 +30,11 @@
   <div id="login-screen">
     <div class="login-card">
       <div class="login-logo">
-        <span class="trophy">🏆</span>
+        <span class="trophy">
+          <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-Black.png" alt="">
+        </span>
         <h2>GGO <span>WC</span> 2026</h2>
-        <p>Prediction Game · Gulf Global Outsourcing</p>
+        <p>Prediction Game</p>
       </div>
 
       <div class="login-divider"></div>
@@ -66,20 +68,30 @@
   <div id="app" style="display: none">
     <!-- HEADER -->
     <header>
-      <div class="logo">
-        <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
-          class="header-logo" />
-        <div class="logo-divider"></div>
+      <!-- Row 1: Brand + User -->
+      <div class="header-top">
+        <div class="logo">
+          <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
+            class="header-logo" />
+          <div class="logo-divider"></div>
 
-        <div class="logo-text">
-          <h1>GGO <span>WC</span> 2026</h1>
-          <p>Prediction Game</p>
+          <div class="logo-text">
+            <h1>GGO <span>WC</span> 2026</h1>
+            <p>Prediction Game</p>
+          </div>
+
+          <img src="fifa-world-cup-2026-logo-white.png" alt="FIFA World Cup 2026" class="header-logo wc-logo" />
         </div>
 
-        <img src="fifa-world-cup-2026-logo-white.png" alt="FIFA World Cup 2026" class="header-logo" />
+        <!-- User pill (top-right on desktop, stays in row 1 on mobile) -->
+        <div class="user-pill" id="user-pill">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span id="user-display-name">Loading…</span>
+          <button class="logout-btn" onclick="handleLogout()">✕</button>
+        </div>
       </div>
-      </logo-header-container>
 
+      <!-- Row 2: Navigation -->
       <nav id="main-nav">
         <button class="nav-btn active" onclick="showView('predictions', this)">
           Predictions
@@ -96,19 +108,13 @@
         <!-- Admin button injected dynamically by showApp() for admins only -->
       </nav>
 
+      <!-- Row 3: Sync status (desktop inline, mobile below nav) -->
       <div class="sync-container">
         <div class="sync-status">
           <span class="status-dot" id="sync-dot"></span>
           <span id="last-sync-time">Not synced</span>
         </div>
         <button class="sync-btn" type="button" onclick="requestSync()">Sync</button>
-
-        <!-- User pill -->
-        <div class="user-pill" id="user-pill">
-          <div class="user-avatar" id="user-avatar">?</div>
-          <span id="user-display-name">Loading…</span>
-          <button class="logout-btn" onclick="handleLogout()">✕</button>
-        </div>
       </div>
     </header>
 
@@ -264,6 +270,56 @@
       <button class="btn-secondary" onclick="toggleSettings(false)">
         Cancel
       </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       RULES MODAL (How to Play)
+  ════════════════════════════════════════ -->
+  <div id="rules-modal" class="modal-overlay">
+    <div class="modal rules-modal-content">
+      <div class="modal-header">
+        <h2>🏆 Welcome to GGO World Cup Predictor!</h2>
+        <button class="close-modal" onclick="toggleRules(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="welcome-text">Hey <strong><span id="rules-username">Employee</span></strong>, join the Gulf Global Outsourcing family in predicting the FIFA World Cup 2026 matches!</p>
+        
+        <div class="modal-section-title">📝 Rules & Guidelines</div>
+        <ul class="rules-list">
+          <li>Go to the <strong>Predictions</strong> tab to enter your predictions for upcoming matches.</li>
+          <li>Matches lock automatically as soon as kickoff begins.</li>
+          <li>Standings update automatically as you enter score predictions.</li>
+        </ul>
+
+        <div class="modal-section-title">⚡ Points Allocation</div>
+        <div class="scoring-grid">
+          <div class="score-rule-card pts-exact">
+            <span class="pts-val">15 pts</span>
+            <strong>Exact Score</strong>
+            <p>Correct scoreline (e.g. predicted 2-1, ended 2-1).</p>
+          </div>
+          <div class="score-rule-card pts-good">
+            <span class="pts-val">8 pts</span>
+            <strong>Close Outcome</strong>
+            <p>Correct winner/draw with goal diff gap ≤ 1.</p>
+          </div>
+          <div class="score-rule-card pts-partial">
+            <span class="pts-val">5 pts</span>
+            <strong>Correct Outcome</strong>
+            <p>Correct winner/draw with larger goal diff gap.</p>
+          </div>
+          <div class="score-rule-card pts-close-guess">
+            <span class="pts-val">3 pts</span>
+            <strong>Close Guess</strong>
+            <p>Wrong outcome, but total goal gap is ≤ 2 goals.</p>
+          </div>
+        </div>
+
+        <button class="btn-primary start-playing-btn" onclick="toggleRules(false)">
+          Let's Play!
+        </button>
+      </div>
     </div>
   </div>
 

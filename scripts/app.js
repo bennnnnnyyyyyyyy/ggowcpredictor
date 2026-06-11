@@ -182,17 +182,8 @@ function showApp() {
   document.getElementById("user-display-name").textContent =
     SESSION.displayName || SESSION.username;
 
-  // Inject Admin button ONLY for admins — never visible in HTML for regular users
-  if (SESSION.isAdmin) {
-    const nav = document.getElementById("main-nav");
-    if (nav && !document.getElementById("admin-nav-btn")) {
-      const adminBtn = document.createElement("button");
-      adminBtn.id = "admin-nav-btn";
-      adminBtn.className = "nav-btn admin-btn";
-      adminBtn.textContent = "Admin";
-      adminBtn.onclick = function () { showView("admin", adminBtn); };
-      nav.appendChild(adminBtn);
-    }
+  if (SESSION.username && !localStorage.getItem(`ggo_wc_rules_shown_${SESSION.username}`)) {
+    toggleRules(true);
   }
 
   requestSync();
@@ -919,6 +910,23 @@ function filterResults(type, btn) {
   });
   if (btn) btn.classList.add("active");
   renderResults();
+}
+
+function toggleRules(show) {
+  const modal = document.getElementById("rules-modal");
+  if (!modal) return;
+  if (show) {
+    const usernameEl = document.getElementById("rules-username");
+    if (usernameEl) {
+      usernameEl.textContent = SESSION.displayName || SESSION.username || "Employee";
+    }
+    modal.classList.add("show");
+  } else {
+    modal.classList.remove("show");
+    if (SESSION.username) {
+      localStorage.setItem(`ggo_wc_rules_shown_${SESSION.username}`, "true");
+    }
+  }
 }
 
 function toggleSettings(show) {
