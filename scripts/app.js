@@ -181,9 +181,19 @@ function showApp() {
   document.getElementById("user-avatar").textContent = initials;
   document.getElementById("user-display-name").textContent =
     SESSION.displayName || SESSION.username;
-  document.getElementById("admin-nav-btn").style.display = SESSION.isAdmin
-    ? ""
-    : "none";
+
+  // Inject Admin button ONLY for admins — never visible in HTML for regular users
+  if (SESSION.isAdmin) {
+    const nav = document.getElementById("main-nav");
+    if (nav && !document.getElementById("admin-nav-btn")) {
+      const adminBtn = document.createElement("button");
+      adminBtn.id = "admin-nav-btn";
+      adminBtn.className = "nav-btn admin-btn";
+      adminBtn.textContent = "Admin";
+      adminBtn.onclick = function () { showView("admin", adminBtn); };
+      nav.appendChild(adminBtn);
+    }
+  }
 
   requestSync();
 }
@@ -536,53 +546,88 @@ function renderPredictions() {
 }
 
 function renderPredictionCard(match) {
-  const pred = STATE.predictions[match.matchId] || {};
+  const pred   = STATE.predictions[match.matchId] || {};
   const result = STATE.results[match.matchId];
   const locked = isLocked(match);
   const status = getMatchStatus(match, result);
   const team1Flag = getTeamFlag(match.team1);
   const team2Flag = getTeamFlag(match.team2);
-  const points =
-    result && hasResult(result) && hasPrediction(pred)
-      ? calculateMatchPoints(
-          pred.pred1,
-          pred.pred2,
-          result.score1,
-          result.score2,
-        )
-      : null;
+  const hasPred   = hasPrediction(pred);
+  const hasRes    = result && hasResult(result);
+  const points    = hasRes && hasPred
+    ? calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2)
+    : null;
+
+  // Determine points tier for styling
+  const ptsTier = points === null ? "" : points >= 15 ? "pts-exact" : points >= 8 ? "pts-good" : points > 0 ? "pts-partial" : "pts-zero";
+
+  const isLive   = result && isLiveStatus(result.status);
+  const isFinal  = result && isFinalStatus(result.status);
+
+  // Score comparison line
+  let comparisonLine = "";
+  if (hasRes && hasPred) {
+    comparisonLine = `
+      <div class="score-comparison">
+        <span class="your-pick">Your pick: <strong>${pred.pred1}–${pred.pred2}</strong></span>
+        <span class="actual-score">Result: <strong>${result.score1}–${result.score2}</strong></span>
+      </div>`;
+  }
 
   return `
-    <article class="match-card ${locked ? "locked" : "open"}">
-      <div class="match-header">
-        <div>
-          <div class="match-date">${formatKickoff(match)}</div>
-          <div class="match-ground">${escapeHtml(match.ground)}</div>
+    <article class="match-card ${locked ? "locked" : "open"} ${isLive ? "live" : ""} ${isFinal ? "final" : ""}">
+      <div class="mc-header">
+        <div class="mc-meta">
+          <span class="mc-kickoff">⏰ ${formatKickoff(match)}</span>
+          <span class="mc-venue">📍 ${escapeHtml(match.ground)}</span>
         </div>
-        <span class="match-status ${status.className}">${status.label}</span>
+        <span class="mc-badge ${status.className}">
+          ${isLive ? '<span class="live-dot"></span>' : ""}${status.label}
+        </span>
       </div>
-      <div class="match-teams">
-        <div class="team">
-          <div class="team-name"><span class="team-flag">${escapeHtml(team1Flag)}</span>${escapeHtml(match.team1)}</div>
-          <input class="score-input" type="number" min="0" max="20" inputmode="numeric"
+
+      <div class="mc-body">
+        <div class="mc-team">
+          <div class="mc-flag">${escapeHtml(team1Flag)}</div>
+          <div class="mc-name">${escapeHtml(match.team1)}</div>
+          <input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+            inputmode="numeric" placeholder="–"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             onchange="handleScoreChange('${match.matchId}')">
         </div>
-        <div class="vs">VS</div>
-        <div class="team">
-          <div class="team-name"><span class="team-flag">${escapeHtml(team2Flag)}</span>${escapeHtml(match.team2)}</div>
-          <input class="score-input" type="number" min="0" max="20" inputmode="numeric"
+
+        <div class="mc-middle">
+          ${hasRes
+            ? `<div class="mc-result-score">${result.score1} <span class="mc-dash">–</span> ${result.score2}</div>`
+            : `<div class="mc-vs">VS</div>`}
+          ${points !== null ? `<div class="mc-points ${ptsTier}">${points}<span>pts</span></div>` : ""}
+        </div>
+
+        <div class="mc-team">
+          <div class="mc-flag">${escapeHtml(team2Flag)}</div>
+          <div class="mc-name">${escapeHtml(match.team2)}</div>
+          <input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+            inputmode="numeric" placeholder="–"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             onchange="handleScoreChange('${match.matchId}')">
         </div>
       </div>
-      <div class="match-footer">
-        <span>${locked ? "Locked 15 minutes before kickoff" : hasPrediction(pred) ? "Saved prediction" : "No prediction yet"}</span>
-        ${points === null ? "" : `<strong>${points} pts</strong>`}
+
+      <div class="mc-footer">
+        ${comparisonLine}
+        <div class="mc-status-line">
+          ${locked && !hasRes
+            ? '<span class="lock-icon">🔒</span><span>Locked — predictions closed</span>'
+            : hasPred && !locked && !hasRes
+            ? '<span class="saved-icon">✅</span><span>Prediction saved</span>'
+            : !hasPred && !locked
+            ? '<span class="tip-icon">✏️</span><span>Enter your score prediction above</span>'
+            : ""}
+        </div>
       </div>
     </article>
   `;
@@ -901,32 +946,29 @@ function saveSettings() {
 }
 
 function parseKickoff(date, time, kickoffUTC) {
-  if (kickoffUTC) {
+  // ALWAYS try to derive from date+time fields first.
+  // Firestore may have kickoffUTC stored incorrectly (local time saved as UTC).
+  if (date && time) {
+    const match = String(time).match(/(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2}(?:\.\d+)?)/i);
+    if (match) {
+      const hour   = Number(match[1]);
+      const minute = Number(match[2]);
+      const offset = Number(match[3]);
+      const [y, m, d] = date.split("-").map(Number);
+      // hour - offset converts local stadium time to UTC
+      return new Date(Date.UTC(y, m - 1, d, hour - offset, minute));
+    }
+  }
+
+  // Fallback: try kickoffUTC from Firestore only if it looks like a full ISO string
+  // (contains 'T' so it's not just a bare date/time).
+  if (kickoffUTC && String(kickoffUTC).includes('T')) {
     const parsed = new Date(kickoffUTC);
     if (!Number.isNaN(parsed.getTime())) return parsed;
   }
 
-  if (!date || !time) return null;
-
-  const match = String(time).match(/(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2})/i);
-  if (!match) {
-    const fallback = new Date(`${date}T00:00:00Z`);
-    return Number.isNaN(fallback.getTime()) ? null : fallback;
-  }
-
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  const offset = Number(match[3]);
-  return new Date(
-    Date.UTC(
-      ...date
-        .split("-")
-        .map(Number)
-        .map((part, index) => (index === 1 ? part - 1 : part)),
-      hour - offset,
-      minute,
-    ),
-  );
+  // Last resort: date-only → treat as open (return null so match stays unlocked)
+  return null;
 }
 
 async function loadTeamMeta() {

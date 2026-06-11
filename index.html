@@ -93,10 +93,7 @@
         <button class="nav-btn" onclick="showView('bracket', this)">
           Bracket
         </button>
-        <!-- Admin button — shown only for admins -->
-        <button class="nav-btn admin-btn" id="admin-nav-btn" style="display: none" onclick="showView('admin', this)">
-          Admin
-        </button>
+        <!-- Admin button injected dynamically by showApp() for admins only -->
       </nav>
 
       <div class="sync-container">
@@ -240,6 +237,9 @@
     </main>
   </div>
   <!-- /#app -->
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
 
   <!-- ════════════════════════════════════════
        SETTINGS MODAL
