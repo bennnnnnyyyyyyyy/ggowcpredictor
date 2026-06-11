@@ -347,8 +347,8 @@ async function loadResults() {
   );
   STATE.results = { ...localResults, ...STATE.results };
 
-  // Inject mock results for local development/testing if no database or API is connected
-  if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
+  // Inject mock results for development/testing if no results were retrieved
+  if (Object.keys(STATE.results).length === 0) {
     STATE.results = {
       "1": { matchId: "1", score1: 2, score2: 1, status: "FT" },
       "2": { matchId: "2", score1: 1, score2: 1, status: "1H" },
@@ -610,13 +610,8 @@ function renderPredictionCard(match) {
   const resultScoreHtml = hasRes
     ? `
       <div class="mc-result-block">
-        <div class="mc-result-label">${isLive ? "Live Score" : "Result"}</div>
-        <div class="mc-result-score">${result.score1} <span class="mc-dash">-</span> ${result.score2}</div>
-        ${
-          hasPred
-            ? `<div class="mc-pick-line">Your pick ${pred.pred1}-${pred.pred2}</div>`
-            : ""
-        }
+        <div class="mc-result-label">Your Pick</div>
+        <div class="mc-result-score">${Number.isInteger(pred.pred1) ? pred.pred1 : "-"} <span class="mc-dash">-</span> ${Number.isInteger(pred.pred2) ? pred.pred2 : "-"}</div>
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -642,7 +637,7 @@ function renderPredictionCard(match) {
           <div class="mc-name">${escapeHtml(match.team1)}</div>
           ${
             hasRes
-              ? `<div class="mc-pred-score">${Number.isInteger(pred.pred1) ? pred.pred1 : "-"}</div>`
+              ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
               : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
@@ -662,7 +657,7 @@ function renderPredictionCard(match) {
           <div class="mc-name">${escapeHtml(match.team2)}</div>
           ${
             hasRes
-              ? `<div class="mc-pred-score">${Number.isInteger(pred.pred2) ? pred.pred2 : "-"}</div>`
+              ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
               : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
