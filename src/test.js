@@ -35,3 +35,20 @@ function testSingleTeamFlag(teamDocId) {
   Logger.log(JSON.stringify(result, null, 2));
   return result;
 }
+
+function testApiFootball() {
+  const apiKey = PropertiesService.getScriptProperties().getProperty("API_FOOTBALL_KEY");
+  Logger.log("API Key found: " + (apiKey ? "Yes" : "No"));
+  if (!apiKey) return;
+  const url = "https://v3.football.api-sports.io/fixtures?league=1&season=2026&timezone=UTC";
+  Logger.log("Fetching: " + url);
+  const resp = UrlFetchApp.fetch(url, { headers: { "x-apisports-key": apiKey }, muteHttpExceptions: true });
+  Logger.log("Response Code: " + resp.getResponseCode());
+  const text = resp.getContentText();
+  Logger.log("Response text snippet: " + text.slice(0, 1000));
+  const data = JSON.parse(text);
+  Logger.log("Response results count: " + (data.response ? data.response.length : "undefined"));
+  if (data.errors) {
+    Logger.log("Errors: " + JSON.stringify(data.errors));
+  }
+}

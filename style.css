@@ -729,6 +729,19 @@ main {
   min-height: 1em;
 }
 
+.mc-actual-score {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--light);
+  min-height: 1em;
+}
+
+.match-card.live .mc-actual-score {
+  color: var(--warning);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
 .mc-pick-line {
   font-size: 10px;
   color: var(--muted);

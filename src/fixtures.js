@@ -166,6 +166,12 @@ function fetchAndUpdateLiveScores() {
     { headers: { "x-apisports-key": apiKey }, muteHttpExceptions: true }
   );
   const data = JSON.parse(resp.getContentText());
+  
+  if (data.errors && (Array.isArray(data.errors) ? data.errors.length > 0 : Object.keys(data.errors).length > 0)) {
+    Logger.log("API-Football errors: " + JSON.stringify(data.errors));
+    return { success: false, error: data.errors, scoresUpdated: 0, timestamp: new Date().toISOString() };
+  }
+
   const apiFixtures = data.response || [];
 
   let updated = 0;

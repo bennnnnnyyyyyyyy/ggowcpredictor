@@ -347,8 +347,8 @@ async function loadResults() {
   );
   STATE.results = { ...localResults, ...STATE.results };
 
-  // Inject mock results for development/testing if no results were retrieved
-  if (Object.keys(STATE.results).length === 0) {
+  // Inject mock results for local development/testing if no database or API is connected
+  if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
     STATE.results = {
       "1": { matchId: "1", score1: 2, score2: 1, status: "FT" },
       "2": { matchId: "2", score1: 1, score2: 1, status: "1H" },
