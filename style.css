@@ -291,7 +291,43 @@ header {
   color: white;
   border-color: var(--wc-blue);
 }
+/* ────────────────────────────────────────
+   FILTER BUTTONS
+────────────────────────────────────────── */
 
+.matches-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  background: rgba(0, 209, 94, 0.08);
+  color: var(--light);
+  border: 1px solid rgba(0, 209, 94, 0.3);
+  border-radius: 6px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  background: rgba(0, 209, 94, 0.18);
+  border-color: var(--wc-blue);
+  color: var(--light);
+}
+
+.filter-btn.active {
+  background: var(--wc-blue);
+  color: #fff;
+  border-color: var(--wc-blue);
+  box-shadow: 0 4px 12px rgba(0, 209, 94, 0.25);
+}
 .admin-btn {
   margin-left: 10px;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
@@ -1210,7 +1246,6 @@ main {
   .matches-list {
     grid-template-columns: 1fr;
   }
-
   #group-standings {
     grid-template-columns: 1fr;
   }
