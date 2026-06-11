@@ -182,7 +182,10 @@ function showApp() {
   document.getElementById("user-display-name").textContent =
     SESSION.displayName || SESSION.username;
 
-  if (SESSION.username && !localStorage.getItem(`ggo_wc_rules_shown_${SESSION.username}`)) {
+  if (
+    SESSION.username &&
+    !localStorage.getItem(`ggo_wc_rules_shown_${SESSION.username}`)
+  ) {
     toggleRules(true);
   }
 
@@ -517,11 +520,17 @@ function renderPredictions() {
     return;
   }
 
-  const groups = groupBy(
-    visibleFixtures,
-    (fixture) => fixture.group || fixture.round || "Matches",
-  );
+  const groups = groupBy(visibleFixtures, (fixture) => {
+    if (fixture.kickoffDate) {
+      return fixture.kickoffDate.toLocaleDateString([], {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
+    }
 
+    return fixture.date || "Unknown Date";
+  });
   container.innerHTML = Object.entries(groups)
     .map(([groupName, fixtures]) => {
       return `
@@ -537,23 +546,38 @@ function renderPredictions() {
 }
 
 function renderPredictionCard(match) {
-  const pred   = STATE.predictions[match.matchId] || {};
+  const pred = STATE.predictions[match.matchId] || {};
   const result = STATE.results[match.matchId];
   const locked = isLocked(match);
   const status = getMatchStatus(match, result);
   const team1Flag = getTeamFlag(match.team1);
   const team2Flag = getTeamFlag(match.team2);
-  const hasPred   = hasPrediction(pred);
-  const hasRes    = result && hasResult(result);
-  const points    = hasRes && hasPred
-    ? calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2)
-    : null;
+  const hasPred = hasPrediction(pred);
+  const hasRes = result && hasResult(result);
+  const points =
+    hasRes && hasPred
+      ? calculateMatchPoints(
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+        )
+      : null;
 
   // Determine points tier for styling
-  const ptsTier = points === null ? "" : points >= 15 ? "pts-exact" : points >= 8 ? "pts-good" : points > 0 ? "pts-partial" : "pts-zero";
+  const ptsTier =
+    points === null
+      ? ""
+      : points >= 15
+        ? "pts-exact"
+        : points >= 8
+          ? "pts-good"
+          : points > 0
+            ? "pts-partial"
+            : "pts-zero";
 
-  const isLive   = result && isLiveStatus(result.status);
-  const isFinal  = result && isFinalStatus(result.status);
+  const isLive = result && isLiveStatus(result.status);
+  const isFinal = result && isFinalStatus(result.status);
 
   // Score comparison line
   let comparisonLine = "";
@@ -590,9 +614,11 @@ function renderPredictionCard(match) {
         </div>
 
         <div class="mc-middle">
-          ${hasRes
-            ? `<div class="mc-result-score">${result.score1} <span class="mc-dash">–</span> ${result.score2}</div>`
-            : `<div class="mc-vs">VS</div>`}
+          ${
+            hasRes
+              ? `<div class="mc-result-score">${result.score1} <span class="mc-dash">–</span> ${result.score2}</div>`
+              : `<div class="mc-vs">VS</div>`
+          }
           ${points !== null ? `<div class="mc-points ${ptsTier}">${points}<span>pts</span></div>` : ""}
         </div>
 
@@ -611,13 +637,15 @@ function renderPredictionCard(match) {
       <div class="mc-footer">
         ${comparisonLine}
         <div class="mc-status-line">
-          ${locked && !hasRes
-            ? '<span class="lock-icon">🔒</span><span>Locked — predictions closed</span>'
-            : hasPred && !locked && !hasRes
-            ? '<span class="saved-icon">✅</span><span>Prediction saved</span>'
-            : !hasPred && !locked
-            ? '<span class="tip-icon">✏️</span><span>Enter your score prediction above</span>'
-            : ""}
+          ${
+            locked && !hasRes
+              ? '<span class="lock-icon">🔒</span><span>Locked — predictions closed</span>'
+              : hasPred && !locked && !hasRes
+                ? '<span class="saved-icon">✅</span><span>Prediction saved</span>'
+                : !hasPred && !locked
+                  ? '<span class="tip-icon">✏️</span><span>Enter your score prediction above</span>'
+                  : ""
+          }
         </div>
       </div>
     </article>
@@ -918,7 +946,8 @@ function toggleRules(show) {
   if (show) {
     const usernameEl = document.getElementById("rules-username");
     if (usernameEl) {
-      usernameEl.textContent = SESSION.displayName || SESSION.username || "Employee";
+      usernameEl.textContent =
+        SESSION.displayName || SESSION.username || "Employee";
     }
     modal.classList.add("show");
   } else {
@@ -957,9 +986,11 @@ function parseKickoff(date, time, kickoffUTC) {
   // ALWAYS try to derive from date+time fields first.
   // Firestore may have kickoffUTC stored incorrectly (local time saved as UTC).
   if (date && time) {
-    const match = String(time).match(/(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2}(?:\.\d+)?)/i);
+    const match = String(time).match(
+      /(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2}(?:\.\d+)?)/i,
+    );
     if (match) {
-      const hour   = Number(match[1]);
+      const hour = Number(match[1]);
       const minute = Number(match[2]);
       const offset = Number(match[3]);
       const [y, m, d] = date.split("-").map(Number);
@@ -970,7 +1001,7 @@ function parseKickoff(date, time, kickoffUTC) {
 
   // Fallback: try kickoffUTC from Firestore only if it looks like a full ISO string
   // (contains 'T' so it's not just a bare date/time).
-  if (kickoffUTC && String(kickoffUTC).includes('T')) {
+  if (kickoffUTC && String(kickoffUTC).includes("T")) {
     const parsed = new Date(kickoffUTC);
     if (!Number.isNaN(parsed.getTime())) return parsed;
   }
@@ -1175,11 +1206,11 @@ function hasResult(result) {
 function calculateMatchPoints(pred1, pred2, actual1, actual2) {
   if (pred1 === actual1 && pred2 === actual2) return 15;
 
-  const predOutcome   = Math.sign(pred1 - pred2);
+  const predOutcome = Math.sign(pred1 - pred2);
   const actualOutcome = Math.sign(actual1 - actual2);
 
   if (predOutcome === actualOutcome) {
-    const diffGap = Math.abs((pred1 - pred2) - (actual1 - actual2));
+    const diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
     return diffGap <= 1 ? 8 : 5;
   }
 
