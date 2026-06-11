@@ -47,7 +47,11 @@ const STATE = {
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
   await loadTeamMeta();
-
+  console.log("STATE.teams sample:");
+  console.log("algeria =", STATE.teams["algeria"]);
+  console.log("alg =", STATE.teams["alg"]);
+  console.log("mexico =", STATE.teams["mexico"]);
+  console.log("mex =", STATE.teams["mex"]);
   // DEBUG: Verify emoji loading
   console.log("🇲🇽 Teams loaded count:", Object.keys(STATE.teams).length);
   console.log("🇲🇽 Mexico flag:", getTeamFlag("Mexico"));
