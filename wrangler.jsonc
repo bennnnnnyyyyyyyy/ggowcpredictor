@@ -1,0 +1,21 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "ggowcpredictor",
+    "main": "index.html",
+    "compatibility_date": "2026-06-11",
+    "assets": {
+        "directory": ".",
+        "binding": "ASSETS"
+    },
+    // Environment variables accessible inside your worker via env.KV_KEY, etc.
+    "vars": {
+        "ENVIRONMENT": "production"
+    }
+    // Uncomment if you need a KV Namespace for storing data (like match predictions)
+    // "kv_namespaces": [
+    //   {
+    //     "binding": "PREDICTIONS_KV",
+    //     "id": "your_kv_namespace_id_here"
+    //   }
+    // ]
+}
