@@ -52,3 +52,59 @@ function testApiFootball() {
     Logger.log("Errors: " + JSON.stringify(data.errors));
   }
 }
+
+function testRapidApiEndpoint(path) {
+  const host = "free-api-live-football-data.p.rapidapi.com";
+  const key = "a2c7484234mshb35750e2ab8a941p1057b9jsne114d43ae0e9";
+  const url = `https://${host}/${path}`;
+  Logger.log("Testing RapidAPI URL: " + url);
+  try {
+    const resp = UrlFetchApp.fetch(url, {
+      headers: {
+        "x-rapidapi-host": host,
+        "x-rapidapi-key": key,
+        "Content-Type": "application/json"
+      },
+      muteHttpExceptions: true
+    });
+    Logger.log("Response Code: " + resp.getResponseCode());
+    const text = resp.getContentText();
+    Logger.log("Response snippet: " + text.slice(0, 1500));
+    return text;
+  } catch (err) {
+    Logger.log("Error testing RapidAPI: " + err.toString());
+    return err.toString();
+  }
+}
+
+function runRapidApiTests() {
+  testRapidApiEndpoint("football-get-live-scores");
+  testRapidApiEndpoint("football-get-all-fixtures");
+}
+
+function testZafronix(url) {
+  const apiKey = "zwc_free_fcfb3caab7da86ec4e708942";
+  Logger.log("Testing Zafronix URL: " + url);
+  try {
+    const resp = UrlFetchApp.fetch(url, {
+      headers: {
+        "X-API-Key": apiKey,
+        "Accept": "application/json"
+      },
+      muteHttpExceptions: true
+    });
+    Logger.log("Response Code: " + resp.getResponseCode());
+    const text = resp.getContentText();
+    Logger.log("Response snippet: " + text.slice(0, 1500));
+    return text;
+  } catch (err) {
+    Logger.log("Error testing Zafronix: " + err.toString());
+    return err.toString();
+  }
+}
+
+function runZafronixTests() {
+  testZafronix("https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026");
+  testZafronix("https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026/matches");
+  testZafronix("https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026/live");
+}
