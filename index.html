@@ -50,14 +50,16 @@
 
         <form id="login-form" onsubmit="handleLogin(event)">
           <div class="form-group">
-            <label for="login-name">Your Name</label>
+            <label for="login-name">Username</label>
             <input
               type="text"
               id="login-name"
               placeholder="Enter your username"
               autocomplete="username"
+              list="username-options"
               required
             />
+            <datalist id="username-options"></datalist>
           </div>
 
           <div class="form-group">
@@ -73,6 +75,14 @@
 
           <button type="submit" class="btn-primary">Enter Predictor</button>
         </form>
+
+        <button
+          type="button"
+          class="btn-secondary login-ghost-btn"
+          onclick="toggleAccountRequest(true)"
+        >
+          Request an account
+        </button>
       </div>
     </div>
 
@@ -266,13 +276,13 @@
           <div class="section-title">
             <span class="title-accent">Admin</span> Panel
           </div>
-          <div id="admin-content">
-            <div class="empty-state">
-              <div class="empty-icon">LOCK</div>
-              <p>Admin panel - coming soon.</p>
-            </div>
+        <div id="admin-content">
+          <div class="empty-state">
+            <div class="empty-icon">LOCK</div>
+            <p>Admin panel - coming soon.</p>
           </div>
         </div>
+      </div>
       </main>
     </div>
     <!-- /#app -->
@@ -311,6 +321,34 @@
         <button class="btn-secondary" onclick="toggleSettings(false)">
           Cancel
         </button>
+      </div>
+    </div>
+
+    <div id="account-request-modal" class="modal-overlay">
+      <div class="modal account-modal">
+        <div class="modal-header">
+          <h2>Request Account</h2>
+          <button class="close-modal" onclick="toggleAccountRequest(false)" aria-label="Close request form">X</button>
+        </div>
+        <p class="modal-copy">
+          Send a request to the GGO admin team. Your account will stay pending until someone approves it.
+        </p>
+        <form id="account-request-form" onsubmit="submitAccountRequest(event)">
+          <div class="form-group">
+            <label for="request-display-name">Display Name</label>
+            <input type="text" id="request-display-name" placeholder="Your full name" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label for="request-username">Username</label>
+            <input type="text" id="request-username" placeholder="Choose a username" autocomplete="username" required />
+          </div>
+          <div class="form-group">
+            <label for="request-note">Notes</label>
+            <input type="text" id="request-note" placeholder="Optional: department, manager, or team" />
+          </div>
+          <button class="btn-primary" type="submit">Send Request</button>
+          <button class="btn-secondary" type="button" onclick="toggleAccountRequest(false)">Cancel</button>
+        </form>
       </div>
     </div>
 

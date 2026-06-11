@@ -40,6 +40,7 @@ const STATE = {
   predictions: {},
   leaderboard: [],
   users: [],
+  accountRequests: [],
   teams: {},
   lastSync: null,
 };
@@ -122,6 +123,8 @@ async function hydrateLoginUsers() {
   } catch (error) {
     console.warn("Could not load Firestore users.", error.message);
   }
+
+  renderUsernameOptions();
 }
 
 async function handleLogin(event) {
@@ -153,7 +156,9 @@ async function handleLogin(event) {
     }
 
     if (!userData) {
-      showLoginError("User not found. Ask the admin to add your username.");
+      showLoginError(
+        "User not found. Request access or ask an admin to approve your username.",
+      );
       return;
     }
 
@@ -180,6 +185,93 @@ async function handleLogin(event) {
   }
 }
 
+function renderUsernameOptions() {
+  const list = document.getElementById("username-options");
+  if (!list) return;
+
+  const usernames = STATE.users
+    .map((user) => user.username)
+    .filter(Boolean)
+    .sort((a, b) => String(a).localeCompare(String(b)));
+
+  list.innerHTML = usernames
+    .map((username) => `<option value="${escapeHtml(username)}"></option>`)
+    .join("");
+}
+
+function normalizeUsername(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
+function toggleAccountRequest(show) {
+  const modal = document.getElementById("account-request-modal");
+  if (!modal) return;
+  if (show) {
+    modal.classList.add("show");
+    return;
+  }
+  modal.classList.remove("show");
+  const form = document.getElementById("account-request-form");
+  if (form) form.reset();
+}
+
+async function submitAccountRequest(event) {
+  if (event) event.preventDefault();
+
+  const displayName = document
+    .getElementById("request-display-name")
+    .value.trim();
+  const rawUsername = document.getElementById("request-username").value.trim();
+  const note = document.getElementById("request-note").value.trim();
+  const username = normalizeUsername(rawUsername);
+
+  if (!displayName || !username) {
+    showLoginError("Please enter both a display name and username.");
+    return;
+  }
+
+  if (!db) {
+    showLoginError("Account requests need Firebase to be connected.");
+    return;
+  }
+
+  try {
+    const existingUser = await db.collection("users").doc(username).get();
+    if (existingUser.exists) {
+      showLoginError("That username is already approved. Try logging in.");
+      return;
+    }
+
+    const requestRef = db.collection("accountRequests").doc(username);
+    const current = await requestRef.get();
+    if (current.exists && current.data().status === "pending") {
+      showLoginError("That request is already pending approval.");
+      return;
+    }
+
+    await requestRef.set(
+      {
+        username,
+        displayName,
+        note,
+        status: "pending",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    toggleAccountRequest(false);
+    showToast("Request sent. An admin will review it soon.");
+  } catch (error) {
+    console.error("Account request failed:", error);
+    showLoginError("Could not send request. Check your connection and try again.");
+  }
+}
+
 function showLoginError(message) {
   const errEl = document.getElementById("login-error");
   errEl.textContent = message;
@@ -201,6 +293,8 @@ function showApp() {
   ) {
     toggleRules(true);
   }
+
+  ensureAdminNav();
 
   requestSync();
 }
@@ -228,6 +322,27 @@ function showView(id, btn) {
   if (id === "admin") renderAdmin();
 }
 
+function ensureAdminNav() {
+  const nav = document.getElementById("main-nav");
+  if (!nav) return;
+
+  const existing = document.getElementById("admin-nav-btn");
+  if (SESSION.isAdmin) {
+    if (existing) return;
+
+    const btn = document.createElement("button");
+    btn.className = "nav-btn";
+    btn.id = "admin-nav-btn";
+    btn.type = "button";
+    btn.innerHTML = 'Admin <span class="nav-badge" id="admin-request-badge" hidden>0</span>';
+    btn.addEventListener("click", () => showView("admin", btn));
+    nav.appendChild(btn);
+    return;
+  }
+
+  if (existing) existing.remove();
+}
+
 async function requestSync() {
   const dot = document.getElementById("sync-dot");
   const timeEl = document.getElementById("last-sync-time");
@@ -243,6 +358,7 @@ async function requestSync() {
     if (!Object.keys(STATE.results).length) await loadResults();
     if (!STATE.leaderboard.length) await loadLeaderboard();
     await loadPredictions();
+    await loadAccountRequests();
 
     STATE.lastSync = new Date();
     if (dot) dot.className = "status-dot active";
@@ -264,7 +380,26 @@ async function requestSync() {
     if (dot) dot.className = "status-dot";
     if (timeEl) timeEl.textContent = "Sync failed";
   } finally {
+    updateAdminBadge();
     if (syncBtn) syncBtn.classList.remove("loading");
+  }
+}
+
+async function loadAccountRequests() {
+  STATE.accountRequests = [];
+  if (!db) return;
+
+  try {
+    const snap = await db
+      .collection("accountRequests")
+      .orderBy("createdAt", "desc")
+      .get();
+    STATE.accountRequests = snap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.warn("Could not load account requests.", error.message);
   }
 }
 
@@ -437,13 +572,88 @@ function normalizePrediction(prediction) {
 }
 
 function normalizeResult(result) {
+  const status = normalizeResultStatus(result.status);
+  const score1 = readResultScore(result, "home");
+  const score2 = readResultScore(result, "away");
   return {
     ...result,
     matchId: String(result.matchId),
-    score1: nullableNumber(result.score1 ?? result.team1Score),
-    score2: nullableNumber(result.score2 ?? result.team2Score),
-    status: result.status || "NS",
+    score1: nullableNumber(score1),
+    score2: nullableNumber(score2),
+    status,
   };
+}
+
+function readResultScore(result, side) {
+  const directKeys = side === "home"
+    ? ["score1", "team1Score", "homeScore", "home_score", "homeGoals", "goalsHome"]
+    : ["score2", "team2Score", "awayScore", "away_score", "awayGoals", "goalsAway"];
+
+  for (const key of directKeys) {
+    if (result[key] !== undefined && result[key] !== null && result[key] !== "") {
+      return result[key];
+    }
+  }
+
+  const nested = result.score || result.result || result.scores;
+  if (nested && typeof nested === "object") {
+    const paths = side === "home"
+      ? [
+          ["home"],
+          ["local"],
+          ["team1"],
+          ["fulltime", "home"],
+          ["ft", "home"],
+          ["final", "home"],
+        ]
+      : [
+          ["away"],
+          ["visitor"],
+          ["team2"],
+          ["fulltime", "away"],
+          ["ft", "away"],
+          ["final", "away"],
+        ];
+
+    for (const path of paths) {
+      let value = nested;
+      let found = true;
+      for (const key of path) {
+        if (value && typeof value === "object" && key in value) {
+          value = value[key];
+        } else {
+          found = false;
+          break;
+        }
+      }
+      if (found && value !== undefined && value !== null && value !== "") {
+        return value;
+      }
+    }
+  }
+
+  return null;
+}
+
+function normalizeResultStatus(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (!value) return "NS";
+  if (["ft", "fulltime", "full-time", "finished", "completed", "complete"].includes(value)) {
+    return "FT";
+  }
+  if (["ht", "half-time", "halftime"].includes(value)) {
+    return "HT";
+  }
+  if (["live", "in_play", "inplay", "1h", "first half", "2h", "second half"].includes(value)) {
+    return value === "2h" || value === "second half" ? "2H" : "1H";
+  }
+  if (["aet", "extra time", "extra-time"].includes(value)) {
+    return "AET";
+  }
+  if (["pen", "penalties", "pens"].includes(value)) {
+    return "PEN";
+  }
+  return status ? String(status).toUpperCase() : "NS";
 }
 
 function showToast(message, type = "success") {
@@ -607,11 +817,27 @@ function renderPredictionCard(match) {
       : hasPred && !locked && !hasRes
         ? '<div class="mc-status-line"><span class="status-token">SAVED</span><span>Prediction saved</span></div>'
         : "";
+  const predictionScore = hasPred
+    ? `${pred.pred1}-${pred.pred2}`
+    : "No pick yet";
+  const actualScore = hasRes
+    ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
+    : null;
   const resultScoreHtml = hasRes
     ? `
-      <div class="mc-result-block">
-        <div class="mc-result-label">Your Pick</div>
-        <div class="mc-result-score">${Number.isInteger(pred.pred1) ? pred.pred1 : "-"} <span class="mc-dash">-</span> ${Number.isInteger(pred.pred2) ? pred.pred2 : "-"}</div>
+      <div class="mc-result-grid">
+        <div class="mc-result-block mc-result-actual">
+          <div class="mc-result-label">Result</div>
+          <div class="mc-result-score">${actualScore}</div>
+          <div class="mc-result-meta">${escapeHtml(String(result.status || "NS"))}</div>
+        </div>
+        <div class="mc-result-block mc-result-prediction">
+          <div class="mc-result-label">Your Pick</div>
+          <div class="mc-result-score">${predictionScore}</div>
+          <div class="mc-result-meta">
+            ${hasPred ? `${points ?? 0} pts` : "No prediction saved"}
+          </div>
+        </div>
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -862,7 +1088,7 @@ function renderResults() {
             <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}</div>
             <div class="team"><div class="team-name"><span class="team-code">${escapeHtml(getTeamCode(fixture.team2))}</span>${escapeHtml(fixture.team2)}</div></div>
           </div>
-          <div class="result-status">${escapeHtml(result.status || "NS")}</div>
+          <div class="result-status">${escapeHtml(normalizeResultStatus(result.status))}</div>
           <div class="match-footer">
             <span>Your pick: ${hasPrediction(pred) ? `${pred.pred1}-${pred.pred2}` : "none"}</span>
             ${points === null ? "" : `<strong>${points} pts</strong>`}
@@ -947,7 +1173,136 @@ function renderAdmin() {
         <span>results synced</span>
       </div>
     </div>
+    <div class="admin-section">
+      <h3>Pending account requests</h3>
+      ${renderAccountRequests()}
+    </div>
   `;
+
+  updateAdminBadge();
+}
+
+function updateAdminBadge() {
+  const badge = document.getElementById("admin-request-badge");
+  if (!badge || !SESSION.isAdmin) return;
+
+  const pendingCount = STATE.accountRequests.filter(
+    (request) => String(request.status || "pending") === "pending",
+  ).length;
+
+  if (!pendingCount) {
+    badge.hidden = true;
+    badge.textContent = "0";
+    return;
+  }
+
+  badge.hidden = false;
+  badge.textContent = String(pendingCount);
+}
+
+function renderAccountRequests() {
+  const pending = STATE.accountRequests.filter(
+    (request) => String(request.status || "pending") === "pending",
+  );
+
+  if (!pending.length) {
+    return `<div class="empty-state compact"><p>No pending requests right now.</p></div>`;
+  }
+
+  return `
+    <div class="request-list">
+      ${pending
+        .map(
+          (request) => `
+            <article class="request-card">
+              <div>
+                <strong>${escapeHtml(request.displayName || request.username)}</strong>
+                <p>@${escapeHtml(request.username)}</p>
+                ${request.note ? `<small>${escapeHtml(request.note)}</small>` : ""}
+              </div>
+              <div class="request-actions">
+                <button class="btn-primary" type="button" onclick="approveAccountRequest('${escapeHtml(request.username)}')">Approve</button>
+                <button class="btn-secondary" type="button" onclick="rejectAccountRequest('${escapeHtml(request.username)}')">Reject</button>
+              </div>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function generateAccessCode(username) {
+  const seed = `${username}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return btoa(seed).replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase();
+}
+
+async function approveAccountRequest(username) {
+  if (!db) return;
+
+  try {
+    const requestDoc = db.collection("accountRequests").doc(username);
+    const userDoc = db.collection("users").doc(username);
+    const requestSnap = await requestDoc.get();
+
+    if (!requestSnap.exists) {
+      showToast("Request not found.", "error");
+      return;
+    }
+
+    const requestData = requestSnap.data();
+    const secretCode = generateAccessCode(username);
+
+    await userDoc.set(
+      {
+        username,
+        displayName: requestData.displayName || username,
+        secretCode,
+        isAdmin: false,
+        accountStatus: "approved",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    await requestDoc.set(
+      {
+        ...requestData,
+        status: "approved",
+        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        secretCode,
+      },
+      { merge: true },
+    );
+
+    showToast(`Approved ${username}. Code: ${secretCode}`, "success");
+    await loadAccountRequests();
+    renderAdmin();
+  } catch (error) {
+    console.error("Could not approve account request:", error);
+    showToast("Approval failed.", "error");
+  }
+}
+
+async function rejectAccountRequest(username) {
+  if (!db) return;
+
+  try {
+    await db.collection("accountRequests").doc(username).set(
+      {
+        status: "rejected",
+        rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+    showToast(`Rejected ${username}.`, "warning");
+    await loadAccountRequests();
+    renderAdmin();
+  } catch (error) {
+    console.error("Could not reject account request:", error);
+    showToast("Rejection failed.", "error");
+  }
 }
 
 function filterMatches(type, btn) {
@@ -1226,7 +1581,9 @@ function hasPrediction(prediction) {
 
 function hasResult(result) {
   return (
-    result && Number.isInteger(result.score1) && Number.isInteger(result.score2)
+    result &&
+    Number.isFinite(result.score1) &&
+    Number.isFinite(result.score2)
   );
 }
 

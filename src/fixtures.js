@@ -190,13 +190,60 @@ function fetchAndUpdateLiveScores() {
     return "NS";
   }
 
+  function readScore(item, side) {
+    const directKeys = side === "home"
+      ? ["homeScore", "score1", "team1Score", "home_goal", "homeGoals", "goalsHome"]
+      : ["awayScore", "score2", "team2Score", "away_goal", "awayGoals", "goalsAway"];
+
+    for (const key of directKeys) {
+      if (item[key] !== undefined && item[key] !== null && item[key] !== "") return item[key];
+    }
+
+    const nested = item.score || item.result || item.scores;
+    if (nested && typeof nested === "object") {
+      const paths = side === "home"
+        ? [
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
+        : [
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
+
+      for (const path of paths) {
+        let value = nested;
+        let found = true;
+        for (const key of path) {
+          if (value && typeof value === "object" && key in value) {
+            value = value[key];
+          } else {
+            found = false;
+            break;
+          }
+        }
+        if (found && value !== undefined && value !== null && value !== "") return value;
+      }
+    }
+
+    return null;
+  }
+
   let updated = 0;
   apiMatches.forEach(item => {
     // Zafronix field names (confirmed from test output)
     const homeTeam = cleanTeamName(item.homeTeam || item.team1 || "");
     const awayTeam = cleanTeamName(item.awayTeam || item.team2 || "");
-    const score1   = item.homeScore !== undefined ? item.homeScore : (item.score1 !== undefined ? item.score1 : null);
-    const score2   = item.awayScore !== undefined ? item.awayScore : (item.score2 !== undefined ? item.score2 : null);
+    const score1   = readScore(item, "home");
+    const score2   = readScore(item, "away");
     const status   = mapStatus(item.status);
 
     if (!homeTeam || !awayTeam) return;
