@@ -24,3 +24,24 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 - **P0 open**: `savePrediction` crashes when match is locked
 - **P1 open**: `firebaseConfig` reference error in Apps Script, matchId mismatch, leaderboard stub, seed Drive path wrong, scoring conflict (now resolved in SCORING.md)
 - **Working**: Login, fixture loading, country flags, prediction inputs (UI), group standings, 15-min lock
+
+## Live Results Worker
+
+Apps Script can stay in place for fixture seeding, but live scores/results should move to the Node worker:
+
+```bash
+npm install
+set ZAFRONIX_API_KEY=your-zafronix-key
+set FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+npm run live-sync
+```
+
+Optional environment variables:
+- `FIREBASE_PROJECT_ID` defaults to `ggowcpredictor`
+- `ZAFRONIX_URL` overrides the live results endpoint
+- `LIVESCORE_API_KEY` and `LIVESCORE_API_SECRET` enable the backup live source
+- `LIVE_SYNC_CRON` defaults to `*/5 * * * *`
+- `LIVE_SYNC_RUN_ON_START=false` skips the first immediate sync
+- `LIVE_SYNC_DRY_RUN=true` logs matches without writing Firestore
+
+If you already have `GOOGLE_APPLICATION_CREDENTIALS` configured, the worker can use ADC instead of a JSON service account.

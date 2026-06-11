@@ -5,12 +5,15 @@
   "description": "GGO World Cup 2026 Prediction Game",
   "main": "index.html",
   "scripts": {
-    "seed": "node scripts/seedDatabase.js"
+    "seed": "node scripts/seedDatabase.js",
+    "live-sync": "node scripts/liveResultsCron.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "firebase": "^12.14.0"
+    "firebase": "^12.14.0",
+    "firebase-admin": "^13.4.0",
+    "node-cron": "^3.0.3"
   }
 }
