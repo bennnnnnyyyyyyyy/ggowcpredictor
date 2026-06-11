@@ -45,6 +45,7 @@ body {
   padding: 40px;
   max-width: 400px;
   width: 100%;
+  overflow: hidden;
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
@@ -55,9 +56,18 @@ body {
 }
 
 .login-logo .trophy {
-  font-size: 48px;
   display: block;
-  margin-bottom: 15px;
+  width: min(240px, 72vw);
+  max-width: 100%;
+  margin: 0 auto 15px;
+  overflow: hidden;
+}
+
+.login-logo .trophy img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .login-logo h2 {
@@ -191,6 +201,7 @@ header {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .logo img {
@@ -551,14 +562,14 @@ main {
 }
 
 .mc-kickoff {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--light);
   letter-spacing: 0.3px;
 }
 
 .mc-venue {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   letter-spacing: 0.3px;
 }
@@ -647,6 +658,36 @@ main {
   align-items: center;
   gap: 6px;
   min-width: 60px;
+}
+
+.mc-result-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
+}
+
+.mc-result-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.mc-pred-score {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.8);
+  min-height: 1em;
+}
+
+.mc-pick-line {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.3px;
 }
 
 .mc-vs {
@@ -1222,6 +1263,23 @@ main {
     display: none;
   }
 
+  .logo img.header-logo {
+    height: 34px;
+    flex-shrink: 0;
+  }
+
+  .logo-text h1 {
+    font-size: 16px;
+  }
+
+  .logo-text p {
+    font-size: 10px;
+  }
+
+  .logo-divider {
+    height: 24px;
+  }
+
   /* Row 2: nav centered, wrapping */
   #main-nav {
     justify-content: center;
@@ -1299,19 +1357,8 @@ main {
   }
   /* The parent wrapper needs a block context and defined bounds */
   .login-logo .trophy {
-    display: inline-block;
-    width: 20px; /* Adjust width to fit your design */
-    height: 20px; /* Adjust height to fit your design */
+    width: min(170px, 62vw);
     margin-bottom: 12px;
-    vertical-align: middle;
-  }
-
-  /* The logo image itself */
-  .resized-logo {
-    width: 100%;
-    height: 100%;
-    /* Changed from cover to contain so the GGO logo never clips */
-    object-fit: contain;
   }
   .user-pill {
     font-size: 12px;

@@ -91,24 +91,22 @@
               class="header-logo"
             />
             <div class="logo-divider"></div>
-
-            <div class="logo-text">
-              <h1>GGO <span>WC</span> 2026</h1>
-              <p>Prediction Game</p>
-            </div>
-
             <img
               src="fifa-world-cup-2026-logo-white.png"
               alt="FIFA World Cup 2026"
               class="header-logo wc-logo"
             />
+            <div class="logo-text">
+              <h1>GGO <span>WC</span> 2026</h1>
+              <p>Prediction Game</p>
+            </div>
           </div>
 
           <!-- User pill (top-right on desktop, stays in row 1 on mobile) -->
           <div class="user-pill" id="user-pill">
             <div class="user-avatar" id="user-avatar">?</div>
             <span id="user-display-name">Loading…</span>
-            <button class="logout-btn" onclick="handleLogout()">✕</button>
+            <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">X</button>
           </div>
         </div>
 
@@ -178,7 +176,7 @@
           </div>
           <div id="group-standings">
             <div class="empty-state">
-              <div class="empty-icon">📊</div>
+              <div class="empty-icon">STATS</div>
               <p>Make predictions to see group standings…</p>
             </div>
           </div>
@@ -231,7 +229,7 @@
               All
             </button>
             <button class="filter-btn" onclick="filterResults('live', this)">
-              🔴 Live
+              Live
             </button>
             <button class="filter-btn" onclick="filterResults('ft', this)">
               Full Time
@@ -239,7 +237,7 @@
           </div>
           <div class="matches-list" id="results-list">
             <div class="empty-state">
-              <div class="empty-icon">⚽</div>
+              <div class="empty-icon">BALL</div>
               <p>No results yet. The tournament kicks off June 11!</p>
             </div>
           </div>
@@ -251,7 +249,7 @@
             Knockout <span class="title-accent">Bracket</span>
           </div>
           <div class="champion-section" id="champion-section">
-            <div class="champion-trophy">🏆</div>
+            <div class="champion-trophy" aria-hidden="true">WC</div>
             <div class="champion-title">World Champion</div>
             <div class="champion-name">TBD</div>
             <div class="champion-subtitle">
@@ -270,7 +268,7 @@
           </div>
           <div id="admin-content">
             <div class="empty-state">
-              <div class="empty-icon">🔒</div>
+              <div class="empty-icon">LOCK</div>
               <p>Admin panel — coming soon.</p>
             </div>
           </div>
@@ -289,7 +287,7 @@
       <div class="modal">
         <div class="modal-header">
           <h2>Settings</h2>
-          <button class="close-modal" onclick="toggleSettings(false)">✕</button>
+          <button class="close-modal" onclick="toggleSettings(false)" aria-label="Close settings">X</button>
         </div>
         <div class="form-group">
           <label>Apps Script / Firebase URL</label>
@@ -322,8 +320,8 @@
     <div id="rules-modal" class="modal-overlay">
       <div class="modal rules-modal-content">
         <div class="modal-header">
-          <h2>🏆 Welcome to GGO World Cup Predictor!</h2>
-          <button class="close-modal" onclick="toggleRules(false)">✕</button>
+          <h2>Welcome to GGO World Cup Predictor!</h2>
+          <button class="close-modal" onclick="toggleRules(false)" aria-label="Close rules">X</button>
         </div>
         <div class="modal-body">
           <p class="welcome-text">

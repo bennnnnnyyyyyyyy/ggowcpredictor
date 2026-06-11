@@ -44,19 +44,28 @@ const STATE = {
   lastSync: null,
 };
 
+const STADIUMS_BY_GROUND = {
+  "Atlanta": { city: "Atlanta", stadium: "Mercedes-Benz Stadium" },
+  "Boston": { city: "Foxborough", stadium: "Gillette Stadium" },
+  "Dallas": { city: "Arlington", stadium: "AT&T Stadium" },
+  "Guadalajara (Zapopan)": { city: "Zapopan", stadium: "Estadio Akron" },
+  "Houston": { city: "Houston", stadium: "NRG Stadium" },
+  "Kansas City": { city: "Kansas City", stadium: "Arrowhead Stadium" },
+  "Los Angeles (Inglewood)": { city: "Inglewood", stadium: "SoFi Stadium" },
+  "Mexico City": { city: "Mexico City", stadium: "Estadio Azteca" },
+  "Miami": { city: "Miami Gardens", stadium: "Hard Rock Stadium" },
+  "Monterrey (Guadalupe)": { city: "Guadalupe", stadium: "Estadio BBVA" },
+  "New York New Jersey": { city: "East Rutherford", stadium: "MetLife Stadium" },
+  "Philadelphia": { city: "Philadelphia", stadium: "Lincoln Financial Field" },
+  "San Francisco Bay Area (Santa Clara)": { city: "Santa Clara", stadium: "Levi's Stadium" },
+  "Seattle": { city: "Seattle", stadium: "Lumen Field" },
+  "Toronto": { city: "Toronto", stadium: "BMO Field" },
+  "Vancouver": { city: "Vancouver", stadium: "BC Place" },
+};
+
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
   await loadTeamMeta();
-  console.log("STATE.teams sample:");
-  console.log("algeria =", STATE.teams["algeria"]);
-  console.log("alg =", STATE.teams["alg"]);
-  console.log("mexico =", STATE.teams["mexico"]);
-  console.log("mex =", STATE.teams["mex"]);
-  // DEBUG: Verify emoji loading
-  console.log("🇲🇽 Teams loaded count:", Object.keys(STATE.teams).length);
-  console.log("🇲🇽 Mexico flag:", getTeamFlag("Mexico"));
-  console.log("🇿🇦 South Africa flag:", getTeamFlag("South Africa"));
-
   await hydrateLoginUsers();
 
   if (SESSION.token && SESSION.username) {
@@ -554,8 +563,9 @@ function renderPredictionCard(match) {
   const result = STATE.results[match.matchId];
   const locked = isLocked(match);
   const status = getMatchStatus(match, result);
-  const team1Flag = getTeamFlag(match.team1);
-  const team2Flag = getTeamFlag(match.team2);
+  const team1Code = getTeamCode(match.team1);
+  const team2Code = getTeamCode(match.team2);
+  const venue = getVenueDetails(match);
   const hasPred = hasPrediction(pred);
   const hasRes = result && hasResult(result);
   const points =
@@ -582,23 +592,29 @@ function renderPredictionCard(match) {
 
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
-
-  // Score comparison line
-  let comparisonLine = "";
-  if (hasRes && hasPred) {
-    comparisonLine = `
-      <div class="score-comparison">
-        <span class="your-pick">Your pick: <strong>${pred.pred1}–${pred.pred2}</strong></span>
-        <span class="actual-score">Result: <strong>${result.score1}–${result.score2}</strong></span>
-      </div>`;
-  }
+  const resultScoreHtml = hasRes
+    ? `
+      <div class="mc-result-block">
+        <div class="mc-result-label">Result</div>
+        <div class="mc-result-score">${result.score1} <span class="mc-dash">–</span> ${result.score2}</div>
+        ${
+          hasPred
+            ? `<div class="mc-pick-line">Your pick ${pred.pred1}–${pred.pred2}</div>`
+            : ""
+        }
+      </div>`
+    : `<div class="mc-vs">VS</div>`;
 
   return `
     <article class="match-card ${locked ? "locked" : "open"} ${isLive ? "live" : ""} ${isFinal ? "final" : ""}">
       <div class="mc-header">
         <div class="mc-meta">
-          <span class="mc-kickoff">⏰ ${formatKickoff(match)}</span>
-          <span class="mc-venue">📍 ${escapeHtml(match.ground)}</span>
+          <span class="mc-kickoff"><span class="meta-label">Kickoff</span>${formatKickoff(match)}</span>
+          <a class="mc-venue" href="${venue.mapsUrl}" target="_blank" rel="noopener noreferrer">
+            <span class="meta-label">City</span>
+            <strong>${escapeHtml(venue.city)}</strong>
+            <span>${escapeHtml(venue.stadium)}</span>
+          </a>
         </div>
         <span class="mc-badge ${status.className}">
           ${isLive ? '<span class="live-dot"></span>' : ""}${status.label}
@@ -607,47 +623,50 @@ function renderPredictionCard(match) {
 
       <div class="mc-body">
         <div class="mc-team">
-          <div class="mc-flag">${escapeHtml(team1Flag)}</div>
+          <div class="team-mark">${escapeHtml(team1Code)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-          <input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          ${
+            hasRes
+              ? `<div class="mc-pred-score">${Number.isInteger(pred.pred1) ? pred.pred1 : "–"}</div>`
+              : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="–"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
-            onchange="handleScoreChange('${match.matchId}')">
+            onchange="handleScoreChange('${match.matchId}')">`
+          }
         </div>
 
         <div class="mc-middle">
-          ${
-            hasRes
-              ? `<div class="mc-result-score">${result.score1} <span class="mc-dash">–</span> ${result.score2}</div>`
-              : `<div class="mc-vs">VS</div>`
-          }
+          ${resultScoreHtml}
           ${points !== null ? `<div class="mc-points ${ptsTier}">${points}<span>pts</span></div>` : ""}
         </div>
 
         <div class="mc-team">
-          <div class="mc-flag">${escapeHtml(team2Flag)}</div>
+          <div class="team-mark">${escapeHtml(team2Code)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-          <input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          ${
+            hasRes
+              ? `<div class="mc-pred-score">${Number.isInteger(pred.pred2) ? pred.pred2 : "–"}</div>`
+              : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="–"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
-            onchange="handleScoreChange('${match.matchId}')">
+            onchange="handleScoreChange('${match.matchId}')">`
+          }
         </div>
       </div>
 
       <div class="mc-footer">
-        ${comparisonLine}
         <div class="mc-status-line">
           ${
             locked && !hasRes
-              ? '<span class="lock-icon">🔒</span><span>Locked — predictions closed</span>'
+              ? '<span class="status-token">LOCK</span><span>Locked - predictions closed</span>'
               : hasPred && !locked && !hasRes
-                ? '<span class="saved-icon">✅</span><span>Prediction saved</span>'
+                ? '<span class="status-token">SAVED</span><span>Prediction saved</span>'
                 : !hasPred && !locked
-                  ? '<span class="tip-icon">✏️</span><span>Enter your score prediction above</span>'
+                  ? '<span class="status-token">PICK</span><span>Enter your score prediction above</span>'
                   : ""
           }
         </div>
@@ -743,7 +762,7 @@ function renderGroupTable(groupName, fixtures) {
               (row, index) => `
                 <tr>
                   <td class="team-rank">${index + 1}</td>
-                  <td><span class="team-flag">${getTeamFlag(row.team)}</span>${escapeHtml(row.team)}</td>
+                  <td><span class="team-code">${escapeHtml(getTeamCode(row.team))}</span>${escapeHtml(row.team)}</td>
                   <td>${row.played}</td>
                   <td>${row.won}</td>
                   <td>${row.drawn}</td>
@@ -841,9 +860,9 @@ function renderResults() {
         <article class="result-card">
           <div class="match-date">${formatKickoff(fixture)}</div>
           <div class="match-teams">
-            <div class="team"><div class="team-name"><span class="team-flag">${getTeamFlag(fixture.team1)}</span>${escapeHtml(fixture.team1)}</div></div>
+            <div class="team"><div class="team-name"><span class="team-code">${escapeHtml(getTeamCode(fixture.team1))}</span>${escapeHtml(fixture.team1)}</div></div>
             <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}</div>
-            <div class="team"><div class="team-name"><span class="team-flag">${getTeamFlag(fixture.team2)}</span>${escapeHtml(fixture.team2)}</div></div>
+            <div class="team"><div class="team-name"><span class="team-code">${escapeHtml(getTeamCode(fixture.team2))}</span>${escapeHtml(fixture.team2)}</div></div>
           </div>
           <div class="result-status">${escapeHtml(result.status || "NS")}</div>
           <div class="match-footer">
@@ -878,23 +897,32 @@ function renderBracket() {
   }
 
   bracket.innerHTML = rounds
-    .map((round) => {
+    .map((round, roundIndex) => {
       const matches = knockout.filter((fixture) => fixture.round === round);
       return `
-        <section class="bracket-round">
+        <section class="bracket-round bracket-round-${roundIndex + 1}">
           <h3>${escapeHtml(round)}</h3>
+          <div class="bracket-stack">
           ${matches
             .map((match) => {
               const result = STATE.results[match.matchId];
+              const score = result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
               return `
                 <div class="bracket-match">
-                  <div><span class="team-flag">${getTeamFlag(match.team1)}</span>${escapeHtml(match.team1)}</div>
-                  <strong>${result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs"}</strong>
-                  <div><span class="team-flag">${getTeamFlag(match.team2)}</span>${escapeHtml(match.team2)}</div>
+                  <div class="bracket-seed">
+                    <span class="team-code">${escapeHtml(getTeamCode(match.team1))}</span>
+                    <span>${escapeHtml(match.team1)}</span>
+                  </div>
+                  <strong>${score}</strong>
+                  <div class="bracket-seed">
+                    <span class="team-code">${escapeHtml(getTeamCode(match.team2))}</span>
+                    <span>${escapeHtml(match.team2)}</span>
+                  </div>
                 </div>
               `;
             })
             .join("")}
+          </div>
         </section>
       `;
     })
@@ -1023,11 +1051,11 @@ async function loadTeamMeta() {
           STATE.teams = {};
           snap.docs.forEach((doc) => {
             const team = doc.data();
-            const flag = team.flag_icon || "🏳";
+            const code = team.fifa_code || shortTeamCode(team.name);
             [team.name, team.name_normalised, team.fifa_code]
               .filter(Boolean)
               .forEach((key) => {
-                STATE.teams[normalizeTeamKey(key)] = flag;
+                STATE.teams[normalizeTeamKey(key)] = code;
               });
           });
           return;
@@ -1043,11 +1071,11 @@ async function loadTeamMeta() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const teams = await response.json();
     STATE.teams = (teams || []).reduce((acc, team) => {
-      const flag = team.flag_icon || "🏳";
+      const code = team.fifa_code || shortTeamCode(team.name);
       [team.name, team.name_normalised, team.fifa_code]
         .filter(Boolean)
         .forEach((key) => {
-          acc[normalizeTeamKey(key)] = flag;
+          acc[normalizeTeamKey(key)] = code;
         });
       return acc;
     }, {});
@@ -1056,10 +1084,6 @@ async function loadTeamMeta() {
     STATE.teams = {};
   }
 }
-console.log(
-  "Mexico raw:",
-  teams.find((t) => t.name === "Mexico"),
-);
 async function loadGameData() {
   if (!CONFIG.appsScriptUrl) return;
 
@@ -1341,9 +1365,37 @@ function normalizeText(value) {
   return String(value ?? "");
 }
 
-function getTeamFlag(teamName) {
+function getTeamCode(teamName) {
   const key = normalizeTeamKey(teamName);
-  return STATE.teams[key] || "🏳";
+  return STATE.teams[key] || shortTeamCode(teamName);
+}
+
+function shortTeamCode(teamName) {
+  const clean = String(teamName || "TBD")
+    .replace(/&/g, " ")
+    .replace(/[^a-zA-Z0-9 ]+/g, " ")
+    .trim();
+  if (!clean || clean.toUpperCase() === "TBD") return "TBD";
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
+  return words
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
+function getVenueDetails(match) {
+  const ground = match.ground || match.venue || "TBD";
+  const known = STADIUMS_BY_GROUND[ground] || {};
+  const city = known.city || ground;
+  const stadium = known.stadium || ground;
+  const mapsQuery = encodeURIComponent(`${stadium} ${city}`);
+  return {
+    city,
+    stadium,
+    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`,
+  };
 }
 
 function groupBy(items, getKey) {
