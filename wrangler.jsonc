@@ -1,7 +1,6 @@
 {
     "$schema": "node_modules/wrangler/config-schema.json",
     "name": "ggowcpredictor",
-    "main": "index.html",
     "compatibility_date": "2026-06-11",
     "assets": {
         "directory": ".",
