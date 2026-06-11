@@ -31,15 +31,16 @@ Apps Script can stay in place for fixture seeding, but live scores/results shoul
 
 ```bash
 npm install
-set ZAFRONIX_API_KEY=your-zafronix-key
 set FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 npm run live-sync
 ```
 
 Optional environment variables:
 - `FIREBASE_PROJECT_ID` defaults to `ggowcpredictor`
+- `worldcup26.ir` is the primary live-source used by the worker
 - `ZAFRONIX_URL` overrides the live results endpoint
 - `LIVESCORE_API_KEY` and `LIVESCORE_API_SECRET` enable the backup live source
+- `ZAFRONIX_API_KEY` enables the secondary fallback source
 - `LIVE_SYNC_CRON` defaults to `*/5 * * * *`
 - `LIVE_SYNC_RUN_ON_START=false` skips the first immediate sync
 - `LIVE_SYNC_DRY_RUN=true` logs matches without writing Firestore

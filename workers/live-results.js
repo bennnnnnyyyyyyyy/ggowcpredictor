@@ -1,3 +1,4 @@
+const WORLDCUP26_GAMES_URL = "https://worldcup26.ir/get/games";
 const ZAFRONIX_URL =
   "https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026/matches";
 const LIVESCORE_FIXTURES_URL =
@@ -68,6 +69,12 @@ async function syncLiveResults(env) {
 
 async function fetchPrimaryOrBackupMatches(zafronixKey, livescoreApiKey, livescoreApiSecret) {
   try {
+    return await fetchWorldcup26Matches();
+  } catch (error) {
+    console.warn("worldcup26.ir failed, falling back to Zafronix / livescore-api.com:", error.message);
+  }
+
+  try {
     if (zafronixKey) {
       return await fetchZafronixMatches(zafronixKey);
     }
@@ -80,6 +87,15 @@ async function fetchPrimaryOrBackupMatches(zafronixKey, livescoreApiKey, livesco
   }
 
   return fetchLivescoreMatches(livescoreApiKey, livescoreApiSecret);
+}
+
+async function fetchWorldcup26Matches() {
+  const response = await fetch(WORLDCUP26_GAMES_URL, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error(`worldcup26.ir HTTP ${response.status}`);
+  const data = await response.json();
+  return normalizeWorldcup26Games(data);
 }
 
 async function fetchZafronixMatches(apiKey) {
@@ -288,6 +304,40 @@ function mergeLivescoreFixtureAndLive(fixtureItem, liveItem) {
       "",
     status: liveItem.status || fixtureItem.status,
   };
+}
+
+function normalizeWorldcup26Games(payload) {
+  const games = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.games)
+      ? payload.games
+      : [];
+
+  return games.map((game) => ({
+    source: "worldcup26",
+    matchId: String(game.id || game.matchId || ""),
+    homeTeam: game.home_team_name_en || game.home_team_label || game.home_team || "",
+    awayTeam: game.away_team_name_en || game.away_team_label || game.away_team || "",
+    homeScore: readGameScore(game, "home"),
+    awayScore: readGameScore(game, "away"),
+    status: mapWorldcup26Status(game),
+    timeElapsed: game.time_elapsed || "",
+    finished: game.finished,
+    localDate: game.local_date || "",
+  }));
+}
+
+function readGameScore(game, side) {
+  return side === "home"
+    ? game.home_score ?? game.score1 ?? game.homeScore ?? null
+    : game.away_score ?? game.score2 ?? game.awayScore ?? null;
+}
+
+function mapWorldcup26Status(game) {
+  if (String(game.finished).toLowerCase() === "true") return "FT";
+  const elapsed = String(game.time_elapsed || "").toLowerCase();
+  if (elapsed && elapsed !== "notstarted") return "LIVE";
+  return "NS";
 }
 
 function toNullableNumber(value) {

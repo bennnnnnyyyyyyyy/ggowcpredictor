@@ -125,6 +125,7 @@ async function hydrateLoginUsers() {
   }
 
   renderUsernameOptions();
+  filterUsernameOptions(document.getElementById("login-name")?.value || "");
 }
 
 async function handleLogin(event) {
@@ -197,6 +198,46 @@ function renderUsernameOptions() {
   list.innerHTML = usernames
     .map((username) => `<option value="${escapeHtml(username)}"></option>`)
     .join("");
+}
+
+function filterUsernameOptions(query) {
+  const suggestions = document.getElementById("username-suggestions");
+  if (!suggestions) return;
+
+  const term = String(query || "").trim().toLowerCase();
+  const usernames = STATE.users
+    .map((user) => user.username)
+    .filter(Boolean)
+    .filter((username) => username.toLowerCase().includes(term))
+    .slice(0, 8);
+
+  if (!term || !usernames.length) {
+    suggestions.innerHTML = "";
+    suggestions.hidden = true;
+    return;
+  }
+
+  suggestions.innerHTML = usernames
+    .map(
+      (username) => `
+        <button type="button" class="username-suggestion" onclick="chooseUsername('${escapeHtml(username)}')">
+          ${escapeHtml(username)}
+        </button>
+      `,
+    )
+    .join("");
+  suggestions.hidden = false;
+}
+
+function chooseUsername(username) {
+  const input = document.getElementById("login-name");
+  const suggestions = document.getElementById("username-suggestions");
+  if (input) input.value = username;
+  if (suggestions) {
+    suggestions.innerHTML = "";
+    suggestions.hidden = true;
+  }
+  document.getElementById("login-code")?.focus();
 }
 
 function normalizeUsername(value) {

@@ -57,9 +57,11 @@
               placeholder="Enter your username"
               autocomplete="username"
               list="username-options"
+              oninput="filterUsernameOptions(this.value)"
               required
             />
             <datalist id="username-options"></datalist>
+            <div id="username-suggestions" class="username-suggestions" hidden></div>
           </div>
 
           <div class="form-group">

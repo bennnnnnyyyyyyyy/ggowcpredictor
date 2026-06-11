@@ -143,6 +143,33 @@ body {
   box-shadow: 0 0 0 3px rgba(0, 209, 94, 0.1);
 }
 
+.username-suggestions {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.username-suggestion {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 209, 94, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--light);
+  font: inherit;
+  cursor: pointer;
+}
+
+.username-suggestion:hover,
+.username-suggestion:focus-visible {
+  outline: none;
+  background: rgba(0, 209, 94, 0.12);
+  border-color: var(--wc-blue);
+}
+
 .btn-primary {
   width: 100%;
   padding: 12px 20px;
@@ -675,20 +702,29 @@ main {
 
 /* ── Card Body ── */
 .mc-body {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 22px 18px;
+  column-gap: clamp(10px, 2vw, 18px);
+  padding: 24px 18px 22px;
 }
 
 .mc-team {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
+}
+
+.mc-team:first-child {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.mc-team:last-child {
+  align-items: flex-start;
+  text-align: left;
 }
 
 .team-mark {
@@ -708,13 +744,13 @@ main {
 
 .mc-name {
   font-family: var(--font-ggo-display);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 900;
   text-align: center;
   color: var(--light);
   letter-spacing: 0.2px;
-  line-height: 1.05;
-  max-width: 118px;
+  line-height: 1.02;
+  max-width: 130px;
   text-transform: uppercase;
 }
 
@@ -722,8 +758,9 @@ main {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 60px;
+  padding-inline: 2px;
 }
 
 .mc-result-block {
@@ -737,13 +774,13 @@ main {
 .mc-result-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  width: 100%;
+  gap: 8px;
+  width: min(100%, 220px);
 }
 
 .mc-result-grid .mc-result-block {
-  padding: 10px 8px;
-  border-radius: 12px;
+  padding: 9px 8px 8px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
@@ -757,7 +794,7 @@ main {
 }
 
 .mc-result-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
@@ -766,7 +803,7 @@ main {
 
 .mc-pred-score {
   font-family: "Barlow Condensed", sans-serif;
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.8);
   min-height: 1em;
@@ -774,7 +811,7 @@ main {
 
 .mc-actual-score {
   font-family: "Barlow Condensed", sans-serif;
-  font-size: 24px;
+  font-size: 23px;
   font-weight: 800;
   color: var(--light);
   min-height: 1em;
@@ -793,10 +830,11 @@ main {
 
 .mc-vs {
   font-family: var(--font-ggo-display);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 900;
   color: rgba(255, 255, 255, 0.34);
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  padding-inline: 4px;
 }
 
 .mc-result-score {
@@ -1793,7 +1831,24 @@ main {
   }
 
   .mc-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     padding: 14px 12px;
+    column-gap: 8px;
+  }
+
+  .mc-team:first-child,
+  .mc-team:last-child {
+    align-items: center;
+    text-align: center;
+  }
+
+  .mc-middle {
+    min-width: 40px;
+  }
+
+  .mc-result-grid {
+    width: 100%;
   }
 
   .score-input {
