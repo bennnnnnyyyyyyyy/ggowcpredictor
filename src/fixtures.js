@@ -5,155 +5,209 @@
  * Seed all 104 WC 2026 fixtures from JSON source
  * Reads from the 2026 folder cloned from openfootball repo
  */
-function seedFixturesFromJSON() {
+/**
+ * Seed WC 2026 fixtures into Firestore.
+ * @param {Object|null} inlinePayload - Optional JSON payload {matches:[...]}. If omitted, reads from Google Drive.
+ */
+function seedFixturesFromJSON(inlinePayload) {
   try {
-    Logger.log("Starting fixture seed process...");
-    
-    // Read the worldcup.json file from local storage
-    const file = DriveApp.getFilesByName("worldcup.json").next();
-    const content = file.getBlob().getDataAsString();
-    const data = JSON.parse(content);
-    
-    let fixturesToCreate = [];
-    let matchId = 1;
-    
-    // Process each match from the JSON structure
-    if (data.matches) {
-      data.matches.forEach(match => {
-        const fixture = {
-          matchId: matchId,
-          date: match.date,
-          time: match.time,
-          round: match.round,
-          team1: match.team1,
-          team2: match.team2,
-          group: match.group || null,
-          venue: match.ground || null,
-          result: null,
-          score1: null,
-          score2: null,
-          status: "scheduled" // scheduled, live, completed
-        };
-        fixturesToCreate.push(fixture);
-        matchId++;
-      });
+    Logger.log('Starting fixture seed process...');
+
+    var data;
+    if (inlinePayload) {
+      data = (typeof inlinePayload === 'string') ? JSON.parse(inlinePayload) : inlinePayload;
+    } else {
+      var file = DriveApp.getFilesByName('worldcup.json').next();
+      data = JSON.parse(file.getBlob().getDataAsString());
     }
-    
-    Logger.log(`Prepared ${fixturesToCreate.length} fixtures for seeding`);
-    
-    // Write all fixtures to Firebase Firestore using REST API
-    const projectId = "ggowcpredictor";
-    const apiKey = firebaseConfig.apiKey;
-    let successCount = 0;
-    let errorCount = 0;
-    
-    fixturesToCreate.forEach(fixture => {
-      try {
-        const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/fixtures?key=${apiKey}`;
-        
-        const payload = {
-          fields: {
-            matchId: { integerValue: fixture.matchId },
-            date: { stringValue: fixture.date },
-            time: { stringValue: fixture.time },
-            round: { stringValue: fixture.round },
-            team1: { stringValue: fixture.team1 },
-            team2: { stringValue: fixture.team2 },
-            group: { stringValue: fixture.group || "" },
-            venue: { stringValue: fixture.venue || "" },
-            score1: { nullValue: null },
-            score2: { nullValue: null },
-            status: { stringValue: fixture.status },
-            createdAt: { timestampValue: new Date().toISOString() }
-          }
-        };
-        
-        const options = {
-          method: "post",
-          contentType: "application/json",
-          payload: JSON.stringify(payload),
-          muteHttpExceptions: true
-        };
-        
-        const response = UrlFetchApp.fetch(url, options);
-        if (response.getResponseCode() === 201) {
-          successCount++;
-        } else {
-          Logger.log(`Error creating fixture ${fixture.matchId}: ${response.getContentText()}`);
-          errorCount++;
+
+    var projectId = firebaseConfig.projectId;
+    var apiKey    = firebaseConfig.apiKey;
+    var base      = 'https://firestore.googleapis.com/v1/projects/' + projectId + '/databases/(default)/documents';
+
+    var matchId      = 1;
+    var successCount = 0;
+    var errorCount   = 0;
+
+    (data.matches || []).forEach(function(match) {
+      var docId   = 'match_' + matchId;
+      var url     = base + '/fixtures/' + docId + '?key=' + apiKey;
+      var stage   = getStageKey(match.round || '');
+      var payload = {
+        fields: {
+          matchId:    { integerValue: String(matchId) },
+          date:       { stringValue: match.date   || '' },
+          time:       { stringValue: match.time   || '' },
+          round:      { stringValue: match.round  || '' },
+          stage:      { stringValue: stage },
+          team1:      { stringValue: match.team1  || 'TBD' },
+          team2:      { stringValue: match.team2  || 'TBD' },
+          group:      { stringValue: match.group  || '' },
+          ground:     { stringValue: match.ground || '' },
+          kickoffUTC: { stringValue: match.kickoffUTC || '' },
+          score1:     { nullValue: null },
+          score2:     { nullValue: null },
+          status:     { stringValue: 'NS' },
+          createdAt:  { timestampValue: new Date().toISOString() }
         }
-      } catch (e) {
-        Logger.log(`Exception for fixture ${fixture.matchId}: ${e}`);
+      };
+
+      var resp = UrlFetchApp.fetch(url, {
+        method: 'patch',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+
+      var code = resp.getResponseCode();
+      if (code === 200 || code === 201) {
+        successCount++;
+      } else {
+        Logger.log('Error seeding fixture ' + matchId + ': ' + resp.getContentText());
         errorCount++;
       }
+      matchId++;
     });
-    
-    Logger.log(`Seeding complete: ${successCount} created, ${errorCount} failed`);
-    
-    return {
-      success: true,
-      fixturesSeeded: successCount,
-      errors: errorCount,
-      total: fixturesToCreate.length,
-      timestamp: new Date().toISOString()
-    };
-    
+
+    Logger.log('Seeding complete: ' + successCount + ' written, ' + errorCount + ' failed');
+    return { success: true, fixturesSeeded: successCount, errors: errorCount, total: matchId - 1, timestamp: new Date().toISOString() };
+
   } catch (error) {
-    Logger.log(`Seed error: ${error}`);
-    return {
-      success: false,
-      error: error.toString(),
-      timestamp: new Date().toISOString()
-    };
+    Logger.log('Seed error: ' + error);
+    return { success: false, error: error.toString(), timestamp: new Date().toISOString() };
   }
+}
+
+/** Map a round string to a stage key (mirrors the frontend getStageFromRound). */
+function getStageKey(round) {
+  var v = String(round).toLowerCase();
+  if (v.indexOf('group') !== -1 || v.indexOf('matchday') !== -1) return 'group';
+  if (v.indexOf('32')    !== -1) return 'r32';
+  if (v.indexOf('16')    !== -1) return 'r16';
+  if (v.indexOf('quarter') !== -1) return 'qf';
+  if (v.indexOf('semi')    !== -1) return 'sf';
+  if (v.indexOf('third')   !== -1) return 'third';
+  if (v.indexOf('final')   !== -1) return 'final';
+  return 'group';
 }
 
 /**
  * Fetch live scores from API-Football and update Firebase
  * Called by scheduled trigger every 60 seconds
  */
+/**
+ * Fetch live scores from API-Football and update Firestore via self-healing matchId bridge.
+ *
+ * Algorithm:
+ *   1. Load all Firestore fixture docs to build a lookup keyed by normalised "team1|team2|date".
+ *   2. Fetch today's WC 2026 fixtures from API-Football.
+ *   3. For each API fixture, find the matching local fixture by normalised team names + date.
+ *   4. Write the result to results/match_{localMatchId}.
+ *   5. Back-fill apiFixtureId on the fixture document so future runs resolve by ID (fast path).
+ */
 function fetchAndUpdateLiveScores() {
-  const apiKey = PropertiesService.getScriptProperties().getProperty("API_FOOTBALL_KEY");
-  if (!apiKey) return { success: false, error: "API_FOOTBALL_KEY not set in Script Properties" };
+  var apiKey = PropertiesService.getScriptProperties().getProperty('API_FOOTBALL_KEY');
+  if (!apiKey) return { success: false, error: 'API_FOOTBALL_KEY not set in Script Properties' };
 
-  const projectId = "ggowcpredictor";
-  const fbKey = firebaseConfig.apiKey;
-  const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+  var projectId = firebaseConfig.projectId;
+  var fbKey     = firebaseConfig.apiKey;
+  var base      = 'https://firestore.googleapis.com/v1/projects/' + projectId + '/databases/(default)/documents';
 
-  // Fetch today's WC 2026 fixtures from API-Football
-  const resp = UrlFetchApp.fetch(
-    "https://v3.football.api-sports.io/fixtures?league=1&season=2026&timezone=UTC",
-    { headers: { "x-apisports-key": apiKey }, muteHttpExceptions: true }
+  // --- Step 1: Build local fixture lookup ---
+  var fixResp    = UrlFetchApp.fetch(base + '/fixtures?pageSize=500&key=' + fbKey, { muteHttpExceptions: true });
+  var fixDocs    = JSON.parse(fixResp.getContentText()).documents || [];
+
+  // key: normalizedTeam1 + '|' + normalizedTeam2 + '|' + dateStr  -> { matchId, docPath, apiFixtureId }
+  var byNameDate = {};
+  // fast path: key: apiFixtureId -> { matchId, docPath }
+  var byApiId    = {};
+
+  fixDocs.forEach(function(doc) {
+    var f  = doc.fields || {};
+    var fv = function(k) { return f[k] ? (f[k].stringValue || f[k].integerValue || '') : ''; };
+    var matchId       = String(fv('matchId'));
+    var apiFixtureId  = fv('apiFixtureId');
+    var team1         = normalizeTeamName(fv('team1'));
+    var team2         = normalizeTeamName(fv('team2'));
+    var dateStr       = String(fv('kickoffUTC') || fv('date') || '').substring(0, 10);
+    var key           = team1 + '|' + team2 + '|' + dateStr;
+    var entry         = { matchId: matchId, docName: doc.name };
+    byNameDate[key]   = entry;
+    if (apiFixtureId) byApiId[apiFixtureId] = entry;
+  });
+
+  // --- Step 2: Fetch API-Football results ---
+  var resp        = UrlFetchApp.fetch(
+    'https://v3.football.api-sports.io/fixtures?league=1&season=2026&timezone=UTC',
+    { headers: { 'x-apisports-key': apiKey }, muteHttpExceptions: true }
   );
-  const data = JSON.parse(resp.getContentText());
-  const apiFixtures = data.response || [];
+  var apiFixtures = JSON.parse(resp.getContentText()).response || [];
 
-  let updated = 0;
-  apiFixtures.forEach(item => {
-    const status = item.fixture.status.short; // NS, 1H, HT, 2H, FT, AET, PEN
-    const score1 = item.goals.home;
-    const score2 = item.goals.away;
-    const apiId   = String(item.fixture.id);
+  var updated = 0;
+  var skipped = 0;
 
-    // We use the API fixture ID as the matchId key in results
-    const url = `${base}/results/api_${apiId}?key=${fbKey}`;
-    const payload = {
+  apiFixtures.forEach(function(item) {
+    var status    = item.fixture.status.short;
+    var score1    = item.goals.home;
+    var score2    = item.goals.away;
+    var apiId     = String(item.fixture.id);
+    var apiDate   = String(item.fixture.date || '').substring(0, 10);
+    var apiTeam1  = normalizeTeamName(item.teams.home.name);
+    var apiTeam2  = normalizeTeamName(item.teams.away.name);
+
+    // Resolve local fixture: fast path via stored apiFixtureId, then by name+date
+    var entry = byApiId[apiId] || byNameDate[apiTeam1 + '|' + apiTeam2 + '|' + apiDate];
+    if (!entry) {
+      skipped++;
+      Logger.log('No local fixture found for API id=' + apiId + ' (' + apiTeam1 + ' v ' + apiTeam2 + ' ' + apiDate + ')');
+      return;
+    }
+
+    var localMatchId = entry.matchId;
+
+    // --- Step 4: Write result ---
+    var resultUrl = base + '/results/match_' + localMatchId + '?key=' + fbKey;
+    var resultPayload = {
       fields: {
-        matchId:     { stringValue: apiId },
-        score1:      score1 !== null ? { integerValue: String(score1) } : { nullValue: null },
-        score2:      score2 !== null ? { integerValue: String(score2) } : { nullValue: null },
-        status:      { stringValue: status },
-        lastUpdated: { stringValue: new Date().toISOString() },
+        matchId:      { stringValue: localMatchId },
+        apiFixtureId: { stringValue: apiId },
+        score1:       score1 !== null ? { integerValue: String(score1) } : { nullValue: null },
+        score2:       score2 !== null ? { integerValue: String(score2) } : { nullValue: null },
+        status:       { stringValue: status },
+        lastUpdated:  { stringValue: new Date().toISOString() }
       }
     };
-    UrlFetchApp.fetch(url, {
-      method: "patch", contentType: "application/json",
-      payload: JSON.stringify(payload), muteHttpExceptions: true
+    UrlFetchApp.fetch(resultUrl, {
+      method: 'patch', contentType: 'application/json',
+      payload: JSON.stringify(resultPayload), muteHttpExceptions: true
     });
+
+    // --- Step 5: Back-fill apiFixtureId on the fixture if not already set ---
+    if (!byApiId[apiId]) {
+      var fixtureUrl = base + '/' + entry.docName.split('/documents/')[1] + '?updateMask.fieldPaths=apiFixtureId&key=' + fbKey;
+      UrlFetchApp.fetch(fixtureUrl, {
+        method: 'patch', contentType: 'application/json',
+        payload: JSON.stringify({ fields: { apiFixtureId: { stringValue: apiId } } }),
+        muteHttpExceptions: true
+      });
+      // Register in fast-path cache for remainder of this run
+      byApiId[apiId] = entry;
+    }
+
     updated++;
   });
 
-  return { success: true, scoresUpdated: updated, timestamp: new Date().toISOString() };
+  Logger.log('Live scores sync: ' + updated + ' updated, ' + skipped + ' skipped');
+  return { success: true, scoresUpdated: updated, skipped: skipped, timestamp: new Date().toISOString() };
+}
+
+/** Normalise a team name to a lowercase alphanumeric key for fuzzy matching. */
+function normalizeTeamName(name) {
+  return String(name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
 }
 /**
  * Parse worldcup.json structure and extract match details

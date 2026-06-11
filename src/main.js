@@ -1,11 +1,7 @@
 // GGO WC 2026 FIFA World Cup Predictor - Google Apps Script Backend
 // Main deployment endpoint for the web app
+// firebaseConfig is declared in firebaseConfig.js (var, globally hoisted)
 
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAVBLnjdM4cV9vBwV27dl6bEc4ZqVjuFBw", // Update with actual key
-  projectId: "ggowcpredictor",
-  databaseURL: "https://ggowcpredictor.firebaseio.com"
-};
 
 /**
  * Main deployment endpoint
@@ -79,7 +75,7 @@ function doPost(e) {
  * Get all fixtures from Firebase
  */
 function getFixtures() {
-  const projectId = "ggowcpredictor";
+  const projectId = firebaseConfig.projectId;
   const apiKey = firebaseConfig.apiKey;
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/fixtures?pageSize=200&key=${apiKey}`;
   const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
@@ -106,7 +102,7 @@ function getFixtures() {
  * Sync all data (fixtures, results, leaderboard)
  */
 function syncAllData() {
-  const projectId = "ggowcpredictor";
+  const projectId = firebaseConfig.projectId;
   const apiKey = firebaseConfig.apiKey;
   const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
 
@@ -216,9 +212,33 @@ function buildLeaderboard(projectId, apiKey, base, results) {
   }
 }
 
-function scoreMatch(p1, p2, a1, a2) {
-  if (p1===a1 && p2===a2) return 15;
-  const po = Math.sign(p1-p2), ao = Math.sign(a1-a2);
-  if (po !== ao) return 0;
-  return Math.abs((p1-p2)-(a1-a2)) <= 1 ? 8 : 5;
+/**
+ * Canonical scoring function with stage multipliers.
+ * Base points: exact=15, correct result + diff≤1=8, correct result=5, wrong result (close)=3, miss=0.
+ * Stage multipliers: group/r32=×1, r16=×2, qf=×3, sf=×4, third/final=×5.
+ * @param {number} p1 - Predicted home score
+ * @param {number} p2 - Predicted away score
+ * @param {number} a1 - Actual home score
+ * @param {number} a2 - Actual away score
+ * @param {string} [stage] - Match stage key
+ * @returns {number} Points awarded (floor of base * multiplier)
+ */
+function scoreMatch(p1, p2, a1, a2, stage) {
+  var MULTIPLIERS = { group: 1, r32: 1, r16: 2, qf: 3, sf: 4, third: 5, final: 5 };
+  var multiplier = MULTIPLIERS[String(stage || 'group').toLowerCase()] || 1;
+
+  var base;
+  if (p1 === a1 && p2 === a2) {
+    base = 15;
+  } else {
+    var po = Math.sign(p1 - p2), ao = Math.sign(a1 - a2);
+    if (po === ao) {
+      base = Math.abs((p1 - p2) - (a1 - a2)) <= 1 ? 8 : 5;
+    } else {
+      var totalGap = Math.abs(p1 - a1) + Math.abs(p2 - a2);
+      base = totalGap <= 2 ? 3 : 0;
+    }
+  }
+
+  return Math.floor(base * multiplier);
 }

@@ -2,7 +2,7 @@
 // Firebase configuration for Google Apps Script
 // This is a global configuration object accessible to all .gs files
 
-const firebaseConfig = {
+var firebaseConfig = {
   apiKey: "AIzaSyAVBLnjdM4cV9vBwV27dl6bEc4ZqVjuFBw",
   authDomain: "ggowcpredictor.firebaseapp.com",
   projectId: "ggowcpredictor",

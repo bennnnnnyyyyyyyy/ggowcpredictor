@@ -60,6 +60,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   window.setInterval(() => {
+    if (document.hidden) return;
     if (document.getElementById("app")?.style.display !== "none") {
       renderPredictions();
       renderResults();
@@ -419,6 +420,19 @@ function normalizeResult(result) {
   };
 }
 
+function showToast(message, type = "success") {
+  let toast = document.getElementById("toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.className = `toast toast-${type} show`;
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
 async function savePrediction(matchId, pred1, pred2) {
   const fixture = STATE.fixtures.find(
     (match) => match.matchId === String(matchId),
@@ -427,39 +441,13 @@ async function savePrediction(matchId, pred1, pred2) {
   const score2 = Number(pred2);
 
   if (!fixture) return;
+
   if (isLocked(fixture)) {
-    alert("This match is locked. Predictions close 15 minutes before kickoff.");
-    STATE.predictions[String(matchId)] = prediction;
-    writeLocalObject(
-      `ggo_wc_predictions_${SESSION.username || "demo"}`,
-      STATE.predictions,
-    );
-    showToast(`Saved: ${match.team1} ${score1} – ${score2} ${match.team2}`);
-
-    if (db && SESSION.username) {
-      try {
-        await db
-          .collection("predictions")
-          .doc(`${SESSION.username}_${matchId}`)
-          .set(
-            {
-              ...prediction,
-              submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true },
-          );
-        showToast(`✓ ${match.team1} ${score1} – ${score2} ${match.team2}`);
-      } catch (error) {
-        showToast("Save failed — stored locally", "error");
-        console.error("Could not save prediction to Firestore.", error);
-      }
-    }
-
+    showToast("This match is locked.", "error");
     renderPredictions();
-    renderGroupStandings();
-    renderLeaderboard();
     return;
   }
+
   if (
     !Number.isInteger(score1) ||
     !Number.isInteger(score2) ||
@@ -470,18 +458,6 @@ async function savePrediction(matchId, pred1, pred2) {
     return;
   }
 
-  function showToast(message, type = "success") {
-    let toast = document.getElementById("toast");
-    if (!toast) {
-      toast = document.createElement("div");
-      toast.id = "toast";
-      document.body.appendChild(toast);
-    }
-    toast.textContent = message;
-    toast.className = `toast toast-${type} show`;
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
-  }
   const prediction = {
     matchId: String(matchId),
     username: SESSION.username,
@@ -497,6 +473,7 @@ async function savePrediction(matchId, pred1, pred2) {
     `ggo_wc_predictions_${SESSION.username || "demo"}`,
     STATE.predictions,
   );
+  showToast(`✓ ${fixture.team1} ${score1} – ${score2} ${fixture.team2}`);
 
   if (db && SESSION.username) {
     try {
@@ -511,6 +488,7 @@ async function savePrediction(matchId, pred1, pred2) {
           { merge: true },
         );
     } catch (error) {
+      showToast("Save failed — stored locally", "error");
       console.error("Could not save prediction to Firestore.", error);
     }
   }
@@ -1045,20 +1023,8 @@ async function loadFixturesFromApi() {
 }
 
 async function loadResultsFromApi() {
-  if (!CONFIG.appsScriptUrl) return {};
-  try {
-    const response = await fetch(
-      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`,
-      {
-        cache: "no-store",
-      },
-    );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    return normalizeResultsPayload(data.results);
-  } catch (error) {
-    return {};
-  }
+  // Results are already hydrated by loadGameData(); avoid a second round-trip.
+  return normalizeResultsPayload(STATE.results);
 }
 
 async function loadLeaderboardFromApi() {
@@ -1152,18 +1118,24 @@ function hasResult(result) {
   );
 }
 
+/**
+ * Client-side scoring — mirrors canonical scoreMatch on the backend.
+ * Points: exact=15, correct result + diff≤1=8, correct result=5, wrong result=3 (if total gap≤2) or 0.
+ */
 function calculateMatchPoints(pred1, pred2, actual1, actual2) {
   if (pred1 === actual1 && pred2 === actual2) return 15;
 
-  const predOutcome = Math.sign(pred1 - pred2);
+  const predOutcome   = Math.sign(pred1 - pred2);
   const actualOutcome = Math.sign(actual1 - actual2);
-  if (predOutcome !== actualOutcome) {
-    const close = Math.abs(pred1 - actual1) + Math.abs(pred2 - actual2) <= 2;
-    return close ? 3 : 0;
+
+  if (predOutcome === actualOutcome) {
+    const diffGap = Math.abs((pred1 - pred2) - (actual1 - actual2));
+    return diffGap <= 1 ? 8 : 5;
   }
 
-  const diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
-  return diffGap <= 1 ? 8 : 5;
+  // Wrong outcome — partial credit if total goal gap ≤ 2
+  const totalGap = Math.abs(pred1 - actual1) + Math.abs(pred2 - actual2);
+  return totalGap <= 2 ? 3 : 0;
 }
 
 function buildLocalLeaderboard() {
