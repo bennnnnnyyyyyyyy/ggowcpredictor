@@ -1052,7 +1052,10 @@ async function loadTeamMeta() {
     STATE.teams = {};
   }
 }
-
+console.log(
+  "Mexico raw:",
+  teams.find((t) => t.name === "Mexico"),
+);
 async function loadGameData() {
   if (!CONFIG.appsScriptUrl) return;
 

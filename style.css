@@ -1,7 +1,5 @@
 /* GGO WC 2026 Predictor - Main Stylesheet */
 
-@import url("https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap");
-
 :root {
   --wc-blue: #00d15e; /* GGO Green */
   --wc-red: #00b359; /* GGO Green Dim */
@@ -1342,7 +1340,10 @@ main {
   }
 
   .mc-flag {
-    font-size: 28px;
+    font-size: 36px;
+    line-height: 1;
+    font-family:
+      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   }
 
   .score-input {
