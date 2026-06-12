@@ -1622,7 +1622,8 @@ function hasResult(result) {
   return (
     result &&
     Number.isFinite(result.score1) &&
-    Number.isFinite(result.score2)
+    Number.isFinite(result.score2) &&
+    (isLiveStatus(result.status) || isFinalStatus(result.status))
   );
 }
 
