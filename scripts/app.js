@@ -1407,8 +1407,13 @@ function saveSettings() {
 }
 
 function parseKickoff(date, time, kickoffUTC) {
-  // ALWAYS try to derive from date+time fields first.
-  // Firestore may have kickoffUTC stored incorrectly (local time saved as UTC).
+  // Try kickoffUTC first if it's a full ISO string
+  if (kickoffUTC && String(kickoffUTC).includes("T")) {
+    const parsed = new Date(kickoffUTC);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
+  // Fallback: parse from date + time with UTC offset
   if (date && time) {
     const match = String(time).match(
       /(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2}(?:\.\d+)?)/i,
@@ -1418,22 +1423,12 @@ function parseKickoff(date, time, kickoffUTC) {
       const minute = Number(match[2]);
       const offset = Number(match[3]);
       const [y, m, d] = date.split("-").map(Number);
-      // hour - offset converts local stadium time to UTC
       return new Date(Date.UTC(y, m - 1, d, hour - offset, minute));
     }
   }
 
-  // Fallback: try kickoffUTC from Firestore only if it looks like a full ISO string
-  // (contains 'T' so it's not just a bare date/time).
-  if (kickoffUTC && String(kickoffUTC).includes("T")) {
-    const parsed = new Date(kickoffUTC);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-
-  // Last resort: date-only → treat as open (return null so match stays unlocked)
   return null;
 }
-
 async function loadTeamMeta() {
   try {
     if (db) {
