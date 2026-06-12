@@ -23,12 +23,11 @@ let activeMatchFilter = "all";
 let activeResultFilter = "all";
 
 const SESSION = {
-  token: sessionStorage.getItem("ggo_wc_token") || null,
-  username: sessionStorage.getItem("ggo_wc_user") || null,
-  displayName: sessionStorage.getItem("ggo_wc_displayname") || null,
-  isAdmin: sessionStorage.getItem("ggo_wc_admin") === "true",
+  token: localStorage.getItem("ggo_wc_token") || null,
+  username: localStorage.getItem("ggo_wc_user") || null,
+  displayName: localStorage.getItem("ggo_wc_displayname") || null,
+  isAdmin: localStorage.getItem("ggo_wc_admin") === "true",
 };
-
 const CONFIG = {
   appsScriptUrl: localStorage.getItem("ggo_wc_url") || "",
   apiKey: localStorage.getItem("ggo_wc_key") || "",
@@ -172,11 +171,10 @@ async function handleLogin(event) {
     SESSION.username = username;
     SESSION.displayName = userData.displayName || username;
     SESSION.isAdmin = Boolean(userData.isAdmin);
-
-    sessionStorage.setItem("ggo_wc_token", SESSION.token);
-    sessionStorage.setItem("ggo_wc_user", SESSION.username);
-    sessionStorage.setItem("ggo_wc_displayname", SESSION.displayName);
-    sessionStorage.setItem("ggo_wc_admin", String(SESSION.isAdmin));
+    localStorage.setItem("ggo_wc_token", SESSION.token);
+    localStorage.setItem("ggo_wc_user", SESSION.username);
+    localStorage.setItem("ggo_wc_displayname", SESSION.displayName);
+    localStorage.setItem("ggo_wc_admin", String(SESSION.isAdmin));
 
     errEl.classList.remove("show");
     showApp();
@@ -341,7 +339,10 @@ function showApp() {
 }
 
 function handleLogout() {
-  sessionStorage.clear();
+  localStorage.removeItem("ggo_wc_token");
+  localStorage.removeItem("ggo_wc_user");
+  localStorage.removeItem("ggo_wc_displayname");
+  localStorage.removeItem("ggo_wc_admin");
   window.location.reload();
 }
 
