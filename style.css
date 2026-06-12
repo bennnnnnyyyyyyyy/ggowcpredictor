@@ -798,6 +798,15 @@ main {
   box-shadow: inset 0 0 0 1px rgba(77, 132, 255, 0.12);
 }
 
+.mc-result-prediction.no-pick {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.mc-result-prediction.has-pick {
+  background: rgba(77, 132, 255, 0.08);
+}
+
 .mc-result-label {
   font-size: 9px;
   font-weight: 700;
@@ -844,7 +853,7 @@ main {
 
 .mc-result-score {
   font-family: "Barlow Condensed", sans-serif;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
   color: var(--light);
   letter-spacing: 1px;
@@ -853,12 +862,36 @@ main {
   gap: 4px;
 }
 
+.mc-result-score--sub {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .mc-result-meta {
   font-family: var(--font-ggo-body);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.mc-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ggo-body);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.status-token {
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 209, 94, 0.25);
+  color: var(--success);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
 }
 
 .mc-dash {
