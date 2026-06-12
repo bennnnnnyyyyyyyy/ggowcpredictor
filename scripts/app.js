@@ -407,6 +407,7 @@ async function requestSync() {
       timeEl.textContent = `Live - ${STATE.lastSync.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
+        timeZone: "Africa/Cairo",
       })}`;
     }
 
@@ -1421,6 +1422,14 @@ function parseKickoff(date, time, kickoffUTC) {
       // hour - offset converts local stadium time to UTC
       return new Date(Date.UTC(y, m - 1, d, hour - offset, minute));
     }
+
+    const fallbackMatch = String(time).match(/^(\d{1,2}):(\d{2})$/);
+    if (fallbackMatch) {
+      const hour = Number(fallbackMatch[1]);
+      const minute = Number(fallbackMatch[2]);
+      const [y, m, d] = date.split("-").map(Number);
+      return new Date(Date.UTC(y, m - 1, d, hour, minute));
+    }
   }
 
   // Fallback: try kickoffUTC from Firestore only if it looks like a full ISO string
@@ -1596,7 +1605,7 @@ function stageLabel(stage) {
 
 function isLocked(match) {
   if (!match.kickoffDate) return false;
-  return Date.now() >= match.kickoffDate.getTime() - 15 * 60 * 1000;
+  return Date.now() >= match.kickoffDate.getTime();
 }
 
 function getMatchStatus(match, result) {
@@ -1720,6 +1729,7 @@ function formatKickoff(match) {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Africa/Cairo",
   });
 }
 

@@ -97,6 +97,23 @@ function getStage(round = "") {
   return "group";
 }
 
+function toKickoffUTC(date, time) {
+  const timeMatch = String(time || "").match(
+    /(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2}(?:\.\d+)?)/i,
+  );
+
+  if (!date || !timeMatch) {
+    return date ? new Date(`${date}T00:00:00Z`).toISOString() : "";
+  }
+
+  const hour = Number(timeMatch[1]);
+  const minute = Number(timeMatch[2]);
+  const offset = Number(timeMatch[3]);
+  const [y, m, d] = String(date).split("-").map(Number);
+
+  return new Date(Date.UTC(y, m - 1, d, hour - offset, minute)).toISOString();
+}
+
 async function seed() {
   // ── USERS ──
   console.log("Seeding users...");
@@ -126,7 +143,7 @@ async function seed() {
       group: m.group || (stage === "group" ? "" : null),
       date: m.date || "",
       time: m.time || "",
-      kickoffUTC: m.date ? new Date(`${m.date}T${(m.time||"00:00").replace(/\s+UTC.*/, "")}:00Z`).toISOString() : "",
+      kickoffUTC: toKickoffUTC(m.date, m.time),
       team1: m.team1 || "TBD",
       team2: m.team2 || "TBD",
       ground: m.ground || "",

@@ -23,7 +23,7 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 - **Audit score**: 10/20 (Acceptable — significant work needed)
 - **P0 open**: `savePrediction` crashes when match is locked
 - **P1 open**: `firebaseConfig` reference error in Apps Script, matchId mismatch, leaderboard stub, seed Drive path wrong, scoring conflict (now resolved in SCORING.md)
-- **Working**: Login, fixture loading, country flags, prediction inputs (UI), group standings, 15-min lock
+- **Working**: Login, fixture loading, country flags, prediction inputs (UI), group standings, lock at kickoff
 
 ## Live Results Worker
 
