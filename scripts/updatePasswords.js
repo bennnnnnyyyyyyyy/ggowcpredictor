@@ -248,9 +248,9 @@ async function main() {
 
   console.log(`\nDone: ${ok} updated, ${fail} failed.`);
 
-  // Write CSV (including name, username, email, password, excluding bruce.logan, george.saad and tom.walker)
+  // Write CSV (including name, username, email, password for all users)
   const csvPath = path.join(__dirname, "..", "user-passwords.csv");
-  const csvLines = ["name,username,email,password", ...withPasswords.filter(u => u.username !== "bruce.logan" && u.username !== "george.saad" && u.username !== "tom.walker").map(u => `${u.name},${u.username},${u.email},${u.code}`)];
+  const csvLines = ["name,username,email,password", ...withPasswords.map(u => `${u.name},${u.username},${u.email},${u.code}`)];
   fs.writeFileSync(csvPath, csvLines.join("\n") + "\n");
   console.log(`\nCSV written to: ${csvPath}`);
 }

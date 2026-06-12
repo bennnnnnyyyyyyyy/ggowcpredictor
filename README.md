@@ -41,6 +41,7 @@ Optional environment variables:
 - `ZAFRONIX_URL` overrides the live results endpoint
 - `LIVESCORE_API_KEY` and `LIVESCORE_API_SECRET` enable the backup live source
 - `ZAFRONIX_API_KEY` enables the secondary fallback source
+- `SEED_TOKEN` protects the manual `/seed` and `/sync` endpoints
 - `LIVE_SYNC_CRON` defaults to `*/5 * * * *`
 - `LIVE_SYNC_RUN_ON_START=false` skips the first immediate sync
 - `LIVE_SYNC_DRY_RUN=true` logs matches without writing Firestore
