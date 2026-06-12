@@ -131,7 +131,7 @@ async function hydrateLoginUsers() {
 async function handleLogin(event) {
   if (event) event.preventDefault();
 
-  const username = document.getElementById("login-name").value.trim();
+  const username = normalizeUsername(document.getElementById("login-name").value);
   const code = document.getElementById("login-code").value.trim();
   const errEl = document.getElementById("login-error");
 
@@ -909,7 +909,7 @@ function renderPredictionCard(match) {
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
-            oninput="handleScoreChange('${match.matchId}')"
+            oninput="handleScoreChange('${match.matchId}')">`
     }
         </div>
 
@@ -928,7 +928,7 @@ function renderPredictionCard(match) {
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
-            oninput="handleScoreChange('${match.matchId}')"
+            oninput="handleScoreChange('${match.matchId}')">`
     }
         </div>
       </div>
