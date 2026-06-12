@@ -909,7 +909,7 @@ function renderPredictionCard(match) {
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
-            onchange="handleScoreChange('${match.matchId}')">`
+            oninput="handleScoreChange('${match.matchId}')"
     }
         </div>
 
@@ -928,7 +928,7 @@ function renderPredictionCard(match) {
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
-            onchange="handleScoreChange('${match.matchId}')">`
+            oninput="handleScoreChange('${match.matchId}')"
     }
         </div>
       </div>
@@ -1619,11 +1619,11 @@ function hasPrediction(prediction) {
 }
 
 function hasResult(result) {
-  return (
-    result &&
-    Number.isFinite(result.score1) &&
-    Number.isFinite(result.score2)
-  );
+  if (!result) return false;
+  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
+  const status = String(result.status || "").toUpperCase();
+  if (status === "NS" || status === "") return false;
+  return true;
 }
 
 /**
