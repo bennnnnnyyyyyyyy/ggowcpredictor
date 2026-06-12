@@ -91,9 +91,9 @@ async function syncLiveResults(env) {
   }
 
   const token = await getAccessToken(serviceAccount);
-  await Promise.all(
-    matchedUpdates.map((update) => writeResult(projectId, token, update)),
-  );
+  if (matchedUpdates.length) {
+    await writeResultsBatch(projectId, token, matchedUpdates);
+  }
 
   return jsonResponse({
     success: true,
@@ -222,37 +222,42 @@ async function fetchFirestoreCollection(
   });
 }
 
-async function writeResult(projectId, token, update) {
-  const docId = `match_${update.matchId}`;
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/results/${docId}`;
-  const body = {
-    fields: {
-      matchId: { stringValue: update.matchId },
-      score1:
-        update.score1 === null
-          ? { nullValue: null }
-          : { integerValue: String(update.score1) },
-      score2:
-        update.score2 === null
-          ? { nullValue: null }
-          : { integerValue: String(update.score2) },
-      status: { stringValue: update.status },
-      lastUpdated: { stringValue: update.lastUpdated },
+async function writeResultsBatch(projectId, token, updates) {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:batchWrite`;
+  const writes = updates.map((update) => ({
+    update: {
+      name: `projects/${projectId}/databases/(default)/documents/results/match_${update.matchId}`,
+      fields: {
+        matchId: { stringValue: update.matchId },
+        score1:
+          update.score1 === null
+            ? { nullValue: null }
+            : { integerValue: String(update.score1) },
+        score2:
+          update.score2 === null
+            ? { nullValue: null }
+            : { integerValue: String(update.score2) },
+        status: { stringValue: update.status },
+        lastUpdated: { stringValue: update.lastUpdated },
+      },
     },
-  };
+    updateMask: {
+      fieldPaths: ["matchId", "score1", "score2", "status", "lastUpdated"],
+    },
+  }));
 
   const response = await fetch(url, {
-    method: "PATCH",
+    method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ writes }),
   });
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Firestore write failed ${response.status}: ${text}`);
+    throw new Error(`Firestore batchWrite failed ${response.status}: ${text}`);
   }
 }
 
