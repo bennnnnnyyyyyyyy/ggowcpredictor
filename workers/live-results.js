@@ -52,7 +52,6 @@ async function syncLiveResults(env) {
   const livescoreApiSecret = env.LIVESCORE_API_SECRET;
   const serviceAccount = parseJsonSecret(env.FIREBASE_SERVICE_ACCOUNT_JSON);
 
-  if (!zafronixKey) throw new Error("Missing ZAFRONIX_API_KEY.");
   if (!serviceAccount)
     throw new Error("Missing FIREBASE_SERVICE_ACCOUNT_JSON.");
 
