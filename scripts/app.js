@@ -854,16 +854,16 @@ function renderPredictionCard(match) {
   const isFinal = result && isFinalStatus(result.status);
   const statusLineHtml =
     locked && !hasRes
-      ? '<div class="mc-status-line"><span class="status-token">LOCK</span><span>Locked - predictions closed</span></div>'
+      ? '<div class="mc-status-line"><span class="status-token">LOCK</span><span>Predictions closed</span></div>'
       : hasPred && !locked && !hasRes
         ? '<div class="mc-status-line"><span class="status-token">SAVED</span><span>Prediction saved</span></div>'
         : "";
   const predictionScore = hasPred
     ? `${pred.pred1}-${pred.pred2}`
-    : "No pick yet";
+    : "—";
   const actualScore = hasRes
     ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
-    : null;
+    : "vs";
   const resultScoreHtml = hasRes
     ? `
       <div class="mc-result-grid">
@@ -872,11 +872,11 @@ function renderPredictionCard(match) {
           <div class="mc-result-score">${actualScore}</div>
           <div class="mc-result-meta">${escapeHtml(String(result.status || "NS"))}</div>
         </div>
-        <div class="mc-result-block mc-result-prediction">
+        <div class="mc-result-block mc-result-prediction ${hasPred ? "has-pick" : "no-pick"}">
           <div class="mc-result-label">Your Pick</div>
-          <div class="mc-result-score">${predictionScore}</div>
+          <div class="mc-result-score mc-result-score--sub">${predictionScore}</div>
           <div class="mc-result-meta">
-            ${hasPred ? `${points ?? 0} pts` : "No prediction saved"}
+            ${hasPred ? `${points ?? 0} pts` : "No prediction"}
           </div>
         </div>
       </div>`
