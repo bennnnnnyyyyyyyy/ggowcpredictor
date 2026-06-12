@@ -1,7 +1,5 @@
 # GGO WC 2026 Predictor — Setup Guide
 
-> For admin setup only. Players just open the URL.
-
 ---
 
 ## Prerequisites
@@ -32,13 +30,13 @@
 
 For each player, create a document in `users/{username}` with these fields:
 
-| Field | Type | Example |
-|-------|------|---------|
-| `displayName` | string | `"Ben Arthur"` |
-| `secretCode` | string | `"GGO2026"` |
-| `isAdmin` | boolean | `true` / `false` |
-| `totalPoints` | number | `0` |
-| `joinedAt` | timestamp | (now) |
+| Field         | Type      | Example          |
+| ------------- | --------- | ---------------- |
+| `displayName` | string    | `"Ben Arthur"`   |
+| `secretCode`  | string    | `"GGO2026"`      |
+| `isAdmin`     | boolean   | `true` / `false` |
+| `totalPoints` | number    | `0`              |
+| `joinedAt`    | timestamp | (now)            |
 
 You can do this directly in the Firebase Console UI, or use the Firestore REST API.
 
@@ -117,6 +115,7 @@ python -m http.server 8080 --directory "C:\Users\abdel\OneDrive\Desktop\ggofiles
 ## Step 8 — Deploy for Team
 
 Options (no CLI required):
+
 - **Firebase Hosting**: Upload `index.html`, `style.css`, `scripts/`, `2026/`, and image assets via the Firebase Console file browser.
 - **GitHub Pages**: Push repo to GitHub → enable Pages on the root or `ggowcpredictor/` folder.
 - **SharePoint / OneDrive share link**: Share `index.html` (note: `fetch` may fail on some SharePoint origins — prefer a real web server).

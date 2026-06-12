@@ -13,31 +13,42 @@ function calculateAndUpdateLeaderboard() {
     const apiKey = firebaseConfig.apiKey;
     const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
 
-    const users = fetchFirestoreCollection(base, apiKey, "users").map((doc) => {
-      const f = doc.fields || {};
-      const userId = readField(f, "username") || doc.name.split("/").pop();
-      return {
-        username: String(userId || ""),
-        displayName: readField(f, "displayName") || String(userId || ""),
-        isAdmin: Boolean(readField(f, "isAdmin")),
-      };
-    }).filter((user) => user.username);
+    const users = fetchFirestoreCollection(base, apiKey, "users")
+      .map((doc) => {
+        const f = doc.fields || {};
+        const parts = doc.name.split("/");
+        const docId = parts[parts.length - 1]; // Securely grabs the actual document ID
+
+        const userId = readField(f, "username") || docId;
+        return {
+          username: String(userId || "").trim(),
+          displayName: readField(f, "displayName") || String(userId || ""),
+          isAdmin: Boolean(readField(f, "isAdmin")),
+        };
+      })
+      .filter((user) => user.username);
 
     const predictions = fetchFirestoreCollection(base, apiKey, "predictions");
-    const results = fetchFirestoreCollection(base, apiKey, "results").reduce((acc, doc) => {
-      const f = doc.fields || {};
-      const matchId = String(
-        readField(f, "matchId") ||
-          doc.name.split("/").pop().replace(/^match_/, ""),
-      );
-      acc[matchId] = {
-        matchId,
-        score1: nullableField(readField(f, "score1")),
-        score2: nullableField(readField(f, "score2")),
-        status: String(readField(f, "status") || "NS"),
-      };
-      return acc;
-    }, {});
+    const results = fetchFirestoreCollection(base, apiKey, "results").reduce(
+      (acc, doc) => {
+        const f = doc.fields || {};
+        const matchId = String(
+          readField(f, "matchId") ||
+            doc.name
+              .split("/")
+              .pop()
+              .replace(/^match_/, ""),
+        );
+        acc[matchId] = {
+          matchId,
+          score1: nullableField(readField(f, "score1")),
+          score2: nullableField(readField(f, "score2")),
+          status: String(readField(f, "status") || "NS"),
+        };
+        return acc;
+      },
+      {},
+    );
 
     const scoredMatchCount = Object.values(results).filter(
       (result) =>
@@ -94,7 +105,13 @@ function buildLeaderboard(users, predictions, results) {
     const pred1 = nullableField(readField(f, "pred1"));
     const pred2 = nullableField(readField(f, "pred2"));
 
-    if (!username || !matchId || !Number.isFinite(pred1) || !Number.isFinite(pred2)) return;
+    if (
+      !username ||
+      !matchId ||
+      !Number.isFinite(pred1) ||
+      !Number.isFinite(pred2)
+    )
+      return;
 
     if (!userMap[username]) {
       userMap[username] = {
@@ -111,22 +128,33 @@ function buildLeaderboard(users, predictions, results) {
     userMap[username].predicted += 1;
 
     const result = results[matchId];
-    if (!result || !Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return;
+    if (
+      !result ||
+      !Number.isFinite(result.score1) ||
+      !Number.isFinite(result.score2)
+    )
+      return;
     if (!isFinalStatus(result.status)) return;
 
-    const points = calculateMatchPoints(pred1, pred2, result.score1, result.score2);
+    const points = calculateMatchPoints(
+      pred1,
+      pred2,
+      result.score1,
+      result.score2,
+    );
     userMap[username].totalPoints += points;
     if (points === 15) userMap[username].exactScores += 1;
     if (points > 0) userMap[username].correctOutcomes += 1;
   });
 
   return Object.values(userMap)
-    .sort((a, b) =>
-      b.totalPoints - a.totalPoints ||
-      b.exactScores - a.exactScores ||
-      b.correctOutcomes - a.correctOutcomes ||
-      b.predicted - a.predicted ||
-      a.displayName.localeCompare(b.displayName),
+    .sort(
+      (a, b) =>
+        b.totalPoints - a.totalPoints ||
+        b.exactScores - a.exactScores ||
+        b.correctOutcomes - a.correctOutcomes ||
+        b.predicted - a.predicted ||
+        a.displayName.localeCompare(b.displayName),
     )
     .map((player, index) => ({
       ...player,
@@ -144,12 +172,24 @@ function writeLeaderboardSnapshot(base, apiKey, leaderboard) {
             mapValue: {
               fields: {
                 username: { stringValue: String(player.username || "") },
-                displayName: { stringValue: String(player.displayName || player.username || "") },
+                displayName: {
+                  stringValue: String(
+                    player.displayName || player.username || "",
+                  ),
+                },
                 isAdmin: { booleanValue: Boolean(player.isAdmin) },
-                totalPoints: { integerValue: String(Number(player.totalPoints || 0)) },
-                exactScores: { integerValue: String(Number(player.exactScores || 0)) },
-                correctOutcomes: { integerValue: String(Number(player.correctOutcomes || 0)) },
-                predicted: { integerValue: String(Number(player.predicted || 0)) },
+                totalPoints: {
+                  integerValue: String(Number(player.totalPoints || 0)),
+                },
+                exactScores: {
+                  integerValue: String(Number(player.exactScores || 0)),
+                },
+                correctOutcomes: {
+                  integerValue: String(Number(player.correctOutcomes || 0)),
+                },
+                predicted: {
+                  integerValue: String(Number(player.predicted || 0)),
+                },
                 rank: { integerValue: String(Number(player.rank || 0)) },
               },
             },
@@ -177,10 +217,16 @@ function fetchFirestoreCollection(base, apiKey, collectionId) {
   return data.documents || [];
 }
 
+//  NEW CODE TO PASTE
 function readField(fields, key) {
   if (!fields || !fields[key]) return null;
   const field = fields[key];
-  return field.stringValue ?? field.integerValue ?? field.doubleValue ?? field.booleanValue ?? field.nullValue ?? null;
+
+  // Explicitly force numeric strings from Firestore REST API into real JS Numbers
+  if (field.integerValue !== undefined) return parseInt(field.integerValue, 10);
+  if (field.doubleValue !== undefined) return parseFloat(field.doubleValue);
+
+  return field.stringValue ?? field.booleanValue ?? field.nullValue ?? null;
 }
 
 function nullableField(value) {
@@ -201,7 +247,7 @@ function calculateMatchPoints(p1, p2, a1, a2) {
   const actualOutcome = Math.sign(a1 - a2);
 
   if (predOutcome === actualOutcome) {
-    const diffGap = Math.abs((p1 - p2) - (a1 - a2));
+    const diffGap = Math.abs(p1 - p2 - (a1 - a2));
     return diffGap <= 1 ? 8 : 5;
   }
 

@@ -1941,7 +1941,10 @@ main {
     display: grid;
     gap: 8px;
     padding: 12px 14px;
-    border-bottom: 1px solid rgba(0, 209, 94, 0.1);
+    margin-bottom: 10px;
+    border: 1px solid rgba(0, 209, 94, 0.2);
+    border-radius: 12px;
+    background: rgba(0, 209, 94, 0.05);
   }
 
   .group-standings-table td {
