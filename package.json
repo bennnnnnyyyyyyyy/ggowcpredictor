@@ -13,5 +13,8 @@
     "firebase-admin": "^13.4.0",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.13"
+  },
+  "devDependencies": {
+    "supabase": "^2.106.0"
   }
 }

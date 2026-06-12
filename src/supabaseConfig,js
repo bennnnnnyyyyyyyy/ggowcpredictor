@@ -1,0 +1,39 @@
+// Supabase Project Configuration for Apps Script
+const supabaseConfig = {
+  url: "https://nthnysznieivbkncpqrk.supabase.co/rest/v1",
+  apiKey: "sb_publishable_q4iEOMH_S09dgmg3mHtK-w_08jFDVUo",
+};
+
+function writeToSupabaseBackup(table, payload) {
+  //  Fixed reference to configuration object
+  const url = `${supabaseConfig.url}/${table}`;
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    headers: {
+      apikey: supabaseConfig.apiKey,
+      Authorization: `Bearer ${supabaseConfig.apiKey}`,
+      Prefer: "resolution=merge-duplicates", // Acts like Firestore set/upsert
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  };
+
+  return UrlFetchApp.fetch(url, options);
+}
+
+function fetchSupabaseCollection(table) {
+  //  Fixed reference to configuration object
+  const url = `${supabaseConfig.url}/${table}?select=*`;
+  const options = {
+    method: "get",
+    headers: {
+      apikey: supabaseConfig.apiKey,
+      Authorization: `Bearer ${supabaseConfig.apiKey}`,
+    },
+    muteHttpExceptions: true,
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  return JSON.parse(response.getContentText());
+}
