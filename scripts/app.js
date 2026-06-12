@@ -23,12 +23,11 @@ let activeMatchFilter = "all";
 let activeResultFilter = "all";
 
 const SESSION = {
-  token: sessionStorage.getItem("ggo_wc_token") || null,
-  username: sessionStorage.getItem("ggo_wc_user") || null,
-  displayName: sessionStorage.getItem("ggo_wc_displayname") || null,
-  isAdmin: sessionStorage.getItem("ggo_wc_admin") === "true",
+  token: localStorage.getItem("ggo_wc_token") || null,
+  username: localStorage.getItem("ggo_wc_user") || null,
+  displayName: localStorage.getItem("ggo_wc_displayname") || null,
+  isAdmin: localStorage.getItem("ggo_wc_admin") === "true",
 };
-
 const CONFIG = {
   appsScriptUrl: localStorage.getItem("ggo_wc_url") || "",
   apiKey: localStorage.getItem("ggo_wc_key") || "",
@@ -172,11 +171,10 @@ async function handleLogin(event) {
     SESSION.username = username;
     SESSION.displayName = userData.displayName || username;
     SESSION.isAdmin = Boolean(userData.isAdmin);
-
-    sessionStorage.setItem("ggo_wc_token", SESSION.token);
-    sessionStorage.setItem("ggo_wc_user", SESSION.username);
-    sessionStorage.setItem("ggo_wc_displayname", SESSION.displayName);
-    sessionStorage.setItem("ggo_wc_admin", String(SESSION.isAdmin));
+    localStorage.setItem("ggo_wc_token", SESSION.token);
+    localStorage.setItem("ggo_wc_user", SESSION.username);
+    localStorage.setItem("ggo_wc_displayname", SESSION.displayName);
+    localStorage.setItem("ggo_wc_admin", String(SESSION.isAdmin));
 
     errEl.classList.remove("show");
     showApp();
@@ -341,7 +339,10 @@ function showApp() {
 }
 
 function handleLogout() {
-  sessionStorage.clear();
+  localStorage.removeItem("ggo_wc_token");
+  localStorage.removeItem("ggo_wc_user");
+  localStorage.removeItem("ggo_wc_displayname");
+  localStorage.removeItem("ggo_wc_admin");
   window.location.reload();
 }
 
@@ -1227,7 +1228,7 @@ function updateAdminBadge() {
   if (!badge || !SESSION.isAdmin) return;
 
   const pendingCount = STATE.accountRequests.filter(
-    (request) => String(request.status || "pending") === "pending",
+    (request) => request.status === "pending",
   ).length;
 
   if (!pendingCount) {
@@ -1242,7 +1243,7 @@ function updateAdminBadge() {
 
 function renderAccountRequests() {
   const pending = STATE.accountRequests.filter(
-    (request) => String(request.status || "pending") === "pending",
+    (request) => request.status === "pending",
   );
 
   if (!pending.length) {
@@ -1408,8 +1409,10 @@ function saveSettings() {
 }
 
 function parseKickoff(date, time, kickoffUTC) {
-  // ALWAYS try to derive from date+time fields first.
-  // Firestore may have kickoffUTC stored incorrectly (local time saved as UTC).
+  if (kickoffUTC && String(kickoffUTC).includes("T")) {
+    const parsed = new Date(kickoffUTC);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
   if (date && time) {
     const match = String(time).match(
       /(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2}(?:\.\d+)?)/i,
@@ -1419,7 +1422,6 @@ function parseKickoff(date, time, kickoffUTC) {
       const minute = Number(match[2]);
       const offset = Number(match[3]);
       const [y, m, d] = date.split("-").map(Number);
-      // hour - offset converts local stadium time to UTC
       return new Date(Date.UTC(y, m - 1, d, hour - offset, minute));
     }
 
@@ -1431,15 +1433,6 @@ function parseKickoff(date, time, kickoffUTC) {
       return new Date(Date.UTC(y, m - 1, d, hour, minute));
     }
   }
-
-  // Fallback: try kickoffUTC from Firestore only if it looks like a full ISO string
-  // (contains 'T' so it's not just a bare date/time).
-  if (kickoffUTC && String(kickoffUTC).includes("T")) {
-    const parsed = new Date(kickoffUTC);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-
-  // Last resort: date-only → treat as open (return null so match stays unlocked)
   return null;
 }
 
@@ -1536,10 +1529,9 @@ async function loadFixturesFromApi() {
 }
 
 async function loadResultsFromApi() {
-  // Results are already hydrated by loadGameData(); avoid a second round-trip.
-  return normalizeResultsPayload(STATE.results);
+  if (!CONFIG.appsScriptUrl) return {};
+  return Object.keys(STATE.results).length ? normalizeResultsPayload(STATE.results) : {};
 }
-
 async function loadLeaderboardFromApi() {
   if (!CONFIG.appsScriptUrl) return [];
   try {
@@ -1605,6 +1597,7 @@ function stageLabel(stage) {
 
 function isLocked(match) {
   if (!match.kickoffDate) return false;
+  return Date.now() >= match.kickoffDate.getTime() - 1 * 60 * 1000;
   return Date.now() >= match.kickoffDate.getTime();
 }
 
@@ -1629,7 +1622,8 @@ function hasPrediction(prediction) {
 
 function hasResult(result) {
   if (!result) return false;
-  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
+  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false; &&
+    (isLiveStatus(result.status) || isFinalStatus(result.status))
   const status = String(result.status || "").toUpperCase();
   if (status === "NS" || status === "") return false;
   return true;
