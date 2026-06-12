@@ -1025,14 +1025,14 @@ function renderGroupTable(groupName, fixtures) {
       .map(
         (row, index) => `
                 <tr>
-                  <td class="team-rank">${index + 1}</td>
-                  <td><span class="team-code">${escapeHtml(getTeamCode(row.team))}</span>${escapeHtml(row.team)}</td>
-                  <td>${row.played}</td>
-                  <td>${row.won}</td>
-                  <td>${row.drawn}</td>
-                  <td>${row.lost}</td>
-                  <td>${row.gd > 0 ? "+" : ""}${row.gd}</td>
-                  <td><strong>${row.points}</strong></td>
+                  <td class="team-rank" data-label="#">${index + 1}</td>
+                  <td data-label="Team"><span class="team-code">${escapeHtml(getTeamCode(row.team))}</span>${escapeHtml(row.team)}</td>
+                  <td data-label="P">${row.played}</td>
+                  <td data-label="W">${row.won}</td>
+                  <td data-label="D">${row.drawn}</td>
+                  <td data-label="L">${row.lost}</td>
+                  <td data-label="GD">${row.gd > 0 ? "+" : ""}${row.gd}</td>
+                  <td data-label="Pts"><strong>${row.points}</strong></td>
                 </tr>
               `,
       )
@@ -1063,17 +1063,17 @@ function renderLeaderboard() {
         player.displayName || player.playerName || player.username || "Player";
       return `
         <tr class="${player.username === SESSION.username ? "current-user" : ""}">
-          <td><span class="rank-badge ${rankClass(rank)}">${rank}</span></td>
-          <td>
+          <td data-label="Rank"><span class="rank-badge ${rankClass(rank)}">${rank}</span></td>
+          <td data-label="Player">
             <div class="player-info">
               <span class="player-avatar">${getInitials(name)}</span>
               <span class="player-name">${escapeHtml(name)}</span>
             </div>
           </td>
-          <td><strong>${player.totalPoints || 0}</strong></td>
-          <td>${player.exactScores || player.exactCount || 0}</td>
-          <td>${player.correctOutcomes || player.outcomeCount || 0}</td>
-          <td>${player.predicted || 0}</td>
+          <td data-label="Points"><strong>${player.totalPoints || 0}</strong></td>
+          <td data-label="Exact">${player.exactScores || player.exactCount || 0}</td>
+          <td data-label="Outcome">${player.correctOutcomes || player.outcomeCount || 0}</td>
+          <td data-label="Predicted">${player.predicted || 0}</td>
         </tr>
       `;
     })

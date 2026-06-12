@@ -1749,18 +1749,20 @@ main {
   header {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
-    padding: 10px 14px;
+    gap: 10px;
+    padding: 10px 12px;
   }
 
-  /* Row 1: logo stretches full width, user pill pushed to the right */
   .header-top {
+    flex-wrap: wrap;
     justify-content: space-between;
+    align-items: center;
     width: 100%;
+    gap: 10px;
   }
 
   .logo {
-    flex: 1;
+    flex: 1 1 100%;
     min-width: 0;
   }
 
@@ -1791,23 +1793,62 @@ main {
     height: 24px;
   }
 
-  /* Row 2: nav centered, wrapping */
   #main-nav {
-    justify-content: center;
-    flex-wrap: wrap;
     width: 100%;
-    gap: 6px;
+    gap: 8px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Row 3: sync bar centered */
+  #main-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-btn {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+  }
+
   .sync-container {
-    justify-content: center;
+    justify-content: space-between;
     width: 100%;
     gap: 10px;
   }
 
   .sync-status {
     display: flex;
+  }
+
+  .matches-filter {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .matches-filter::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-btn {
+    flex: 0 0 auto;
+  }
+
+  main {
+    margin: 20px auto;
+    padding: 0 14px 24px;
+  }
+
+  .section-title {
+    font-size: 22px;
   }
 
   .matches-list {
@@ -1817,32 +1858,205 @@ main {
     grid-template-columns: 1fr;
   }
 
-  .section-title {
-    font-size: 22px;
+  .group-table {
+    border-radius: 12px;
   }
 
   .leaderboard-table {
-    font-size: 12px;
+    display: block;
+    background: transparent;
+    border: 0;
   }
 
-  .leaderboard-table th,
-  .leaderboard-table td {
-    padding: 10px 5px;
-  }
-
-  /* Hide less important leaderboard columns on mobile */
-  .leaderboard-table th:nth-child(4),
-  .leaderboard-table td:nth-child(4),
-  .leaderboard-table th:nth-child(5),
-  .leaderboard-table td:nth-child(5) {
+  .leaderboard-table thead {
     display: none;
+  }
+
+  .leaderboard-table tbody {
+    display: block;
+  }
+
+  .leaderboard-table tr {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(0, 209, 94, 0.2);
+    border-radius: 12px;
+    background: rgba(0, 209, 94, 0.05);
+  }
+
+  .leaderboard-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    text-align: right;
+  }
+
+  .leaderboard-table td::before,
+  .group-standings-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .leaderboard-table td[data-label="Rank"],
+  .group-standings-table td[data-label="#"] {
+    justify-content: flex-start;
+  }
+
+  .leaderboard-table td[data-label="Player"],
+  .group-standings-table td[data-label="Team"] {
+    text-align: left;
+  }
+
+  .leaderboard-table td[data-label="Player"] .player-info,
+  .group-standings-table td[data-label="Team"] .team-name {
+    width: 100%;
+  }
+
+  .leaderboard-table td strong {
+    font-size: 16px;
+  }
+
+  .group-standings-table {
+    display: block;
+  }
+
+  .group-standings-table thead {
+    display: none;
+  }
+
+  .group-standings-table tbody {
+    display: block;
+  }
+
+  .group-standings-table tr {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(0, 209, 94, 0.1);
+  }
+
+  .group-standings-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    text-align: right;
+  }
+
+  .match-card {
+    border-radius: 14px;
+  }
+
+  .mc-header {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .mc-badge {
+    align-self: flex-start;
+  }
+
+  .mc-body {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px 14px 18px;
+  }
+
+  .mc-team,
+  .mc-team:first-child,
+  .mc-team:last-child {
+    align-items: center;
+    text-align: center;
+  }
+
+  .mc-name {
+    max-width: none;
+    font-size: 15px;
+  }
+
+  .mc-middle {
+    min-width: 0;
+  }
+
+  .mc-result-grid {
+    width: 100%;
+  }
+
+  .score-input {
+    width: 72px;
+    height: 48px;
+    font-size: 24px;
+  }
+
+  .result-card {
+    border-radius: 14px;
+  }
+
+  .result-card .match-teams {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .result-card .team,
+  .result-card .team:first-child,
+  .result-card .team:last-child {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .result-card .team:first-child .team-name,
+  .result-card .team:last-child .team-name {
+    flex-direction: row;
+  }
+
+  .result-card .result-score {
+    min-width: 0;
+    font-size: 28px;
+  }
+
+  .result-card .match-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .bracket-container {
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+
+  .vertical-bracket {
+    min-width: 960px;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .modal {
+    width: min(100%, 560px);
+    padding: 22px 18px;
   }
 }
 
 /* Small Mobile (480px and below) */
 @media (max-width: 480px) {
   header {
-    padding: 10px 12px;
+    padding: 10px 10px 8px;
   }
 
   .logo img.header-logo {
@@ -1867,15 +2081,15 @@ main {
   }
 
   .nav-btn {
-    padding: 8px 12px; /* 44px touch target height satisfied by line-height */
+    padding: 10px 12px;
     font-size: 12px;
-    min-height: 36px;
   }
-  /* The parent wrapper needs a block context and defined bounds */
+
   .login-logo .trophy {
     width: min(170px, 62vw);
     margin-bottom: 12px;
   }
+
   .user-pill {
     font-size: 12px;
     padding: 4px 8px 4px 4px;
@@ -1894,29 +2108,20 @@ main {
     font-size: 18px;
   }
 
-  .match-card {
-    border-radius: 12px;
-  }
-
   .mc-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     padding: 14px 12px;
-    column-gap: 8px;
-  }
-
-  .mc-team:first-child,
-  .mc-team:last-child {
-    align-items: center;
-    text-align: center;
-  }
-
-  .mc-middle {
-    min-width: 40px;
   }
 
   .mc-result-grid {
-    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .mc-result-score {
+    font-size: 24px;
+  }
+
+  .mc-result-score--sub {
+    font-size: 16px;
   }
 
   .score-input {
@@ -1926,17 +2131,43 @@ main {
   }
 
   .champion-trophy {
-    font-size: 48px;
+    width: 72px;
+    height: 72px;
+    font-size: 42px;
   }
 
   .champion-name {
     font-size: 18px;
   }
 
-  /* Leaderboard: also hide Predicted column */
-  .leaderboard-table th:nth-child(6),
-  .leaderboard-table td:nth-child(6) {
-    display: none;
+  .result-card .match-date {
+    font-size: 12px;
+  }
+
+  .result-card .team-name {
+    font-size: 16px;
+  }
+
+  .result-card .result-score {
+    font-size: 26px;
+  }
+
+  .modal {
+    padding: 20px 16px;
+  }
+
+  .scoring-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .match-card.open:hover,
+  .result-card:hover,
+  .score-rule-card:hover,
+  .btn-primary:hover {
+    transform: none;
+    box-shadow: inherit;
   }
 }
 

@@ -18,12 +18,13 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 | [docs/ERROR_REDUCTION.md](docs/ERROR_REDUCTION.md) | Rules to follow before editing code |
 | [docs/project-tracker.html](docs/project-tracker.html) | Interactive visualizer — open directly in browser |
 
-## Current Status (Jun 11, 2026)
+## Current Status (Jun 13, 2026)
 
 - **Audit score**: 10/20 (Acceptable — significant work needed)
 - **P0 open**: `savePrediction` crashes when match is locked
 - **P1 open**: `firebaseConfig` reference error in Apps Script, matchId mismatch, seed Drive path wrong
 - **Working**: Login, fixture loading, country flags, prediction inputs (UI), group standings, lock at kickoff
+- **Responsive UI**: Header controls, filters, match cards, and leaderboard/group tables now reflow more cleanly on phones
 
 ## Live Results Worker
 

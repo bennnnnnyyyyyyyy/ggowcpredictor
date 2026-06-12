@@ -55,6 +55,21 @@
 - Reviewed README diff to confirm it points to the new docs.
 - No app runtime tests were run because this change only adds documentation.
 
+## 2026-06-13 - Mobile layout pass
+
+### What changed
+
+- Tightened the app shell for phones and small tablets.
+- Converted leaderboard and group standings into stacked card layouts on narrow screens.
+- Reworked header navigation, filters, and sync controls to scroll and wrap more gracefully on touch devices.
+- Stacked match and result cards more aggressively on small screens so content no longer relies on desktop-width columns.
+- Added `.impeccable.md` with project design context for future UI work.
+
+### Verification
+
+- No browser run was captured in this session.
+- Reviewed the responsive CSS and table renderers after the edits to confirm the new mobile data labels and stacked layouts are in place.
+
 ## 2026-06-11 - Full audit, canonical docs, and project visualizer
 
 ### What changed
