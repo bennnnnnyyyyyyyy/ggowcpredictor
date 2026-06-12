@@ -640,21 +640,21 @@ function readResultScore(result, side) {
   if (nested && typeof nested === "object") {
     const paths = side === "home"
       ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+        ["home"],
+        ["local"],
+        ["team1"],
+        ["fulltime", "home"],
+        ["ft", "home"],
+        ["final", "home"],
+      ]
       : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+        ["away"],
+        ["visitor"],
+        ["team2"],
+        ["fulltime", "away"],
+        ["ft", "away"],
+        ["final", "away"],
+      ];
 
     for (const path of paths) {
       let value = nested;
@@ -831,11 +831,11 @@ function renderPredictionCard(match) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-          pred.pred1,
-          pred.pred2,
-          result.score1,
-          result.score2,
-        )
+        pred.pred1,
+        pred.pred2,
+        result.score1,
+        result.score2,
+      )
       : null;
 
   // Determine points tier for styling
@@ -902,16 +902,15 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${escapeHtml(team1Code)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-          ${
-            hasRes
-              ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
-              : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          ${hasRes
+      ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
+      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             onchange="handleScoreChange('${match.matchId}')">`
-          }
+    }
         </div>
 
         <div class="mc-middle">
@@ -922,16 +921,15 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${escapeHtml(team2Code)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-          ${
-            hasRes
-              ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
-              : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          ${hasRes
+      ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
+      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             onchange="handleScoreChange('${match.matchId}')">`
-          }
+    }
         </div>
       </div>
 
@@ -1023,8 +1021,8 @@ function renderGroupTable(groupName, fixtures) {
         </thead>
         <tbody>
           ${standings
-            .map(
-              (row, index) => `
+      .map(
+        (row, index) => `
                 <tr>
                   <td class="team-rank">${index + 1}</td>
                   <td><span class="team-code">${escapeHtml(getTeamCode(row.team))}</span>${escapeHtml(row.team)}</td>
@@ -1036,8 +1034,8 @@ function renderGroupTable(groupName, fixtures) {
                   <td><strong>${row.points}</strong></td>
                 </tr>
               `,
-            )
-            .join("")}
+      )
+      .join("")}
         </tbody>
       </table>
     </article>
@@ -1114,11 +1112,11 @@ function renderResults() {
       const points =
         hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-              pred.pred1,
-              pred.pred2,
-              result.score1,
-              result.score2,
-            )
+            pred.pred1,
+            pred.pred2,
+            result.score1,
+            result.score2,
+          )
           : null;
 
       return `
@@ -1169,10 +1167,10 @@ function renderBracket() {
           <h3>${escapeHtml(round)}</h3>
           <div class="bracket-stack">
           ${matches
-            .map((match) => {
-              const result = STATE.results[match.matchId];
-              const score = result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
-              return `
+          .map((match) => {
+            const result = STATE.results[match.matchId];
+            const score = result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
+            return `
                 <div class="bracket-match">
                   <div class="bracket-seed">
                     <span class="team-code">${escapeHtml(getTeamCode(match.team1))}</span>
@@ -1185,8 +1183,8 @@ function renderBracket() {
                   </div>
                 </div>
               `;
-            })
-            .join("")}
+          })
+          .join("")}
           </div>
         </section>
       `;
@@ -1253,8 +1251,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-        .map(
-          (request) => `
+      .map(
+        (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -1267,8 +1265,8 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-        )
-        .join("")}
+      )
+      .join("")}
     </div>
   `;
 }
