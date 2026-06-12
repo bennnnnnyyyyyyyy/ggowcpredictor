@@ -1,283 +1,239 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GGO WC 2026 Predictor</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3-16x16.png"
-    />
-  </head>
-  <link rel="stylesheet" href="style.css" />
 
-  <body>
-    <!-- Firebase SDK (CDN) -->
-    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
-    <!-- ════════════════════════════════════════
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GGO WC 2026 Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="icon" type="image/png" sizes="32x32"
+    href="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16"
+    href="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3-16x16.png" />
+</head>
+<link rel="stylesheet" href="style.css" />
+
+<body>
+  <!-- Firebase SDK (CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
+  <!-- ════════════════════════════════════════
        LOGIN SCREEN
   ════════════════════════════════════════ -->
-    <div id="login-screen">
-      <div class="login-card">
-        <div class="login-logo">
-          <span class="trophy">
-            <img class="resized-logo" src="GGO-GREY.png" alt="GGO Logo" />
-          </span>
-          <h2>GGO <span>WC</span> 2026</h2>
-          <p>Prediction Game</p>
-        </div>
-
-        <div class="login-divider"></div>
-
-        <div id="login-error" class="login-error">
-          Invalid name or code. Try again.
-        </div>
-
-        <form id="login-form" onsubmit="handleLogin(event)">
-          <div class="form-group">
-            <label for="login-name">Username</label>
-            <input
-              type="text"
-              id="login-name"
-              placeholder="Enter your username"
-              autocomplete="username"
-              list="username-options"
-              oninput="filterUsernameOptions(this.value)"
-              required
-            />
-            <datalist id="username-options"></datalist>
-            <div id="username-suggestions" class="username-suggestions" hidden></div>
-          </div>
-
-          <div class="form-group">
-            <label for="login-code">Secret Code</label>
-            <input
-              type="password"
-              id="login-code"
-              placeholder="Enter your code"
-              autocomplete="current-password"
-              required
-            />
-          </div>
-
-          <button type="submit" class="btn-primary">Enter Predictor</button>
-        </form>
-
-        <button
-          type="button"
-          class="btn-secondary login-ghost-btn"
-          onclick="toggleAccountRequest(true)"
-        >
-          Request an account
-        </button>
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="trophy">
+          <img class="resized-logo" src="GGO-GREY.png" alt="GGO Logo" />
+        </span>
+        <h2>GGO <span>WC</span> 2026</h2>
+        <p>Prediction Game</p>
       </div>
-    </div>
 
-    <!-- ════════════════════════════════════════
+      <div class="login-divider"></div>
+
+      <div id="login-error" class="login-error">
+        Invalid name or code. Try again.
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="login-name">Username</label>
+          <input type="text" id="login-name" placeholder="Enter your username" autocomplete="username"
+            list="username-options" oninput="filterUsernameOptions(this.value)" required />
+          <datalist id="username-options"></datalist>
+          <div id="username-suggestions" class="username-suggestions" hidden></div>
+        </div>
+
+        <div class="form-group">
+          <label for="login-code">Secret Code</label>
+          <input type="password" id="login-code" placeholder="Enter your code" autocomplete="current-password"
+            required />
+        </div>
+
+        <button type="submit" class="btn-primary">Enter Predictor</button>
+      </form>
+
+      <button type="button" class="btn-secondary login-ghost-btn" onclick="toggleAccountRequest(true)">
+        Request an account
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
        MAIN APP (hidden until login)
   ════════════════════════════════════════ -->
-    <div id="app" style="display: none">
-      <!-- HEADER -->
-      <header>
-        <!-- Row 1: Brand + User -->
-        <div class="header-top">
-          <div class="logo">
-            <img
-              src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png"
-              alt="GGO"
-              class="header-logo"
-            />
-            <div class="logo-divider"></div>
-            <img
-              src="fifa-world-cup-2026-logo-white.png"
-              alt="FIFA World Cup 2026"
-              class="header-logo wc-logo"
-            />
-            <div class="logo-text">
-              <h1>GGO <span>WC</span> 2026</h1>
-              <p>Prediction Game</p>
-            </div>
-          </div>
-
-          <!-- User pill (top-right on desktop, stays in row 1 on mobile) -->
-          <div class="user-pill" id="user-pill">
-            <div class="user-avatar" id="user-avatar">?</div>
-            <span id="user-display-name">Loading...</span>
-            <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">X</button>
+  <div id="app" style="display: none">
+    <!-- HEADER -->
+    <header>
+      <!-- Row 1: Brand + User -->
+      <div class="header-top">
+        <div class="logo">
+          <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
+            class="header-logo" />
+          <div class="logo-divider"></div>
+          <img src="fifa-world-cup-2026-logo-white.png" alt="FIFA World Cup 2026" class="header-logo wc-logo" />
+          <div class="logo-text">
+            <h1>GGO <span>WC</span> 2026</h1>
+            <p>Prediction Game</p>
           </div>
         </div>
 
-        <!-- Row 2: Navigation -->
-        <nav id="main-nav">
-          <button
-            class="nav-btn active"
-            onclick="showView('predictions', this)"
-          >
-            Predictions
-          </button>
-          <button class="nav-btn" onclick="showView('leaderboard', this)">
-            Leaderboard
-          </button>
-          <button class="nav-btn" onclick="showView('results', this)">
-            Results
-          </button>
-          <button class="nav-btn" onclick="showView('bracket', this)">
-            Bracket
-          </button>
-          <!-- Admin button injected dynamically by showApp() for admins only -->
-        </nav>
+        <!-- User pill (top-right on desktop, stays in row 1 on mobile) -->
+        <div class="user-pill" id="user-pill">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span id="user-display-name">Loading...</span>
+          <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">X</button>
+        </div>
+      </div>
 
-        <!-- Row 3: Sync status (desktop inline, mobile below nav) -->
-        <div class="sync-container">
-          <div class="sync-status">
-            <span class="status-dot" id="sync-dot"></span>
-            <span id="last-sync-time">Not synced</span>
-          </div>
-          <button class="sync-btn" type="button" onclick="requestSync()">
-            Sync
+      <!-- Row 2: Navigation -->
+      <nav id="main-nav">
+        <button class="nav-btn active" onclick="showView('predictions', this)">
+          Predictions
+        </button>
+        <button class="nav-btn" onclick="showView('leaderboard', this)">
+          Leaderboard
+        </button>
+        <button class="nav-btn" onclick="showView('results', this)">
+          Results
+        </button>
+        <button class="nav-btn" onclick="showView('bracket', this)">
+          Bracket
+        </button>
+        <!-- Admin button injected dynamically by showApp() for admins only -->
+      </nav>
+
+      <!-- Row 3: Sync status (desktop inline, mobile below nav) -->
+      <div class="sync-container">
+        <div class="sync-status">
+          <span class="status-dot" id="sync-dot"></span>
+          <span id="last-sync-time">Not synced</span>
+        </div>
+        <button class="sync-btn" type="button" onclick="requestSync()">
+          Sync
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main>
+      <!-- ── PREDICTIONS VIEW ── -->
+      <div id="view-predictions" class="view active">
+        <div class="section-title">
+          My <span class="title-accent">Predictions</span>
+        </div>
+        <div class="matches-filter">
+          <button class="filter-btn active" onclick="filterMatches('all', this)">
+            All
+          </button>
+          <button class="filter-btn" onclick="filterMatches('open', this)">
+            Open
+          </button>
+          <button class="filter-btn" onclick="filterMatches('locked', this)">
+            Locked
           </button>
         </div>
-      </header>
-
-      <!-- MAIN CONTENT -->
-      <main>
-        <!-- ── PREDICTIONS VIEW ── -->
-        <div id="view-predictions" class="view active">
-          <div class="section-title">
-            My <span class="title-accent">Predictions</span>
-          </div>
-          <div class="matches-filter">
-            <button
-              class="filter-btn active"
-              onclick="filterMatches('all', this)"
-            >
-              All
-            </button>
-            <button class="filter-btn" onclick="filterMatches('open', this)">
-              Open
-            </button>
-            <button class="filter-btn" onclick="filterMatches('locked', this)">
-              Locked
-            </button>
-          </div>
-          <div class="matches-list" id="predictions-list">
-            <div class="empty-state">
-              <div class="empty-icon">⏳</div>
-              <p>Loading fixtures...</p>
-            </div>
-          </div>
-
-          <!-- ── GROUP STANDINGS ── -->
-          <div class="section-title" style="margin-top: 60px">
-            <span class="title-accent">Group</span> Standings
-          </div>
-          <div id="group-standings">
-            <div class="empty-state">
-              <div class="empty-icon">STATS</div>
-              <p>Make predictions to see group standings...</p>
-            </div>
+        <div class="matches-list" id="predictions-list">
+          <div class="empty-state">
+            <div class="empty-icon">⏳</div>
+            <p>Loading fixtures...</p>
           </div>
         </div>
 
-        <!-- ── LEADERBOARD VIEW ── -->
-        <div id="view-leaderboard" class="view">
-          <div class="section-title">
-            <span class="title-accent">Leaderboard</span>
+        <!-- ── GROUP STANDINGS ── -->
+        <div class="section-title" style="margin-top: 60px">
+          <span class="title-accent">Group</span> Standings
+        </div>
+        <div id="group-standings">
+          <div class="empty-state">
+            <div class="empty-icon">STATS</div>
+            <p>Make predictions to see group standings...</p>
           </div>
-          <table class="leaderboard-table" id="leaderboard-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th style="text-align: left">Player</th>
-                <th>Points</th>
-                <th>Exact</th>
-                <th>Outcome</th>
-                <th>Predicted</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboard-body">
-              <tr>
-                <td
-                  colspan="6"
-                  style="
+        </div>
+      </div>
+      <!-- ── LEADERBOARD VIEW ── -->
+      <div id="view-leaderboard" class="view">
+        <div class="section-title">
+          <span class="title-accent">Leaderboard</span>
+        </div>
+        <table class="leaderboard-table" id="leaderboard-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th style="text-align: left">Player</th>
+              <th>Points</th>
+              <th>Exact</th>
+              <th>Outcome</th>
+              <th>Predicted</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <tr>
+              <td colspan="6" style="
                     text-align: center;
                     padding: 40px;
                     color: var(--muted);
                     font-family: &quot;DM Sans&quot;, sans-serif;
-                  "
-                >
-                  Loading leaderboard...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                  ">
+                Loading leaderboard...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <!-- ── RESULTS VIEW ── -->
-        <div id="view-results" class="view">
-          <div class="section-title">
-            Match <span class="title-accent">Results</span>
-          </div>
-          <div class="matches-filter">
-            <button
-              class="filter-btn active"
-              onclick="filterResults('all', this)"
-            >
-              All
-            </button>
-            <button class="filter-btn" onclick="filterResults('live', this)">
-              Live
-            </button>
-            <button class="filter-btn" onclick="filterResults('ft', this)">
-              Full Time
-            </button>
-          </div>
-          <div class="matches-list" id="results-list">
-            <div class="empty-state">
-              <div class="empty-icon">BALL</div>
-              <p>No results yet. The tournament kicks off June 11!</p>
-            </div>
+      <!-- ── RESULTS VIEW ── -->
+      <div id="view-results" class="view">
+        <div class="section-title">
+          Match <span class="title-accent">Results</span>
+        </div>
+        <div class="matches-filter">
+          <button class="filter-btn active" onclick="filterResults('all', this)">
+            All
+          </button>
+          <button class="filter-btn" onclick="filterResults('live', this)">
+            Live
+          </button>
+          <button class="filter-btn" onclick="filterResults('ft', this)">
+            Full Time
+          </button>
+        </div>
+        <div class="matches-list" id="results-list">
+          <div class="empty-state">
+            <div class="empty-icon">BALL</div>
+            <p>No results yet. The tournament kicks off June 11!</p>
           </div>
         </div>
+      </div>
 
-        <!-- ── BRACKET VIEW ── -->
-        <div id="view-bracket" class="view">
-          <div class="section-title">
-            Knockout <span class="title-accent">Bracket</span>
-          </div>
-          <div class="champion-section" id="champion-section">
-            <div class="champion-trophy" aria-hidden="true">WC</div>
-            <div class="champion-title">World Champion</div>
-            <div class="champion-name">TBD</div>
-            <div class="champion-subtitle">
-              FIFA World Cup 2026 · USA · Mexico · Canada
-            </div>
-          </div>
-          <div class="bracket-container">
-            <div class="vertical-bracket" id="bracket"></div>
+      <!-- ── BRACKET VIEW ── -->
+      <div id="view-bracket" class="view">
+        <div class="section-title">
+          Knockout <span class="title-accent">Bracket</span>
+        </div>
+        <div class="champion-section" id="champion-section">
+          <div class="champion-trophy" aria-hidden="true">WC</div>
+          <div class="champion-title">World Champion</div>
+          <div class="champion-name">TBD</div>
+          <div class="champion-subtitle">
+            FIFA World Cup 2026 · USA · Mexico · Canada
           </div>
         </div>
+        <div class="bracket-container">
+          <div class="vertical-bracket" id="bracket"></div>
+        </div>
+      </div>
 
-        <!-- ── ADMIN VIEW (conditional) ── -->
-        <div id="view-admin" class="view">
-          <div class="section-title">
-            <span class="title-accent">Admin</span> Panel
-          </div>
+      <!-- ── ADMIN VIEW (conditional) ── -->
+      <div id="view-admin" class="view">
+        <div class="section-title">
+          <span class="title-accent">Admin</span> Panel
+        </div>
         <div id="admin-content">
           <div class="empty-state">
             <div class="empty-icon">LOCK</div>
@@ -285,140 +241,130 @@
           </div>
         </div>
       </div>
-      </main>
-    </div>
-    <!-- /#app -->
+    </main>
+  </div>
+  <!-- /#app -->
 
-    <!-- Toast notification -->
-    <div id="toast" class="toast"></div>
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
 
-    <!-- ════════════════════════════════════════
+  <!-- ════════════════════════════════════════
        SETTINGS MODAL
   ════════════════════════════════════════ -->
-    <div id="settings-modal" class="modal-overlay">
-      <div class="modal">
-        <div class="modal-header">
-          <h2>Settings</h2>
-          <button class="close-modal" onclick="toggleSettings(false)" aria-label="Close settings">X</button>
+  <div id="settings-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="close-modal" onclick="toggleSettings(false)" aria-label="Close settings">X</button>
+      </div>
+      <div class="form-group">
+        <label>Apps Script / Firebase URL</label>
+        <input type="text" id="setting-api-url" placeholder="https://script.google.com/macros/s/..." />
+      </div>
+      <div class="form-group">
+        <label>API-Football Key</label>
+        <input type="text" id="setting-api-key" placeholder="Your api-sports.io key" />
+      </div>
+      <button class="btn-primary" onclick="saveSettings()">
+        Save & Reconnect
+      </button>
+      <button class="btn-secondary" onclick="toggleSettings(false)">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <div id="account-request-modal" class="modal-overlay">
+    <div class="modal account-modal">
+      <div class="modal-header">
+        <h2>Request Account</h2>
+        <button class="close-modal" onclick="toggleAccountRequest(false)" aria-label="Close request form">X</button>
+      </div>
+      <p class="modal-copy">
+        Send a request to the GGO admin team. Your account will stay pending until someone approves it.
+      </p>
+      <form id="account-request-form" onsubmit="submitAccountRequest(event)">
+        <div class="form-group">
+          <label for="request-display-name">Display Name</label>
+          <input type="text" id="request-display-name" placeholder="Your full name" autocomplete="name" required />
         </div>
         <div class="form-group">
-          <label>Apps Script / Firebase URL</label>
-          <input
-            type="text"
-            id="setting-api-url"
-            placeholder="https://script.google.com/macros/s/..."
-          />
+          <label for="request-username">Username</label>
+          <input type="text" id="request-username" placeholder="Choose a username" autocomplete="username" required />
         </div>
         <div class="form-group">
-          <label>API-Football Key</label>
-          <input
-            type="text"
-            id="setting-api-key"
-            placeholder="Your api-sports.io key"
-          />
+          <label for="request-note">Notes</label>
+          <input type="text" id="request-note" placeholder="Optional: department, manager, or team" />
         </div>
-        <button class="btn-primary" onclick="saveSettings()">
-          Save & Reconnect
-        </button>
-        <button class="btn-secondary" onclick="toggleSettings(false)">
-          Cancel
-        </button>
-      </div>
+        <button class="btn-primary" type="submit">Send Request</button>
+        <button class="btn-secondary" type="button" onclick="toggleAccountRequest(false)">Cancel</button>
+      </form>
     </div>
+  </div>
 
-    <div id="account-request-modal" class="modal-overlay">
-      <div class="modal account-modal">
-        <div class="modal-header">
-          <h2>Request Account</h2>
-          <button class="close-modal" onclick="toggleAccountRequest(false)" aria-label="Close request form">X</button>
-        </div>
-        <p class="modal-copy">
-          Send a request to the GGO admin team. Your account will stay pending until someone approves it.
-        </p>
-        <form id="account-request-form" onsubmit="submitAccountRequest(event)">
-          <div class="form-group">
-            <label for="request-display-name">Display Name</label>
-            <input type="text" id="request-display-name" placeholder="Your full name" autocomplete="name" required />
-          </div>
-          <div class="form-group">
-            <label for="request-username">Username</label>
-            <input type="text" id="request-username" placeholder="Choose a username" autocomplete="username" required />
-          </div>
-          <div class="form-group">
-            <label for="request-note">Notes</label>
-            <input type="text" id="request-note" placeholder="Optional: department, manager, or team" />
-          </div>
-          <button class="btn-primary" type="submit">Send Request</button>
-          <button class="btn-secondary" type="button" onclick="toggleAccountRequest(false)">Cancel</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- ════════════════════════════════════════
+  <!-- ════════════════════════════════════════
        RULES MODAL (How to Play)
   ════════════════════════════════════════ -->
-    <div id="rules-modal" class="modal-overlay">
-      <div class="modal rules-modal-content">
-        <div class="modal-header">
-          <h2>Welcome to GGO World Cup Predictor!</h2>
-          <button class="close-modal" onclick="toggleRules(false)" aria-label="Close rules">X</button>
-        </div>
-        <div class="modal-body">
-          <p class="welcome-text">
-            Hey <strong><span id="rules-username">Employee</span></strong
-            >, join the Gulf Global Outsourcing family in predicting the FIFA
-            World Cup 2026 matches!
-          </p>
+  <div id="rules-modal" class="modal-overlay">
+    <div class="modal rules-modal-content">
+      <div class="modal-header">
+        <h2>Welcome to GGO World Cup Predictor!</h2>
+        <button class="close-modal" onclick="toggleRules(false)" aria-label="Close rules">X</button>
+      </div>
+      <div class="modal-body">
+        <p class="welcome-text">
+          Hey <strong><span id="rules-username">Employee</span></strong>, join the Gulf Global Outsourcing family in
+          predicting the FIFA
+          World Cup 2026 matches!
+        </p>
 
-          <div class="modal-section-title">Rules & Guidelines</div>
-          <ul class="rules-list">
-            <li>
-              Go to the <strong>Predictions</strong> tab to enter your
-              predictions for upcoming matches.
-            </li>
-            <li>Matches lock automatically as soon as kickoff begins.</li>
-            <li>
-              Standings update automatically as you enter score predictions.
-            </li>
-          </ul>
+        <div class="modal-section-title">Rules & Guidelines</div>
+        <ul class="rules-list">
+          <li>
+            Go to the <strong>Predictions</strong> tab to enter your
+            predictions for upcoming matches.
+          </li>
+          <li>Matches lock automatically as soon as kickoff begins.</li>
+          <li>
+            Standings update automatically as you enter score predictions.
+          </li>
+        </ul>
 
-          <div class="modal-section-title">Points Allocation</div>
-          <div class="scoring-grid">
-            <div class="score-rule-card pts-exact">
-              <span class="pts-val">15 pts</span>
-              <strong>Exact Score</strong>
-              <p>Your prediction matches the final score exactly.</p>
-            </div>
-            <div class="score-rule-card pts-good">
-              <span class="pts-val">8 pts</span>
-              <strong>Correct Result + Close Difference</strong>
-              <p>You picked the right winner or draw, and the goal difference is within 1.</p>
-            </div>
-            <div class="score-rule-card pts-partial">
-              <span class="pts-val">5 pts</span>
-              <strong>Correct Result</strong>
-              <p>You picked the right winner or draw, but the goal difference was not close.</p>
-            </div>
-            <div class="score-rule-card pts-close-guess">
-              <span class="pts-val">3 pts</span>
-              <strong>Close Score, Wrong Result</strong>
-              <p>Your scores were close to the final score, but the winner or draw was wrong.</p>
-            </div>
+        <div class="modal-section-title">Points Allocation</div>
+        <div class="scoring-grid">
+          <div class="score-rule-card pts-exact">
+            <span class="pts-val">15 pts</span>
+            <strong>Exact Score</strong>
+            <p>Your prediction matches the final score exactly.</p>
           </div>
-
-          <button
-            class="btn-primary start-playing-btn"
-            onclick="toggleRules(false)"
-          >
-            Let's Play!
-          </button>
+          <div class="score-rule-card pts-good">
+            <span class="pts-val">8 pts</span>
+            <strong>Correct Result + Close Difference</strong>
+            <p>You picked the right winner or draw, and the goal difference is within 1.</p>
+          </div>
+          <div class="score-rule-card pts-partial">
+            <span class="pts-val">5 pts</span>
+            <strong>Correct Result</strong>
+            <p>You picked the right winner or draw, but the goal difference was not close.</p>
+          </div>
+          <div class="score-rule-card pts-close-guess">
+            <span class="pts-val">3 pts</span>
+            <strong>Close Score, Wrong Result</strong>
+            <p>Your scores were close to the final score, but the winner or draw was wrong.</p>
+          </div>
         </div>
+
+        <button class="btn-primary start-playing-btn" onclick="toggleRules(false)">
+          Let's Play!
+        </button>
       </div>
     </div>
+  </div>
 
-    <!-- ════════════════════════════════════════
+  <!-- ════════════════════════════════════════
        SCAFFOLD JS - wire-up only, no data yet
   ════════════════════════════════════════ -->
-  </body>
-  <script src="scripts/app.js"></script>
+</body>
+<script src="scripts/app.js"></script>
+
 </html>

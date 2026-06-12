@@ -1596,7 +1596,7 @@ function stageLabel(stage) {
 
 function isLocked(match) {
   if (!match.kickoffDate) return false;
-  return Date.now() >= match.kickoffDate.getTime() - 15 * 60 * 1000;
+  return Date.now() >= match.kickoffDate.getTime() - 1 * 60 * 1000;
 }
 
 function getMatchStatus(match, result) {
