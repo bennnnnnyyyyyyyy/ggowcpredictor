@@ -8,10 +8,6 @@
             "*/5 * * * *"
         ]
     },
-    "assets": {
-        "directory": ".",
-        "binding": "ASSETS"
-    },
     // Environment variables accessible inside your worker via env.KV_KEY, etc.
     "vars": {
         "ENVIRONMENT": "production"
