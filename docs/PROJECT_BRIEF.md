@@ -76,6 +76,7 @@ Important naming note: `src/main.js` is not the browser entrypoint. It is Google
 ### leaderboard/current
 
 - `players`: array of player summary objects
+- `updatedAt`: ISO timestamp for the last leaderboard refresh
 
 ## Scoring Decision To Confirm
 

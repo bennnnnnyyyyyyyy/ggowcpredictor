@@ -27,6 +27,22 @@ body {
   min-height: 100vh;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  line-height: 1.45;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
 /* ════════════════════════════════════════
    LOGIN SCREEN
 ════════════════════════════════════════ */
@@ -322,6 +338,7 @@ header {
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
+  min-height: 44px;
 }
 
 .nav-btn:hover {
@@ -378,6 +395,7 @@ header {
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
+  min-height: 44px;
 }
 
 .filter-btn:hover {
@@ -421,6 +439,7 @@ header {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .sync-btn:hover {
@@ -473,6 +492,7 @@ header {
   border-radius: 20px;
   padding: 6px 12px 6px 6px;
   font-size: 13px;
+  max-width: 100%;
 }
 
 .user-avatar {
@@ -1044,6 +1064,7 @@ main {
   border: 1px solid rgba(0, 209, 94, 0.2);
   border-radius: 10px;
   overflow: hidden;
+  min-width: 0;
 }
 
 .group-table h3 {
@@ -1629,6 +1650,11 @@ main {
   font-size: 24px;
   cursor: pointer;
   transition: color 0.3s ease;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
 }
 
 .close-modal:hover {

@@ -348,7 +348,7 @@ header{background:linear-gradient(180deg,rgba(0,61,165,0.15) 0%,transparent 100%
             <td><div class="feat-name">Leaderboard (all players)</div></td>
             <td><span class="tag tag-be">Backend</span></td>
             <td><span class="badge badge-blocked">Blocked</span></td>
-            <td style="font-size:12px;color:var(--muted)">leaderboard.js is a stub; buildLeaderboard in main.js works but uses wrong scoring</td>
+            <td style="font-size:12px;color:var(--muted)">leaderboard.js now reads Firestore users/predictions/results and writes leaderboard/current</td>
           </tr>
           <tr>
             <td><div class="feat-name">Unified scoring system</div></td>
@@ -453,7 +453,7 @@ header{background:linear-gradient(180deg,rgba(0,61,165,0.15) 0%,transparent 100%
           </tr>
           <tr class="bug-row-p1">
             <td><span class="severity sev-p1">P1</span></td>
-            <td style="font-size:13px;font-weight:500"><code>leaderboard.js:calculateAndUpdateLeaderboard</code> is a stub — <code>players=[]</code> and <code>results=[]</code> are never fetched. Daily trigger writes nothing</td>
+            <td style="font-size:13px;font-weight:500"><code>leaderboard.js:calculateAndUpdateLeaderboard</code> now fetches Firestore users, predictions, and results before writing <code>leaderboard/current</code></td>
             <td style="font-size:11px;color:var(--muted)">src/leaderboard.js L13–14</td>
             <td><span class="tag tag-be">Backend</span></td>
             <td><span class="badge badge-blocked">Open</span></td>

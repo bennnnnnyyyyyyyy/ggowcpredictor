@@ -133,7 +133,7 @@ Each data type has a 3-tier fallback:
       "predicted": 72
     }
   ],
-  "calculatedAt": "timestamp"
+  "updatedAt": "timestamp"
 }
 ```
 
@@ -146,7 +146,7 @@ Each data type has a 3-tier fallback:
 | `Code.js` | Entry point (minimal) | ✅ Ready |
 | `main.js` | `doGet` / `doPost` router + sync logic | ⚠️ Has `firebaseConfig` reference bug |
 | `fixtures.js` | Seed fixtures from Drive + live score fetch | ⚠️ Drive path wrong; matchId bridge missing |
-| `leaderboard.js` | Leaderboard calculation | ❌ Stub — never fetches data |
+| `leaderboard.js` | Leaderboard calculation and Firestore snapshot write | ✅ Ready |
 | `firebase.js` | Firestore REST helpers | ✅ Solid utility layer |
 | `firebaseConfig.js` | Firebase project config | ✅ Config exists |
 

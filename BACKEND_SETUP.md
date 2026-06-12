@@ -32,12 +32,13 @@ ggowcpredictor/
 - `validateFixture()` - Data validation
 
 **leaderboard.js**
-- `calculateAndUpdateLeaderboard()` - Scores all player predictions daily
-- `calculatePlayerPoints(playerId, results)` - Points per player
+- `calculateAndUpdateLeaderboard()` - Fetches users, predictions, and results from Firestore, scores every player, and writes `leaderboard/current`
+- `calculatePlayerPoints(playerId, results)` - Legacy helper retained for backwards compatibility
 - `calculateMatchPoints()` - Scoring system:
   - Exact score: **15 points**
   - Correct outcome: **5 points**
-  - Off by 1 goal: **3 points**
+  - Close goal-difference match: **8 points**
+  - Close wrong-outcome guess: **3 points**
 - Head-to-head comparison helpers
 
 **firebase.js**

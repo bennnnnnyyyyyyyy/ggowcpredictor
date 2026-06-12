@@ -83,7 +83,7 @@
 
 - `savePrediction` P0 crash (locked branch references undefined vars)
 - `main.js` ReferenceError (`FIREBASE_CONFIG` vs `firebaseConfig`)
-- `leaderboard.js` stub — never fetches data
+- `leaderboard.js` now fetches users, predictions, and results from Firestore and writes `leaderboard/current`
 - matchId mismatch between fixtures (sequential int) and API-Football results (API fixture ID)
 - `seedFixturesFromJSON` reads from wrong Drive location
 

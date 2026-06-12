@@ -1,176 +1,210 @@
 // Leaderboard calculation logic
-// Scores predictions against actual results and updates Firebase
+// Aggregates Firestore predictions against completed results and updates leaderboard/current.
 
 /**
- * Calculate and update leaderboard for all players
- * Called by scheduled trigger daily
+ * Calculate and update leaderboard for all players.
+ * Called by the scheduled trigger daily.
  */
 function calculateAndUpdateLeaderboard() {
   try {
     Logger.log("Starting leaderboard calculation...");
-    
-    const leaderboard = [];
-    let players = []; // TODO: Fetch from Firebase
-    let results = []; // TODO: Fetch completed match results from Firebase
-    
-    // For each player, calculate total points
-    players.forEach(player => {
-      const points = calculatePlayerPoints(player.id, results);
-      leaderboard.push({
-        playerId: player.id,
-        playerName: player.name,
-        totalPoints: points,
-        rank: 0 // Will be set after sorting
-      });
-    });
-    
-    // Sort by points descending
-    leaderboard.sort((a, b) => b.totalPoints - a.totalPoints);
-    
-    // Assign ranks
-    leaderboard.forEach((entry, index) => {
-      entry.rank = index + 1;
-    });
-    
-    Logger.log(`Leaderboard calculated for ${leaderboard.length} players`);
-    
-    // TODO: Update Firebase leaderboard collection
-    
+
+    const projectId = "ggowcpredictor";
+    const apiKey = firebaseConfig.apiKey;
+    const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+
+    const users = fetchFirestoreCollection(base, apiKey, "users").map((doc) => {
+      const f = doc.fields || {};
+      const userId = readField(f, "username") || doc.name.split("/").pop();
+      return {
+        username: String(userId || ""),
+        displayName: readField(f, "displayName") || String(userId || ""),
+        isAdmin: Boolean(readField(f, "isAdmin")),
+      };
+    }).filter((user) => user.username);
+
+    const predictions = fetchFirestoreCollection(base, apiKey, "predictions");
+    const results = fetchFirestoreCollection(base, apiKey, "results").reduce((acc, doc) => {
+      const f = doc.fields || {};
+      const matchId = String(
+        readField(f, "matchId") ||
+          doc.name.split("/").pop().replace(/^match_/, ""),
+      );
+      acc[matchId] = {
+        matchId,
+        score1: nullableField(readField(f, "score1")),
+        score2: nullableField(readField(f, "score2")),
+        status: String(readField(f, "status") || "NS"),
+      };
+      return acc;
+    }, {});
+
+    const scoredMatchCount = Object.values(results).filter(
+      (result) =>
+        Number.isFinite(result.score1) &&
+        Number.isFinite(result.score2) &&
+        isFinalStatus(result.status),
+    ).length;
+
+    const leaderboard = buildLeaderboard(users, predictions, results);
+
+    Logger.log(`Scored matches available: ${scoredMatchCount}`);
+    Logger.log(`Players ranked: ${leaderboard.length}`);
+
+    writeLeaderboardSnapshot(base, apiKey, leaderboard);
+
+    Logger.log("Firestore leaderboard/current updated.");
+
     return {
       success: true,
       playersScored: leaderboard.length,
-      leaderboard: leaderboard,
-      timestamp: new Date().toISOString()
+      scoredMatches: scoredMatchCount,
+      leaderboard,
+      timestamp: new Date().toISOString(),
     };
-    
   } catch (error) {
+    Logger.log("Error in calculateAndUpdateLeaderboard: " + error.toString());
     return {
       success: false,
       error: error.toString(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }
 
-/**
- * Calculate total points for a single player
- * @param {string} playerId - Player ID
- * @param {Array} results - Completed match results
- * @returns {number} Total points
- */
-function calculatePlayerPoints(playerId, results) {
-  let totalPoints = 0;
-  
-  // TODO: Fetch player predictions from Firebase
-  const predictions = []; // db.collection("predictions").where("playerId", "==", playerId).get()
-  
-  predictions.forEach(prediction => {
-    const matchResult = results.find(r => r.matchId === prediction.matchId);
-    
-    if (matchResult && matchResult.status === "completed") {
-      const points = calculateMatchPoints(
-        prediction.score1,
-        prediction.score2,
-        matchResult.score1,
-        matchResult.score2
-      );
-      totalPoints += points;
-    }
-  });
-  
-  return totalPoints;
-}
+function buildLeaderboard(users, predictions, results) {
+  const userMap = {};
 
-/**
- * Calculate points for a single prediction
- * Scoring system:
- * - Correct outcome (W/D/L): 5 points
- * - Correct exact score: 15 points
- * - Off by 1 goal: 3 points
- * - No match: 0 points
- * 
- * @param {number} predScore1 - Predicted score for team 1
- * @param {number} predScore2 - Predicted score for team 2
- * @param {number} actualScore1 - Actual score for team 1
- * @param {number} actualScore2 - Actual score for team 2
- * @returns {number} Points earned
- */
-function calculateMatchPoints(predScore1, predScore2, actualScore1, actualScore2) {
-  if (predScore1 === actualScore1 && predScore2 === actualScore2) {
-    // Exact score match
-    return 15;
-  }
-  
-  const predDiff = predScore1 - predScore2;
-  const actualDiff = actualScore1 - actualScore2;
-  
-  // Check if outcome matches (win/loss/draw)
-  const predOutcome = Math.sign(predDiff);
-  const actualOutcome = Math.sign(actualDiff);
-  
-  if (predOutcome === actualOutcome) {
-    // Correct outcome
-    const goalDiff = Math.abs(predDiff - actualDiff);
-    
-    if (goalDiff <= 1) {
-      // Off by 1 goal difference or exact
-      return 5 + Math.max(0, 3 - goalDiff);
-    }
-    return 5;
-  }
-  
-  // Check if close call (off by exactly 1 goal each team)
-  const score1Diff = Math.abs(predScore1 - actualScore1);
-  const score2Diff = Math.abs(predScore2 - actualScore2);
-  
-  if (score1Diff <= 1 && score2Diff <= 1 && score1Diff + score2Diff <= 2) {
-    return 3;
-  }
-  
-  return 0;
-}
-
-/**
- * Get point breakdown for a specific player
- * Useful for displaying in UI
- * @param {string} playerId - Player ID
- * @returns {Object} Points by match and total
- */
-function getPlayerPointsBreakdown(playerId) {
-  const breakdown = {
-    total: 0,
-    byMatch: [],
-    summary: {
+  users.forEach((user) => {
+    userMap[user.username] = {
+      username: user.username,
+      displayName: user.displayName || user.username,
+      isAdmin: Boolean(user.isAdmin),
+      totalPoints: 0,
       exactScores: 0,
       correctOutcomes: 0,
-      closeGuesses: 0,
-      missed: 0
+      predicted: 0,
+    };
+  });
+
+  predictions.forEach((doc) => {
+    const f = doc.fields || {};
+    const username = String(readField(f, "username") || "");
+    const matchId = String(readField(f, "matchId") || "");
+    const pred1 = nullableField(readField(f, "pred1"));
+    const pred2 = nullableField(readField(f, "pred2"));
+
+    if (!username || !matchId || !Number.isFinite(pred1) || !Number.isFinite(pred2)) return;
+
+    if (!userMap[username]) {
+      userMap[username] = {
+        username,
+        displayName: username,
+        isAdmin: false,
+        totalPoints: 0,
+        exactScores: 0,
+        correctOutcomes: 0,
+        predicted: 0,
+      };
     }
-  };
-  
-  // TODO: Implement when Firebase integration ready
-  
-  return breakdown;
+
+    userMap[username].predicted += 1;
+
+    const result = results[matchId];
+    if (!result || !Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return;
+    if (!isFinalStatus(result.status)) return;
+
+    const points = calculateMatchPoints(pred1, pred2, result.score1, result.score2);
+    userMap[username].totalPoints += points;
+    if (points === 15) userMap[username].exactScores += 1;
+    if (points > 0) userMap[username].correctOutcomes += 1;
+  });
+
+  return Object.values(userMap)
+    .sort((a, b) =>
+      b.totalPoints - a.totalPoints ||
+      b.exactScores - a.exactScores ||
+      b.correctOutcomes - a.correctOutcomes ||
+      b.predicted - a.predicted ||
+      a.displayName.localeCompare(b.displayName),
+    )
+    .map((player, index) => ({
+      ...player,
+      rank: index + 1,
+    }));
 }
 
-/**
- * Get head-to-head comparison between two players
- * @param {string} player1Id - First player ID
- * @param {string} player2Id - Second player ID
- * @returns {Object} Comparison data
- */
-function comparePlayerHeadToHead(player1Id, player2Id) {
-  return {
-    player1: {
-      id: player1Id,
-      points: 0,
-      wins: 0
+function writeLeaderboardSnapshot(base, apiKey, leaderboard) {
+  const url = `${base}/leaderboard/current?key=${apiKey}`;
+  const payload = {
+    fields: {
+      players: {
+        arrayValue: {
+          values: leaderboard.map((player) => ({
+            mapValue: {
+              fields: {
+                username: { stringValue: String(player.username || "") },
+                displayName: { stringValue: String(player.displayName || player.username || "") },
+                isAdmin: { booleanValue: Boolean(player.isAdmin) },
+                totalPoints: { integerValue: String(Number(player.totalPoints || 0)) },
+                exactScores: { integerValue: String(Number(player.exactScores || 0)) },
+                correctOutcomes: { integerValue: String(Number(player.correctOutcomes || 0)) },
+                predicted: { integerValue: String(Number(player.predicted || 0)) },
+                rank: { integerValue: String(Number(player.rank || 0)) },
+              },
+            },
+          })),
+        },
+      },
+      updatedAt: { stringValue: new Date().toISOString() },
     },
-    player2: {
-      id: player2Id,
-      points: 0,
-      wins: 0
-    },
-    matcheCompared: 0
   };
+
+  UrlFetchApp.fetch(url, {
+    method: "patch",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  });
+}
+
+function fetchFirestoreCollection(base, apiKey, collectionId) {
+  const response = UrlFetchApp.fetch(
+    `${base}/${collectionId}?pageSize=500&key=${apiKey}`,
+    { method: "get", muteHttpExceptions: true },
+  );
+  const data = JSON.parse(response.getContentText());
+  return data.documents || [];
+}
+
+function readField(fields, key) {
+  if (!fields || !fields[key]) return null;
+  const field = fields[key];
+  return field.stringValue ?? field.integerValue ?? field.doubleValue ?? field.booleanValue ?? field.nullValue ?? null;
+}
+
+function nullableField(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function isFinalStatus(status) {
+  const value = String(status || "").toUpperCase();
+  return ["FT", "AET", "PEN", "FINAL", "COMPLETED"].includes(value);
+}
+
+function calculateMatchPoints(p1, p2, a1, a2) {
+  if (p1 === a1 && p2 === a2) return 15;
+
+  const predOutcome = Math.sign(p1 - p2);
+  const actualOutcome = Math.sign(a1 - a2);
+
+  if (predOutcome === actualOutcome) {
+    const diffGap = Math.abs((p1 - p2) - (a1 - a2));
+    return diffGap <= 1 ? 8 : 5;
+  }
+
+  const totalGap = Math.abs(p1 - a1) + Math.abs(p2 - a2);
+  return totalGap <= 2 ? 3 : 0;
 }
