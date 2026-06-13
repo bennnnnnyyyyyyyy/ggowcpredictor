@@ -213,11 +213,45 @@ async function handleLogin(event) {
   try {
     let userData = null;
 
+async function handleLogin(event) {
+  if (event) event.preventDefault();
+
+  const username = normalizeUsername(document.getElementById("login-name").value);
+  const code = document.getElementById("login-code").value.trim();
+
+  if (!username || !code) {
+    showLoginError("Please enter your username and secret code.");
+    return;
+  }
+
+  try {
+    let userData = null;
+
+    // 1. Try Firestore SDK
     if (db) {
       const userSnap = await db.collection("users").doc(username).get();
       if (userSnap.exists) userData = userSnap.data();
     }
 
+    // 2. Firestore REST fallback (works even if SDK failed to load)
+    if (!userData) {
+      try {
+        const restUrl = `https://firestore.googleapis.com/v1/projects/ggowcpredictor/databases/(default)/documents/users/${encodeURIComponent(username)}`;
+        const resp = await fetch(restUrl);
+        if (resp.ok) {
+          const doc = await resp.json();
+          if (doc.fields) {
+            userData = {
+              displayName: doc.fields.displayName?.stringValue || username,
+              secretCode: doc.fields.secretCode?.stringValue || "",
+              isAdmin: doc.fields.isAdmin?.booleanValue || false,
+            };
+          }
+        }
+      } catch (_) { /* REST also failed, fall through */ }
+    }
+
+    // 3. Hardcoded demo users last resort
     if (!userData && DEMO_USERS[username]) {
       userData = {
         displayName: DEMO_USERS[username].displayName,
@@ -227,9 +261,7 @@ async function handleLogin(event) {
     }
 
     if (!userData) {
-      showLoginError(
-        "User not found. Request access or ask an admin to approve your username.",
-      );
+      showLoginError("User not found. Request access or ask an admin to approve your username.");
       return;
     }
 
@@ -238,6 +270,7 @@ async function handleLogin(event) {
       return;
     }
 
+    // ... rest of login unchanged
     SESSION.token = btoa(`${username}:${Date.now()}`);
     SESSION.username = username;
     SESSION.displayName = userData.displayName || username;
@@ -316,9 +349,8 @@ function normalizeUsername(value) {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_]/g, "");
+    .replace(/[^a-z0-9_.]/g, "");  // ← keep dots
 }
-
 function toggleAccountRequest(show) {
   const modal = document.getElementById("account-request-modal");
   if (!modal) return;
@@ -1165,7 +1197,7 @@ function renderLeaderboard() {
     : buildLocalLeaderboard();
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="table-empty">No predictions yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="table-empty">No predictions yet.</td></tr>`;
     return;
   }
 
@@ -1183,10 +1215,9 @@ function renderLeaderboard() {
               <span class="player-name">${escapeHtml(name)}</span>
             </div>
           </td>
-          <td data-label="Points"><strong>${player.totalPoints || 0}</strong></td>
-          <td data-label="Exact">${player.exactScores || player.exactCount || 0}</td>
-          <td data-label="Outcome">${player.correctOutcomes || player.outcomeCount || 0}</td>
-          <td data-label="Predicted">${player.predicted || 0}</td>
+          <td data-label="Points" style="text-align:center"><strong>${player.totalPoints || 0}</strong></td>
+          <td data-label="Exact" style="text-align:center">${player.exactScores || player.exactCount || 0}</td>
+          <td data-label="Outcome" style="text-align:center">${player.correctOutcomes || player.outcomeCount || 0}</td>
         </tr>
       `;
     })

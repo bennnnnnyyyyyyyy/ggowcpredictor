@@ -54,14 +54,26 @@ select {
   min-height: 100vh;
   background:
     linear-gradient(180deg, rgba(6, 8, 15, 0.96) 0%, rgba(6, 8, 15, 0.98) 100%),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 11px);
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.03) 0 1px,
+      transparent 1px 11px
+    );
   padding: 20px;
 }
 
 .login-card {
   background:
-    linear-gradient(145deg, rgba(12, 17, 24, 0.98) 0%, rgba(6, 36, 24, 0.78) 100%),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 9px);
+    linear-gradient(
+      145deg,
+      rgba(12, 17, 24, 0.98) 0%,
+      rgba(6, 36, 24, 0.78) 100%
+    ),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0 1px,
+      transparent 1px 9px
+    );
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   padding: 34px;
@@ -573,8 +585,16 @@ main {
 
 .match-card {
   background:
-    linear-gradient(145deg, rgba(12, 17, 24, 0.98) 0%, rgba(6, 36, 24, 0.78) 100%),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 9px);
+    linear-gradient(
+      145deg,
+      rgba(12, 17, 24, 0.98) 0%,
+      rgba(6, 36, 24, 0.78) 100%
+    ),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0 1px,
+      transparent 1px 9px
+    );
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   overflow: hidden;
@@ -1111,28 +1131,53 @@ main {
    LEADERBOARD
 ────────────────────────────────────────── */
 
+#view-leaderboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#view-leaderboard .section-title {
+  width: 100%;
+  max-width: 820px;
+}
+
 .leaderboard-table {
   width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
   border-collapse: collapse;
-  background: rgba(0, 209, 94, 0.05);
+  background: rgba(0, 209, 94, 0.04);
   border: 1px solid rgba(0, 209, 94, 0.2);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
 }
 
 .leaderboard-table th {
   background: linear-gradient(90deg, var(--wc-blue) 0%, #00b359 100%);
-  padding: 15px;
+  padding: 14px 18px;
   text-align: center;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  font-size: 12px;
+  font-size: 11px;
+  color: #fff;
+}
+
+.leaderboard-table th:nth-child(2) {
+  text-align: left;
 }
 
 .leaderboard-table td {
-  padding: 15px;
-  border-bottom: 1px solid rgba(0, 209, 94, 0.1);
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(0, 209, 94, 0.08);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.leaderboard-table td:nth-child(2) {
+  text-align: left;
 }
 
 .leaderboard-table tr:last-child td {
@@ -1210,8 +1255,16 @@ main {
 
 .result-card {
   background:
-    linear-gradient(145deg, rgba(12, 17, 24, 0.98) 0%, rgba(6, 36, 24, 0.78) 100%),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 9px);
+    linear-gradient(
+      145deg,
+      rgba(12, 17, 24, 0.98) 0%,
+      rgba(6, 36, 24, 0.78) 100%
+    ),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0 1px,
+      transparent 1px 9px
+    );
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   padding: 20px;
@@ -1456,7 +1509,11 @@ main {
 
 .bracket-match {
   position: relative;
-  background: linear-gradient(180deg, rgba(12, 18, 24, 0.98), rgba(7, 33, 22, 0.92));
+  background: linear-gradient(
+    180deg,
+    rgba(12, 18, 24, 0.98),
+    rgba(7, 33, 22, 0.92)
+  );
   border: 2px solid rgba(0, 209, 94, 0.36);
   border-radius: 6px;
   padding: 8px;
