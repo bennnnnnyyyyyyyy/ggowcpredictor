@@ -45,23 +45,91 @@ const STATE = {
 };
 
 const STADIUMS_BY_GROUND = {
-  "Atlanta": { city: "Atlanta", stadium: "Mercedes-Benz Stadium", timeZone: "America/New_York" },
-  "Boston": { city: "Foxborough", stadium: "Gillette Stadium", timeZone: "America/New_York" },
-  "Dallas": { city: "Arlington", stadium: "AT&T Stadium", timeZone: "America/Chicago" },
-  "Guadalajara (Zapopan)": { city: "Zapopan", stadium: "Estadio Akron", timeZone: "America/Mexico_City" },
-  "Houston": { city: "Houston", stadium: "NRG Stadium", timeZone: "America/Chicago" },
-  "Kansas City": { city: "Kansas City", stadium: "Arrowhead Stadium", timeZone: "America/Chicago" },
-  "Los Angeles (Inglewood)": { city: "Inglewood", stadium: "SoFi Stadium", timeZone: "America/Los_Angeles" },
-  "Mexico City": { city: "Mexico City", stadium: "Estadio Azteca", timeZone: "America/Mexico_City" },
-  "Miami": { city: "Miami Gardens", stadium: "Hard Rock Stadium", timeZone: "America/New_York" },
-  "Monterrey (Guadalupe)": { city: "Guadalupe", stadium: "Estadio BBVA", timeZone: "America/Monterrey" },
-  "New York New Jersey": { city: "East Rutherford", stadium: "MetLife Stadium", timeZone: "America/New_York" },
-  "New York/New Jersey (East Rutherford)": { city: "East Rutherford", stadium: "MetLife Stadium", timeZone: "America/New_York" },
-  "Philadelphia": { city: "Philadelphia", stadium: "Lincoln Financial Field", timeZone: "America/New_York" },
-  "San Francisco Bay Area (Santa Clara)": { city: "Santa Clara", stadium: "Levi's Stadium", timeZone: "America/Los_Angeles" },
-  "Seattle": { city: "Seattle", stadium: "Lumen Field", timeZone: "America/Los_Angeles" },
-  "Toronto": { city: "Toronto", stadium: "BMO Field", timeZone: "America/Toronto" },
-  "Vancouver": { city: "Vancouver", stadium: "BC Place", timeZone: "America/Vancouver" },
+  Atlanta: {
+    city: "Atlanta",
+    stadium: "Mercedes-Benz Stadium",
+    timeZone: "America/New_York",
+  },
+  Boston: {
+    city: "Foxborough",
+    stadium: "Gillette Stadium",
+    timeZone: "America/New_York",
+  },
+  Dallas: {
+    city: "Arlington",
+    stadium: "AT&T Stadium",
+    timeZone: "America/Chicago",
+  },
+  "Guadalajara (Zapopan)": {
+    city: "Zapopan",
+    stadium: "Estadio Akron",
+    timeZone: "America/Mexico_City",
+  },
+  Houston: {
+    city: "Houston",
+    stadium: "NRG Stadium",
+    timeZone: "America/Chicago",
+  },
+  "Kansas City": {
+    city: "Kansas City",
+    stadium: "Arrowhead Stadium",
+    timeZone: "America/Chicago",
+  },
+  "Los Angeles (Inglewood)": {
+    city: "Inglewood",
+    stadium: "SoFi Stadium",
+    timeZone: "America/Los_Angeles",
+  },
+  "Mexico City": {
+    city: "Mexico City",
+    stadium: "Estadio Azteca",
+    timeZone: "America/Mexico_City",
+  },
+  Miami: {
+    city: "Miami Gardens",
+    stadium: "Hard Rock Stadium",
+    timeZone: "America/New_York",
+  },
+  "Monterrey (Guadalupe)": {
+    city: "Guadalupe",
+    stadium: "Estadio BBVA",
+    timeZone: "America/Monterrey",
+  },
+  "New York New Jersey": {
+    city: "East Rutherford",
+    stadium: "MetLife Stadium",
+    timeZone: "America/New_York",
+  },
+  "New York/New Jersey (East Rutherford)": {
+    city: "East Rutherford",
+    stadium: "MetLife Stadium",
+    timeZone: "America/New_York",
+  },
+  Philadelphia: {
+    city: "Philadelphia",
+    stadium: "Lincoln Financial Field",
+    timeZone: "America/New_York",
+  },
+  "San Francisco Bay Area (Santa Clara)": {
+    city: "Santa Clara",
+    stadium: "Levi's Stadium",
+    timeZone: "America/Los_Angeles",
+  },
+  Seattle: {
+    city: "Seattle",
+    stadium: "Lumen Field",
+    timeZone: "America/Los_Angeles",
+  },
+  Toronto: {
+    city: "Toronto",
+    stadium: "BMO Field",
+    timeZone: "America/Toronto",
+  },
+  Vancouver: {
+    city: "Vancouver",
+    stadium: "BC Place",
+    timeZone: "America/Vancouver",
+  },
 };
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -131,7 +199,9 @@ async function hydrateLoginUsers() {
 async function handleLogin(event) {
   if (event) event.preventDefault();
 
-  const username = normalizeUsername(document.getElementById("login-name").value);
+  const username = normalizeUsername(
+    document.getElementById("login-name").value,
+  );
   const code = document.getElementById("login-code").value.trim();
   const errEl = document.getElementById("login-error");
 
@@ -203,7 +273,9 @@ function filterUsernameOptions(query) {
   const suggestions = document.getElementById("username-suggestions");
   if (!suggestions) return;
 
-  const term = String(query || "").trim().toLowerCase();
+  const term = String(query || "")
+    .trim()
+    .toLowerCase();
   const usernames = STATE.users
     .map((user) => user.username)
     .filter(Boolean)
@@ -308,7 +380,9 @@ async function submitAccountRequest(event) {
     showToast("Request sent. An admin will review it soon.");
   } catch (error) {
     console.error("Account request failed:", error);
-    showLoginError("Could not send request. Check your connection and try again.");
+    showLoginError(
+      "Could not send request. Check your connection and try again.",
+    );
   }
 }
 
@@ -377,7 +451,8 @@ function ensureAdminNav() {
     btn.className = "nav-btn";
     btn.id = "admin-nav-btn";
     btn.type = "button";
-    btn.innerHTML = 'Admin <span class="nav-badge" id="admin-request-badge" hidden>0</span>';
+    btn.innerHTML =
+      'Admin <span class="nav-badge" id="admin-request-badge" hidden>0</span>';
     btn.addEventListener("click", () => showView("admin", btn));
     nav.appendChild(btn);
     return;
@@ -396,8 +471,8 @@ async function requestSync() {
   if (syncBtn) syncBtn.classList.add("loading");
 
   try {
-    await loadFixtures();
     await loadGameData();
+    if (!STATE.fixtures.length) await loadFixtures();
     if (!Object.keys(STATE.results).length) await loadResults();
     if (!STATE.leaderboard.length) await loadLeaderboard();
     await loadPredictions();
@@ -448,63 +523,34 @@ async function loadAccountRequests() {
 }
 
 async function loadFixtures() {
-  const localFixtures = await loadLocalFixtures();
-  let fixtures = localFixtures;
+  let fixtures = [];
+
+  const apiFixtures = await loadFixturesFromApi();
+  if (apiFixtures.length) {
+    STATE.fixtures = apiFixtures;
+    return;
+  }
 
   if (db) {
     try {
       const snap = await db.collection("fixtures").get();
-      const firestoreFixtures = snap.docs.map((doc) =>
+      fixtures = snap.docs.map((doc) =>
         normalizeFixture({ id: doc.id, ...doc.data() }),
       );
-      fixtures = mergeFixturesWithSchedule(firestoreFixtures, localFixtures);
     } catch (error) {
       console.warn("Could not load Firestore fixtures.", error.message);
     }
   }
 
-  const apiFixtures = await loadFixturesFromApi();
-  if (apiFixtures.length) {
-    fixtures = mergeFixturesWithSchedule(apiFixtures, fixtures);
+  if (!fixtures.length) {
+    fixtures = await loadLocalFixtures();
   }
 
-  STATE.fixtures = sortFixtures(fixtures);
-}
-
-function sortFixtures(fixtures) {
-  return [...fixtures].sort((a, b) => {
+  STATE.fixtures = fixtures.sort((a, b) => {
     const aTime = a.kickoffDate ? a.kickoffDate.getTime() : 0;
     const bTime = b.kickoffDate ? b.kickoffDate.getTime() : 0;
     return aTime - bTime || Number(a.matchId) - Number(b.matchId);
   });
-}
-
-function mergeFixturesWithSchedule(remoteFixtures, scheduleFixtures) {
-  if (!scheduleFixtures.length) return sortFixtures(remoteFixtures.map(normalizeFixture));
-  if (!remoteFixtures.length) return sortFixtures(scheduleFixtures.map(normalizeFixture));
-
-  const remoteById = remoteFixtures.reduce((acc, fixture) => {
-    const matchId = String(fixture.matchId || fixture.num || fixture.id || "").replace(/^match_/, "");
-    if (matchId) acc[matchId] = fixture;
-    return acc;
-  }, {});
-
-  const merged = scheduleFixtures.map((scheduleFixture) => {
-    const matchId = String(scheduleFixture.matchId || "").replace(/^match_/, "");
-    return normalizeFixture({
-      ...(remoteById[matchId] || {}),
-      ...scheduleFixture,
-    });
-  });
-
-  remoteFixtures.forEach((remoteFixture) => {
-    const matchId = String(remoteFixture.matchId || remoteFixture.num || remoteFixture.id || "").replace(/^match_/, "");
-    if (matchId && !merged.some((fixture) => fixture.matchId === matchId)) {
-      merged.push(normalizeFixture(remoteFixture));
-    }
-  });
-
-  return sortFixtures(merged);
 }
 
 async function loadLocalFixtures() {
@@ -558,9 +604,9 @@ async function loadResults() {
   // Inject mock results for local development/testing if no database or API is connected
   if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
     STATE.results = {
-      "1": { matchId: "1", score1: 2, score2: 1, status: "FT" },
-      "2": { matchId: "2", score1: 1, score2: 1, status: "1H" },
-      "3": { matchId: "3", score1: 0, score2: 2, status: "FT" }
+      1: { matchId: "1", score1: 2, score2: 1, status: "FT" },
+      2: { matchId: "2", score1: 1, score2: 1, status: "1H" },
+      3: { matchId: "3", score1: 0, score2: 2, status: "FT" },
     };
   }
 }
@@ -658,35 +704,55 @@ function normalizeResult(result) {
 }
 
 function readResultScore(result, side) {
-  const directKeys = side === "home"
-    ? ["score1", "team1Score", "homeScore", "home_score", "homeGoals", "goalsHome"]
-    : ["score2", "team2Score", "awayScore", "away_score", "awayGoals", "goalsAway"];
+  const directKeys =
+    side === "home"
+      ? [
+          "score1",
+          "team1Score",
+          "homeScore",
+          "home_score",
+          "homeGoals",
+          "goalsHome",
+        ]
+      : [
+          "score2",
+          "team2Score",
+          "awayScore",
+          "away_score",
+          "awayGoals",
+          "goalsAway",
+        ];
 
   for (const key of directKeys) {
-    if (result[key] !== undefined && result[key] !== null && result[key] !== "") {
+    if (
+      result[key] !== undefined &&
+      result[key] !== null &&
+      result[key] !== ""
+    ) {
       return result[key];
     }
   }
 
   const nested = result.score || result.result || result.scores;
   if (nested && typeof nested === "object") {
-    const paths = side === "home"
-      ? [
-        ["home"],
-        ["local"],
-        ["team1"],
-        ["fulltime", "home"],
-        ["ft", "home"],
-        ["final", "home"],
-      ]
-      : [
-        ["away"],
-        ["visitor"],
-        ["team2"],
-        ["fulltime", "away"],
-        ["ft", "away"],
-        ["final", "away"],
-      ];
+    const paths =
+      side === "home"
+        ? [
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
+        : [
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
 
     for (const path of paths) {
       let value = nested;
@@ -709,15 +775,36 @@ function readResultScore(result, side) {
 }
 
 function normalizeResultStatus(status) {
-  const value = String(status || "").trim().toLowerCase();
+  const value = String(status || "")
+    .trim()
+    .toLowerCase();
   if (!value) return "NS";
-  if (["ft", "fulltime", "full-time", "finished", "completed", "complete"].includes(value)) {
+  if (
+    [
+      "ft",
+      "fulltime",
+      "full-time",
+      "finished",
+      "completed",
+      "complete",
+    ].includes(value)
+  ) {
     return "FT";
   }
   if (["ht", "half-time", "halftime"].includes(value)) {
     return "HT";
   }
-  if (["live", "in_play", "inplay", "1h", "first half", "2h", "second half"].includes(value)) {
+  if (
+    [
+      "live",
+      "in_play",
+      "inplay",
+      "1h",
+      "first half",
+      "2h",
+      "second half",
+    ].includes(value)
+  ) {
     return value === "2h" || value === "second half" ? "2H" : "1H";
   }
   if (["aet", "extra time", "extra-time"].includes(value)) {
@@ -858,11 +945,11 @@ function renderPredictionCard(match) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+        )
       : null;
 
   // Determine points tier for styling
@@ -885,9 +972,7 @@ function renderPredictionCard(match) {
       : hasPred && !locked && !hasRes
         ? '<div class="mc-status-line"><span class="status-token">SAVED</span><span>Prediction saved</span></div>'
         : "";
-  const predictionScore = hasPred
-    ? `${pred.pred1}-${pred.pred2}`
-    : "—";
+  const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "—";
   const actualScore = hasRes
     ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
     : "vs";
@@ -929,15 +1014,16 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${escapeHtml(team1Code)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-          ${hasRes
-      ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          ${
+            hasRes
+              ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
+              : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+          }
         </div>
 
         <div class="mc-middle">
@@ -948,15 +1034,16 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${escapeHtml(team2Code)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-          ${hasRes
-      ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          ${
+            hasRes
+              ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
+              : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+          }
         </div>
       </div>
 
@@ -1048,8 +1135,8 @@ function renderGroupTable(groupName, fixtures) {
         </thead>
         <tbody>
           ${standings
-      .map(
-        (row, index) => `
+            .map(
+              (row, index) => `
                 <tr>
                   <td class="team-rank" data-label="#">${index + 1}</td>
                   <td data-label="Team"><span class="team-code">${escapeHtml(getTeamCode(row.team))}</span>${escapeHtml(row.team)}</td>
@@ -1061,8 +1148,8 @@ function renderGroupTable(groupName, fixtures) {
                   <td data-label="Pts"><strong>${row.points}</strong></td>
                 </tr>
               `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
     </article>
@@ -1139,11 +1226,11 @@ function renderResults() {
       const points =
         hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-            pred.pred1,
-            pred.pred2,
-            result.score1,
-            result.score2,
-          )
+              pred.pred1,
+              pred.pred2,
+              result.score1,
+              result.score2,
+            )
           : null;
 
       return `
@@ -1194,10 +1281,13 @@ function renderBracket() {
           <h3>${escapeHtml(round)}</h3>
           <div class="bracket-stack">
           ${matches
-          .map((match) => {
-            const result = STATE.results[match.matchId];
-            const score = result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
-            return `
+            .map((match) => {
+              const result = STATE.results[match.matchId];
+              const score =
+                result && hasResult(result)
+                  ? `${result.score1}-${result.score2}`
+                  : "vs";
+              return `
                 <div class="bracket-match">
                   <div class="bracket-seed">
                     <span class="team-code">${escapeHtml(getTeamCode(match.team1))}</span>
@@ -1210,8 +1300,8 @@ function renderBracket() {
                   </div>
                 </div>
               `;
-          })
-          .join("")}
+            })
+            .join("")}
           </div>
         </section>
       `;
@@ -1278,8 +1368,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-      .map(
-        (request) => `
+        .map(
+          (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -1292,15 +1382,18 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-      )
-      .join("")}
+        )
+        .join("")}
     </div>
   `;
 }
 
 function generateAccessCode(username) {
   const seed = `${username}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  return btoa(seed).replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase();
+  return btoa(seed)
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 8)
+    .toUpperCase();
 }
 
 async function approveAccountRequest(username) {
@@ -1519,10 +1612,7 @@ async function loadGameData() {
     const data = await response.json();
 
     if (Array.isArray(data.fixtures) && data.fixtures.length) {
-      STATE.fixtures = mergeFixturesWithSchedule(
-        data.fixtures.map(normalizeFixture),
-        STATE.fixtures,
-      );
+      STATE.fixtures = data.fixtures.map(normalizeFixture);
     }
     if (data.results) {
       STATE.results = normalizeResultsPayload(data.results);
@@ -1560,7 +1650,9 @@ async function loadFixturesFromApi() {
 
 async function loadResultsFromApi() {
   if (!CONFIG.appsScriptUrl) return {};
-  return Object.keys(STATE.results).length ? normalizeResultsPayload(STATE.results) : {};
+  return Object.keys(STATE.results).length
+    ? normalizeResultsPayload(STATE.results)
+    : {};
 }
 async function loadLeaderboardFromApi() {
   if (!CONFIG.appsScriptUrl) return [];
@@ -1635,7 +1727,10 @@ function getMatchStatus(match, result) {
     return { label: "Final", className: "locked" };
   if (result && isLiveStatus(result.status)) {
     const statusLabel = String(result.status).toUpperCase();
-    return { label: `Live${statusLabel && statusLabel !== "LIVE" ? ` - ${statusLabel}` : ""}`, className: "live" };
+    return {
+      label: `Live${statusLabel && statusLabel !== "LIVE" ? ` - ${statusLabel}` : ""}`,
+      className: "live",
+    };
   }
   if (isLocked(match)) return { label: "Locked", className: "locked" };
   return { label: "Open", className: "open" };
@@ -1651,7 +1746,8 @@ function hasPrediction(prediction) {
 
 function hasResult(result) {
   if (!result) return false;
-  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
+  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2))
+    return false;
   const status = String(result.status || "").toUpperCase();
   if (status === "NS" || status === "") return false;
   return isLiveStatus(status) || isFinalStatus(status);
@@ -1755,8 +1851,7 @@ function formatKickoff(match) {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: getVenueTimeZone(match),
-    timeZoneName: "short",
+    timeZone: "Africa/Cairo",
   });
 }
 
@@ -1764,26 +1859,32 @@ function formatFixtureLocalKickoff(match) {
   if (!match.date || !match.time) return "";
 
   const parsedDate = String(match.date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  const parsedTime = String(match.time).match(/^(\d{1,2}):(\d{2})(?:\s+(UTC[+-]\d{1,2}(?:\.\d+)?))?$/i);
+  const parsedTime = String(match.time).match(
+    /^(\d{1,2}):(\d{2})(?:\s+UTC([+-]\d{1,2}(?:\.\d+)?))?$/i,
+  );
   if (!parsedDate || !parsedTime) return "";
 
-  const date = new Date(Date.UTC(
+  const hour = Number(parsedTime[1]);
+  const minute = Number(parsedTime[2]);
+  const offsetHours = parsedTime[3] ? Number(parsedTime[3]) : 0;
+
+  // Convert venue local time to UTC, then display in Cairo
+  const utcMs = Date.UTC(
     Number(parsedDate[1]),
     Number(parsedDate[2]) - 1,
     Number(parsedDate[3]),
-  ));
-  const hour = Number(parsedTime[1]);
-  const minute = Number(parsedTime[2]);
-  const suffix = hour >= 12 ? "PM" : "AM";
-  const displayHour = hour % 12 || 12;
+    hour - offsetHours,
+    minute,
+  );
 
-  const zoneLabel = parsedTime[3] ? ` ${parsedTime[3].toUpperCase()}` : "";
-
-  return `${date.toLocaleDateString([], {
+  return new Date(utcMs).toLocaleString([], {
     month: "short",
     day: "numeric",
-    timeZone: "UTC",
-  })}, ${String(displayHour).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${suffix}${zoneLabel}`;
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Africa/Cairo",
+    hour12: true,
+  });
 }
 
 function formatFixtureLocalDate(match) {
@@ -1791,40 +1892,18 @@ function formatFixtureLocalDate(match) {
   const parsedDate = String(match.date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!parsedDate) return "";
 
-  return new Date(Date.UTC(
-    Number(parsedDate[1]),
-    Number(parsedDate[2]) - 1,
-    Number(parsedDate[3]),
-  )).toLocaleDateString([], {
+  return new Date(
+    Date.UTC(
+      Number(parsedDate[1]),
+      Number(parsedDate[2]) - 1,
+      Number(parsedDate[3]),
+    ),
+  ).toLocaleDateString([], {
     weekday: "long",
     month: "long",
     day: "numeric",
     timeZone: "UTC",
   });
-}
-
-function getVenueTimeZone(match) {
-  const ground = String(match.ground || match.venue || "");
-  const known = STADIUMS_BY_GROUND[ground];
-  if (known && known.timeZone) return known.timeZone;
-
-  const normalized = normalizeText(ground);
-  if (normalized.includes("los angeles") || normalized.includes("inglewood")) return "America/Los_Angeles";
-  if (normalized.includes("san francisco") || normalized.includes("santa clara")) return "America/Los_Angeles";
-  if (normalized.includes("seattle")) return "America/Los_Angeles";
-  if (normalized.includes("vancouver")) return "America/Vancouver";
-  if (normalized.includes("toronto")) return "America/Toronto";
-  if (normalized.includes("new york") || normalized.includes("east rutherford")) return "America/New_York";
-  if (normalized.includes("boston") || normalized.includes("foxborough")) return "America/New_York";
-  if (normalized.includes("philadelphia")) return "America/New_York";
-  if (normalized.includes("atlanta")) return "America/New_York";
-  if (normalized.includes("miami")) return "America/New_York";
-  if (normalized.includes("dallas") || normalized.includes("arlington")) return "America/Chicago";
-  if (normalized.includes("houston")) return "America/Chicago";
-  if (normalized.includes("kansas city")) return "America/Chicago";
-  if (normalized.includes("mexico city") || normalized.includes("guadalajara")) return "America/Mexico_City";
-  if (normalized.includes("monterrey")) return "America/Monterrey";
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 
 function isLiveStatus(status = "") {
