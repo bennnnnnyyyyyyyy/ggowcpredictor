@@ -45,22 +45,23 @@ const STATE = {
 };
 
 const STADIUMS_BY_GROUND = {
-  "Atlanta": { city: "Atlanta", stadium: "Mercedes-Benz Stadium" },
-  "Boston": { city: "Foxborough", stadium: "Gillette Stadium" },
-  "Dallas": { city: "Arlington", stadium: "AT&T Stadium" },
-  "Guadalajara (Zapopan)": { city: "Zapopan", stadium: "Estadio Akron" },
-  "Houston": { city: "Houston", stadium: "NRG Stadium" },
-  "Kansas City": { city: "Kansas City", stadium: "Arrowhead Stadium" },
-  "Los Angeles (Inglewood)": { city: "Inglewood", stadium: "SoFi Stadium" },
-  "Mexico City": { city: "Mexico City", stadium: "Estadio Azteca" },
-  "Miami": { city: "Miami Gardens", stadium: "Hard Rock Stadium" },
-  "Monterrey (Guadalupe)": { city: "Guadalupe", stadium: "Estadio BBVA" },
-  "New York New Jersey": { city: "East Rutherford", stadium: "MetLife Stadium" },
-  "Philadelphia": { city: "Philadelphia", stadium: "Lincoln Financial Field" },
-  "San Francisco Bay Area (Santa Clara)": { city: "Santa Clara", stadium: "Levi's Stadium" },
-  "Seattle": { city: "Seattle", stadium: "Lumen Field" },
-  "Toronto": { city: "Toronto", stadium: "BMO Field" },
-  "Vancouver": { city: "Vancouver", stadium: "BC Place" },
+  "Atlanta": { city: "Atlanta", stadium: "Mercedes-Benz Stadium", timeZone: "America/New_York" },
+  "Boston": { city: "Foxborough", stadium: "Gillette Stadium", timeZone: "America/New_York" },
+  "Dallas": { city: "Arlington", stadium: "AT&T Stadium", timeZone: "America/Chicago" },
+  "Guadalajara (Zapopan)": { city: "Zapopan", stadium: "Estadio Akron", timeZone: "America/Mexico_City" },
+  "Houston": { city: "Houston", stadium: "NRG Stadium", timeZone: "America/Chicago" },
+  "Kansas City": { city: "Kansas City", stadium: "Arrowhead Stadium", timeZone: "America/Chicago" },
+  "Los Angeles (Inglewood)": { city: "Inglewood", stadium: "SoFi Stadium", timeZone: "America/Los_Angeles" },
+  "Mexico City": { city: "Mexico City", stadium: "Estadio Azteca", timeZone: "America/Mexico_City" },
+  "Miami": { city: "Miami Gardens", stadium: "Hard Rock Stadium", timeZone: "America/New_York" },
+  "Monterrey (Guadalupe)": { city: "Guadalupe", stadium: "Estadio BBVA", timeZone: "America/Monterrey" },
+  "New York New Jersey": { city: "East Rutherford", stadium: "MetLife Stadium", timeZone: "America/New_York" },
+  "New York/New Jersey (East Rutherford)": { city: "East Rutherford", stadium: "MetLife Stadium", timeZone: "America/New_York" },
+  "Philadelphia": { city: "Philadelphia", stadium: "Lincoln Financial Field", timeZone: "America/New_York" },
+  "San Francisco Bay Area (Santa Clara)": { city: "Santa Clara", stadium: "Levi's Stadium", timeZone: "America/Los_Angeles" },
+  "Seattle": { city: "Seattle", stadium: "Lumen Field", timeZone: "America/Los_Angeles" },
+  "Toronto": { city: "Toronto", stadium: "BMO Field", timeZone: "America/Toronto" },
+  "Vancouver": { city: "Vancouver", stadium: "BC Place", timeZone: "America/Vancouver" },
 };
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -796,13 +797,8 @@ function renderPredictions() {
   }
 
   const groups = groupBy(visibleFixtures, (fixture) => {
-    if (fixture.kickoffDate) {
-      return fixture.kickoffDate.toLocaleDateString([], {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      });
-    }
+    const fixtureLocalDate = formatFixtureLocalDate(fixture);
+    if (fixtureLocalDate) return fixtureLocalDate;
 
     return fixture.date || "Unknown Date";
   });
@@ -1409,10 +1405,6 @@ function saveSettings() {
 }
 
 function parseKickoff(date, time, kickoffUTC) {
-  if (kickoffUTC && String(kickoffUTC).includes("T")) {
-    const parsed = new Date(kickoffUTC);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
   if (date && time) {
     const match = String(time).match(
       /(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2}(?:\.\d+)?)/i,
@@ -1433,6 +1425,12 @@ function parseKickoff(date, time, kickoffUTC) {
       return new Date(Date.UTC(y, m - 1, d, hour, minute));
     }
   }
+
+  if (kickoffUTC && String(kickoffUTC).includes("T")) {
+    const parsed = new Date(kickoffUTC);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
   return null;
 }
 
@@ -1714,15 +1712,87 @@ function applyTableResult(team1, team2, score1, score2) {
 }
 
 function formatKickoff(match) {
+  const fixtureLocal = formatFixtureLocalKickoff(match);
+  if (fixtureLocal) return fixtureLocal;
+
   if (!match.kickoffDate)
     return `${match.date || ""} ${match.time || ""}`.trim();
+
   return match.kickoffDate.toLocaleString([], {
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "Africa/Cairo",
+    timeZone: getVenueTimeZone(match),
+    timeZoneName: "short",
   });
+}
+
+function formatFixtureLocalKickoff(match) {
+  if (!match.date || !match.time) return "";
+
+  const parsedDate = String(match.date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const parsedTime = String(match.time).match(/^(\d{1,2}):(\d{2})(?:\s+(UTC[+-]\d{1,2}(?:\.\d+)?))?$/i);
+  if (!parsedDate || !parsedTime) return "";
+
+  const date = new Date(Date.UTC(
+    Number(parsedDate[1]),
+    Number(parsedDate[2]) - 1,
+    Number(parsedDate[3]),
+  ));
+  const hour = Number(parsedTime[1]);
+  const minute = Number(parsedTime[2]);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+
+  const zoneLabel = parsedTime[3] ? ` ${parsedTime[3].toUpperCase()}` : "";
+
+  return `${date.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  })}, ${String(displayHour).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${suffix}${zoneLabel}`;
+}
+
+function formatFixtureLocalDate(match) {
+  if (!match.date) return "";
+  const parsedDate = String(match.date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!parsedDate) return "";
+
+  return new Date(Date.UTC(
+    Number(parsedDate[1]),
+    Number(parsedDate[2]) - 1,
+    Number(parsedDate[3]),
+  )).toLocaleDateString([], {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function getVenueTimeZone(match) {
+  const ground = String(match.ground || match.venue || "");
+  const known = STADIUMS_BY_GROUND[ground];
+  if (known && known.timeZone) return known.timeZone;
+
+  const normalized = normalizeText(ground);
+  if (normalized.includes("los angeles") || normalized.includes("inglewood")) return "America/Los_Angeles";
+  if (normalized.includes("san francisco") || normalized.includes("santa clara")) return "America/Los_Angeles";
+  if (normalized.includes("seattle")) return "America/Los_Angeles";
+  if (normalized.includes("vancouver")) return "America/Vancouver";
+  if (normalized.includes("toronto")) return "America/Toronto";
+  if (normalized.includes("new york") || normalized.includes("east rutherford")) return "America/New_York";
+  if (normalized.includes("boston") || normalized.includes("foxborough")) return "America/New_York";
+  if (normalized.includes("philadelphia")) return "America/New_York";
+  if (normalized.includes("atlanta")) return "America/New_York";
+  if (normalized.includes("miami")) return "America/New_York";
+  if (normalized.includes("dallas") || normalized.includes("arlington")) return "America/Chicago";
+  if (normalized.includes("houston")) return "America/Chicago";
+  if (normalized.includes("kansas city")) return "America/Chicago";
+  if (normalized.includes("mexico city") || normalized.includes("guadalajara")) return "America/Mexico_City";
+  if (normalized.includes("monterrey")) return "America/Monterrey";
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 
 function isLiveStatus(status = "") {

@@ -1,6 +1,6 @@
 // leaderboard.gs
-// Reads predictions + results, scores every player, writes Sheets tabs and
-// persists leaderboard/current to Firestore with Supabase fallback.
+// Reads predictions + results from Supabase first, scores every player,
+// writes Sheets tabs, and mirrors the backup into Firestore.
 //
 // Trigger: scheduledLeaderboardUpdate() every 30 minutes.
 
@@ -96,31 +96,43 @@ function firestoreDocToRow_(doc) {
 
 function loadCollectionRows_(collection, options) {
   options = options || {};
+  const primary = String(options.primary || "supabase").toLowerCase();
+  const loadOrder =
+    primary === "firestore"
+      ? [loadFirestoreRows_, loadSupabaseRows_]
+      : [loadSupabaseRows_, loadFirestoreRows_];
 
-  try {
-    const docs = fsGet_(collection, options.pageSize || 500);
-    return docs.map(firestoreDocToRow_);
-  } catch (error) {
-    Logger.log(
-      `[FALLBACK] Firestore ${collection} unavailable (${error.message}). Trying Supabase.`,
-    );
+  for (let i = 0; i < loadOrder.length; i += 1) {
     try {
-      return fetchSupabaseCollection(collection);
-    } catch (supabaseError) {
+      return loadOrder[i](collection, options);
+    } catch (error) {
+      const source = i === 0 ? primary : primary === "firestore" ? "supabase" : "firestore";
       Logger.log(
-        `[FALLBACK] Supabase ${collection} unavailable (${supabaseError.message}).`,
+        `[FALLBACK] ${source} ${collection} unavailable (${error.message}).`,
       );
-      if (options.optional) return [];
-      throw supabaseError;
     }
   }
+
+  if (options.optional) return [];
+  throw new Error(`Could not load collection ${collection} from Supabase or Firestore.`);
+}
+
+function loadFirestoreRows_(collection, options) {
+  const docs = fsGet_(collection, options.pageSize || 500);
+  return docs.map(firestoreDocToRow_);
+}
+
+function loadSupabaseRows_(collection) {
+  return fetchSupabaseCollection(collection);
 }
 
 function buildLeaderboardSnapshot_(sourceRows) {
   sourceRows = sourceRows || {};
-  const resultRows = sourceRows.results || loadCollectionRows_("results");
-  const predictionRows = sourceRows.predictions || loadCollectionRows_("predictions");
-  const userRows = sourceRows.users || loadCollectionRows_("users");
+  const resultRows =
+    sourceRows.results || loadCollectionRows_("results", { primary: "supabase" });
+  const predictionRows =
+    sourceRows.predictions || loadCollectionRows_("predictions", { primary: "supabase" });
+  const userRows = sourceRows.users || loadCollectionRows_("users", { primary: "supabase" });
 
   const displayNames = {};
   userRows.forEach(function (user) {
@@ -308,12 +320,6 @@ function writeToSheets_(ranked, results, predictions) {
 
 function persistLeaderboard_(ranked) {
   try {
-    writeToFirestore_(ranked);
-  } catch (error) {
-    Logger.log(`[FALLBACK] Firestore leaderboard write failed: ${error.message}`);
-  }
-
-  try {
     writeToSupabaseBackup(
       "leaderboard",
       ranked.map(function (player) {
@@ -323,6 +329,12 @@ function persistLeaderboard_(ranked) {
     Logger.log("Supabase leaderboard table updated.");
   } catch (error) {
     Logger.log(`[FALLBACK] Supabase leaderboard write failed: ${error.message}`);
+  }
+
+  try {
+    writeToFirestore_(ranked);
+  } catch (error) {
+    Logger.log(`[FALLBACK] Firestore leaderboard write failed: ${error.message}`);
   }
 }
 
@@ -377,6 +389,68 @@ function migrateFirestoreToSupabase() {
   };
 }
 
+function mirrorSupabaseToFirestore() {
+  const snapshot = buildLeaderboardSnapshot_();
+  const collections = ["users", "fixtures", "predictions", "results"];
+  const summary = {};
+
+  collections.forEach(function (collection) {
+    const rows = loadCollectionRows_(collection, { primary: "supabase" });
+    let synced = 0;
+
+    rows.forEach(function (row) {
+      const docId = firestoreDocIdForCollection_(collection, row);
+      if (!docId) return;
+      const fields = convertToFirebaseDocument(normalizeSupabaseRow_(collection, row)).fields;
+      fsPatch_(collection, docId, fields);
+      synced++;
+    });
+
+    summary[collection] = synced;
+  });
+
+  fsPatch_("leaderboard", "current", {
+    players: {
+      arrayValue: {
+        values: snapshot.leaderboard.map(function (player) {
+          return {
+            mapValue: {
+              fields: {
+                rank: { integerValue: String(player.rank) },
+                username: { stringValue: player.username },
+                displayName: { stringValue: player.displayName },
+                totalPoints: { integerValue: String(player.totalPoints) },
+                exactScores: { integerValue: String(player.exactScores) },
+                correctOutcomes: { integerValue: String(player.correctOutcomes) },
+                predicted: { integerValue: String(player.predicted) },
+                scored: { integerValue: String(player.scored) },
+              },
+            },
+          };
+        }),
+      },
+    },
+    updatedAt: { stringValue: new Date().toISOString() },
+    playerCount: { integerValue: String(snapshot.leaderboard.length) },
+  });
+  summary.leaderboard = snapshot.leaderboard.length;
+
+  Logger.log("Supabase mirror synced to Firestore backup: " + JSON.stringify(summary));
+  return {
+    success: true,
+    mirrored: summary,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function firestoreDocIdForCollection_(collection, row) {
+  if (collection === "users") return String(row.username || row.id || "").trim();
+  if (collection === "fixtures") return `match_${String(row.matchId || row.id || "").replace(/^match_/, "")}`;
+  if (collection === "results") return `match_${String(row.matchId || row.id || "").replace(/^match_/, "")}`;
+  if (collection === "predictions") return String(row.id || `${row.username || ""}_${String(row.matchId || "").replace(/^match_/, "")}`);
+  return String(row.id || "").trim();
+}
+
 function getOrCreateSheet_(ss, name) {
   return ss.getSheetByName(name) || ss.insertSheet(name);
 }
@@ -402,5 +476,15 @@ function scheduledLeaderboardUpdate() {
     Logger.log("=== Done: " + JSON.stringify(result) + " ===");
   } catch (err) {
     Logger.log("scheduledLeaderboardUpdate ERROR: " + err.toString());
+  }
+}
+
+function scheduledSupabaseMirrorUpdate() {
+  try {
+    Logger.log("=== Supabase mirror update started ===");
+    const result = mirrorSupabaseToFirestore();
+    Logger.log("=== Mirror done: " + JSON.stringify(result) + " ===");
+  } catch (err) {
+    Logger.log("scheduledSupabaseMirrorUpdate ERROR: " + err.toString());
   }
 }

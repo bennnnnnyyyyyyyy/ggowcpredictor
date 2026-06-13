@@ -24,6 +24,19 @@
 - Existing Firebase quota limits can still block the initial migration until the daily reset.
 - Supabase tables must be created before fallback reads or leaderboard upserts will succeed.
 
+## 2026-06-13 - Fixture kickoff display fix
+
+### What changed
+
+- Updated `scripts/app.js` so fixture `date` + `time` with UTC offset takes priority over stored `kickoffUTC` when calculating kickoff instants.
+- Changed visible kickoff labels to show the fixture's listed stadium-local time instead of forcing Cairo/browser-local display.
+- Changed prediction day grouping to use the fixture date, avoiding date shifts caused by timezone conversion.
+
+### Verification
+
+- Ran `node --check scripts/app.js`.
+- Spot-checked Canada vs Bosnia, Qatar vs Switzerland, and USA vs Paraguay kickoff parsing from `2026/worldcup.json`.
+
 ## 2026-06-10 - Repo orientation and docs setup
 
 ### What I learned
