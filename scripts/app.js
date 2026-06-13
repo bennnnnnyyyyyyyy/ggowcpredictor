@@ -213,27 +213,13 @@ async function handleLogin(event) {
   try {
     let userData = null;
 
-async function handleLogin(event) {
-  if (event) event.preventDefault();
-
-  const username = normalizeUsername(document.getElementById("login-name").value);
-  const code = document.getElementById("login-code").value.trim();
-
-  if (!username || !code) {
-    showLoginError("Please enter your username and secret code.");
-    return;
-  }
-
-  try {
-    let userData = null;
-
-    // 1. Try Firestore SDK
+    // 1. Firestore SDK
     if (db) {
       const userSnap = await db.collection("users").doc(username).get();
       if (userSnap.exists) userData = userSnap.data();
     }
 
-    // 2. Firestore REST fallback (works even if SDK failed to load)
+    // 2. Firestore REST fallback (SDK not loaded)
     if (!userData) {
       try {
         const restUrl = `https://firestore.googleapis.com/v1/projects/ggowcpredictor/databases/(default)/documents/users/${encodeURIComponent(username)}`;
@@ -248,10 +234,10 @@ async function handleLogin(event) {
             };
           }
         }
-      } catch (_) { /* REST also failed, fall through */ }
+      } catch (_) {}
     }
 
-    // 3. Hardcoded demo users last resort
+    // 3. Demo users last resort
     if (!userData && DEMO_USERS[username]) {
       userData = {
         displayName: DEMO_USERS[username].displayName,
@@ -261,7 +247,9 @@ async function handleLogin(event) {
     }
 
     if (!userData) {
-      showLoginError("User not found. Request access or ask an admin to approve your username.");
+      showLoginError(
+        "User not found. Request access or ask an admin to approve your username.",
+      );
       return;
     }
 
@@ -270,7 +258,6 @@ async function handleLogin(event) {
       return;
     }
 
-    // ... rest of login unchanged
     SESSION.token = btoa(`${username}:${Date.now()}`);
     SESSION.username = username;
     SESSION.displayName = userData.displayName || username;
@@ -287,7 +274,6 @@ async function handleLogin(event) {
     showLoginError("Login failed. Check your connection and try again.");
   }
 }
-
 function renderUsernameOptions() {
   const list = document.getElementById("username-options");
   if (!list) return;
@@ -349,7 +335,7 @@ function normalizeUsername(value) {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_.]/g, "");  // ← keep dots
+    .replace(/[^a-z0-9_.]/g, ""); // keep dots
 }
 function toggleAccountRequest(show) {
   const modal = document.getElementById("account-request-modal");
