@@ -10,4 +10,6 @@ const firebaseConfig = {
   appId: "1:126058028551:web:e60b6e211c3e2e56e154a2",
   measurementId: "G-YQLEYQ386D",
   spreadsheetBackupId: "1KQo-BrctH7_CvzI7dGUeCpJIDhiC2g6cLpKfcEYlrYo",
+  supabaseUrl: "https://nthnysznieivbkncpqrk.supabase.co",
+  supabaseAnonKey: "sb_publishable_q4iEOMH_S09dgmg3mHtK-w_08jFDVUo",
 };
