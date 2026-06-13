@@ -1,6 +1,6 @@
 # GGO WC 2026 Predictor — Architecture
 
-> Last updated: 2026-06-11
+> Last updated: 2026-06-13
 
 ---
 
@@ -31,7 +31,11 @@
    Google Firestore   Apps Script Web App
    (ggowcpredictor)   (deployed via clasp)
           │                 │
-          │           ┌─────┘
+          │           ├─────┐
+          │           │     ▼
+          │           │ Supabase
+          │           │ backup tables
+          │           └─────┘
           │           │
           ▼           ▼
    ┌──────────────────────────┐
@@ -59,6 +63,8 @@ Each data type has a 3-tier fallback:
 | Predictions | — | Firestore `predictions/` | localStorage |
 | Leaderboard | `?action=leaderboard` (Apps Script) | Firestore `leaderboard/current` | buildLocalLeaderboard() |
 | Teams/flags | — | Firestore `teams/` | `2026/worldcup.teams.json` |
+
+Apps Script collection reads are Firebase-first. If Firestore is unavailable because of quota or another HTTP error, the backend falls back to matching Supabase tables.
 
 ---
 
@@ -144,11 +150,12 @@ Each data type has a 3-tier fallback:
 | File | Purpose | Status |
 |------|---------|--------|
 | `Code.js` | Entry point (minimal) | ✅ Ready |
-| `main.js` | `doGet` / `doPost` router + sync logic | ⚠️ Has `firebaseConfig` reference bug |
+| `main.js` | `doGet` / `doPost` router + sync logic | ✅ Uses shared leaderboard/data path |
 | `fixtures.js` | Seed fixtures from Drive + live score fetch | ⚠️ Drive path wrong; matchId bridge missing |
-| `leaderboard.js` | Leaderboard calculation and Firestore snapshot write | ✅ Ready |
+| `leaderboard.js` | Leaderboard calculation, paginated Firestore reads, Supabase fallback, Sheets snapshot | ✅ Ready |
+| `supabase.js` | Supabase REST reads/upserts and row normalization | ✅ Ready |
 | `firebase.js` | Firestore REST helpers | ✅ Solid utility layer |
-| `firebaseConfig.js` | Firebase project config | ✅ Config exists |
+| `firebaseConfig.js` | Firebase and Supabase project config | ✅ Config exists |
 
 ---
 
@@ -166,6 +173,7 @@ Each data type has a 3-tier fallback:
 | Service | Usage | Auth |
 |---------|-------|------|
 | Firebase Firestore | Primary data store | SDK apiKey (client-safe) |
+| Supabase | Backup datastore and leaderboard mirror | Publishable key or Apps Script `SUPABASE_KEY` |
 | API-Football (api-sports.io) | Live scores | `API_FOOTBALL_KEY` in Script Properties (never in browser) |
 | Google Drive | Fixture seed JSON source | Apps Script DriveApp |
 | Google Fonts | Typography (Barlow Condensed, DM Sans) | CDN |

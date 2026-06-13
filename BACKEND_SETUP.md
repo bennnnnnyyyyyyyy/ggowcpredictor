@@ -11,6 +11,7 @@ ggowcpredictor/
 │   ├── main.js                   # ✅ Main deployment endpoint (doGet/doPost)
 │   ├── fixtures.js               # ✅ Fixture seeding logic
 │   ├── leaderboard.js            # ✅ Scoring/leaderboard calculation
+│   ├── supabase.js               # ✅ Supabase backup/fallback utilities
 │   ├── firebase.js               # ✅ Firebase REST API utilities
 │   ├── Code.js                   # ✅ Entry point (auto-loaded by clasp)
 │   ├── config.gs                 # Old - can be archived
@@ -32,8 +33,13 @@ ggowcpredictor/
 - `validateFixture()` - Data validation
 
 **leaderboard.js**
-- `calculateAndUpdateLeaderboard()` - Fetches users, predictions, and results from Firestore, scores every player, and writes `leaderboard/current`
-- `calculatePlayerPoints(playerId, results)` - Legacy helper retained for backwards compatibility
+- `calculateAndUpdateLeaderboard()` - Fetches users, predictions, and results from Firestore with Supabase fallback, scores every player, and writes `leaderboard/current`
+- `migrateFirestoreToSupabase()` - Copies Firestore users, fixtures, predictions, and results into matching Supabase tables after Firebase quota resets
+
+**supabase.js**
+- `fetchSupabaseCollection(table)` - Reads all rows from a Supabase table with pagination
+- `writeToSupabaseBackup(table, payload)` - Upserts rows into Supabase using the table primary key
+- Used automatically when Firestore reads fail because of quota/errors
 - `calculateMatchPoints()` - Scoring system:
   - Exact score: **15 points**
   - Correct outcome: **5 points**
@@ -71,15 +77,14 @@ In Google Apps Script editor:
 - New trigger → `scheduledLiveScoresUpdate` → Time-driven → Every minute
 - New trigger → `scheduledLeaderboardUpdate` → Time-driven → Daily at 1 AM
 
-### 4. Add Firebase Credentials
-Update `FIREBASE_CONFIG` in `main.js` with real Firebase credentials:
-```javascript
-const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  projectId: "ggowcpredictor",
-  databaseURL: "https://ggowcpredictor.firebaseio.com"
-};
-```
+### 4. Verify Firebase and Supabase Credentials
+Firebase credentials live in `src/firebaseConfig.js` as `firebaseConfig`.
+
+For Supabase, set Apps Script **Script Properties** when possible:
+- `SUPABASE_URL`
+- `SUPABASE_KEY`
+
+If those properties are missing, `src/supabase.js` falls back to the Supabase values in `firebaseConfig`.
 
 ### 5. Seed Fixtures (One-time)
 ```bash
@@ -169,6 +174,7 @@ Example:
 
 - **Single source of truth**: Apps Script reads from external APIs, writes to Firebase
 - **Firebase as hub**: Frontend reads from Firebase, backend maintains it
+- **Supabase as backup**: Apps Script falls back to Supabase when Firestore is unavailable and mirrors leaderboard rows there
 - **No API keys exposed**: Frontend never calls external APIs directly
 - **Scheduled updates**: Live scores every 60 seconds, leaderboard daily
 - **Stateless**: Each request to Apps Script endpoint is independent

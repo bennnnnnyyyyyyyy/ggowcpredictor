@@ -432,15 +432,15 @@ header{background:linear-gradient(180deg,rgba(0,61,165,0.15) 0%,transparent 100%
           </tr>
           <tr class="bug-row-p1">
             <td><span class="severity sev-p1">P1</span></td>
-            <td style="font-size:13px;font-weight:500"><code>main.js:getFixtures</code> and <code>syncAllData</code> throw <code>ReferenceError: firebaseConfig is not defined</code> (uses <code>FIREBASE_CONFIG</code> vs <code>firebaseConfig</code>)</td>
-            <td style="font-size:11px;color:var(--muted)">src/main.js L84, L110</td>
+            <td style="font-size:13px;font-weight:500"><code>main.js:getFixtures</code> and <code>syncAllData</code> now use the shared Firebase/Supabase collection loader</td>
+            <td style="font-size:11px;color:var(--muted)">src/main.js</td>
             <td><span class="tag tag-be">Backend</span></td>
-            <td><span class="badge badge-blocked">Open</span></td>
+            <td><span class="badge badge-done">Done</span></td>
           </tr>
           <tr class="bug-row-p1">
             <td><span class="severity sev-p1">P1</span></td>
-            <td style="font-size:13px;font-weight:500">3 conflicting scoring implementations in <code>app.js</code>, <code>main.js</code>, and <code>leaderboard.js</code> — produce different point values</td>
-            <td style="font-size:11px;color:var(--muted)">All 3 files</td>
+            <td style="font-size:13px;font-weight:500">Stage multipliers are documented in scoring rules but still need a runtime implementation pass</td>
+            <td style="font-size:11px;color:var(--muted)">docs/SCORING.md, scripts/app.js, src/leaderboard.js</td>
             <td><span class="tag tag-be">Backend</span><span class="tag tag-fe">Frontend</span></td>
             <td><span class="badge badge-blocked">Open</span></td>
           </tr>
@@ -453,10 +453,10 @@ header{background:linear-gradient(180deg,rgba(0,61,165,0.15) 0%,transparent 100%
           </tr>
           <tr class="bug-row-p1">
             <td><span class="severity sev-p1">P1</span></td>
-            <td style="font-size:13px;font-weight:500"><code>leaderboard.js:calculateAndUpdateLeaderboard</code> now fetches Firestore users, predictions, and results before writing <code>leaderboard/current</code></td>
-            <td style="font-size:11px;color:var(--muted)">src/leaderboard.js L13–14</td>
+            <td style="font-size:13px;font-weight:500"><code>leaderboard.js:calculateAndUpdateLeaderboard</code> now paginates Firestore, falls back to Supabase, and writes both stores</td>
+            <td style="font-size:11px;color:var(--muted)">src/leaderboard.js, src/supabase.js</td>
             <td><span class="tag tag-be">Backend</span></td>
-            <td><span class="badge badge-blocked">Open</span></td>
+            <td><span class="badge badge-done">Done</span></td>
           </tr>
           <tr class="bug-row-p1">
             <td><span class="severity sev-p1">P1</span></td>

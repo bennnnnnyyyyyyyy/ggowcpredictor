@@ -1,5 +1,29 @@
 # Work Log
 
+## 2026-06-13 - Supabase fallback and leaderboard repair
+
+### What changed
+
+- Replaced the misnamed `src/supabaseConfig,js` file with `src/supabase.js` so clasp can deploy the Supabase helper layer.
+- Added paginated Firestore collection reads for leaderboard data, removing the old 500-document ceiling.
+- Added Supabase fallback reads for `users`, `fixtures`, `predictions`, and `results` when Firestore is blocked.
+- Added `migrateFirestoreToSupabase()` plus `doPost` action `migrateToSupabase` for copying Firestore data after quota reset.
+- Updated `src/main.js` so `?action=sync` and `?action=leaderboard` use the same leaderboard calculation path as the scheduled job.
+- Leaderboard writes now try Firestore and also upsert rows into the Supabase `leaderboard` table.
+- Added [SUPABASE_SETUP.md](SUPABASE_SETUP.md) with table SQL and the migration runbook.
+
+### Verification
+
+- Ran `node --check src/main.js`.
+- Ran `node --check src/leaderboard.js`.
+- Ran `node --check src/supabase.js`.
+- Confirmed only one `scheduledLeaderboardUpdate` and one `calculateLeaderboard` definition remain in `src/`.
+
+### Notes
+
+- Existing Firebase quota limits can still block the initial migration until the daily reset.
+- Supabase tables must be created before fallback reads or leaderboard upserts will succeed.
+
 ## 2026-06-10 - Repo orientation and docs setup
 
 ### What I learned
@@ -110,7 +134,7 @@
 ### Blockers still open
 
 - `savePrediction` P0 crash (locked branch references undefined vars)
-- `main.js` ReferenceError (`FIREBASE_CONFIG` vs `firebaseConfig`)
+- `main.js` ReferenceError (`FIREBASE_CONFIG` vs `firebaseConfig`) is fixed by the shared collection loader path
 - `leaderboard.js` now fetches users, predictions, and results from Firestore and writes `leaderboard/current`
 - matchId mismatch between fixtures (sequential int) and API-Football results (API fixture ID)
 - `seedFixturesFromJSON` reads from wrong Drive location

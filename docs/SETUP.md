@@ -6,6 +6,7 @@
 
 - A Google account with access to the GGO Firebase project (`ggowcpredictor`)
 - Access to the Apps Script project (Google Account that owns it)
+- Access to the Supabase project `ggowcpredictor`
 - Optionally: `clasp` installed (only needed to push backend changes)
 
 > ⚠️ This PC has no admin/PATH access. All commands below use PowerShell built-ins or browser-based tools only.
@@ -84,7 +85,20 @@ In the Apps Script editor:
 
 ---
 
-## Step 6 — Configure the Browser App
+## Step 6 — Configure Supabase Backup
+
+1. Open Supabase project `ggowcpredictor`.
+2. Run the SQL in [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
+3. In Apps Script **Project Settings → Script Properties**, add:
+   - `SUPABASE_URL`: `https://nthnysznieivbkncpqrk.supabase.co`
+   - `SUPABASE_KEY`: the Supabase publishable key
+4. After Firebase quota resets, run `migrateFirestoreToSupabase()` once from Apps Script.
+
+The backend will try Firestore first and fall back to Supabase if Firestore is blocked by quota.
+
+---
+
+## Step 7 — Configure the Browser App
 
 1. Open `index.html` in a browser (serve via local web server, not `file://` — fetch requires HTTP).
 2. Log in with an admin account.
@@ -96,7 +110,7 @@ In the Apps Script editor:
 
 ---
 
-## Step 7 — Serve Locally (for testing)
+## Step 8 — Serve Locally (for testing)
 
 Since this PC has no global CLI, use PowerShell's built-in HTTP listener or Python (if installed):
 
@@ -112,7 +126,7 @@ python -m http.server 8080 --directory "C:\Users\abdel\OneDrive\Desktop\ggofiles
 
 ---
 
-## Step 8 — Deploy for Team
+## Step 9 — Deploy for Team
 
 Options (no CLI required):
 
