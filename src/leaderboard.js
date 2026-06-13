@@ -116,10 +116,11 @@ function loadCollectionRows_(collection, options) {
   }
 }
 
-function buildLeaderboardSnapshot_() {
-  const resultRows = loadCollectionRows_("results");
-  const predictionRows = loadCollectionRows_("predictions");
-  const userRows = loadCollectionRows_("users");
+function buildLeaderboardSnapshot_(sourceRows) {
+  sourceRows = sourceRows || {};
+  const resultRows = sourceRows.results || loadCollectionRows_("results");
+  const predictionRows = sourceRows.predictions || loadCollectionRows_("predictions");
+  const userRows = sourceRows.users || loadCollectionRows_("users");
 
   const displayNames = {};
   userRows.forEach(function (user) {

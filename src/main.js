@@ -100,7 +100,12 @@ function getFixtures() {
  * Sync all data (fixtures, results, leaderboard)
  */
 function syncAllData() {
-  const fixtures = loadCollectionRows_("fixtures").map((fixture) => ({
+  const fixtureRows = loadCollectionRows_("fixtures");
+  const resultRows = loadCollectionRows_("results");
+  const userRows = loadCollectionRows_("users", { optional: true });
+  const predictionRows = loadCollectionRows_("predictions", { optional: true });
+
+  const fixtures = fixtureRows.map((fixture) => ({
     matchId: String(fixture.matchId || fixture.id || "").replace(/^match_/, ""),
     round: fixture.round || "",
     group: fixture.group || "",
@@ -114,7 +119,7 @@ function syncAllData() {
   }));
 
   const results = {};
-  loadCollectionRows_("results").forEach((result) => {
+  resultRows.forEach((result) => {
     const matchId = String(result.matchId || result.id || "").replace(/^match_/, "");
     if (!matchId) return;
     results[matchId] = {
@@ -125,13 +130,17 @@ function syncAllData() {
     };
   });
 
-  const users = loadCollectionRows_("users", { optional: true }).map((user) => ({
+  const users = userRows.map((user) => ({
     username: String(user.username || user.id || "").trim(),
     displayName: user.displayName || user.username || user.id || "",
     isAdmin: Boolean(user.isAdmin),
   })).filter((user) => user.username);
 
-  const leaderboardSnapshot = getLeaderboardSnapshot();
+  const leaderboardSnapshot = buildLeaderboardSnapshot_({
+    results: resultRows,
+    predictions: predictionRows,
+    users: userRows,
+  });
 
   return {
     fixtures,
