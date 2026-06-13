@@ -396,8 +396,8 @@ async function requestSync() {
   if (syncBtn) syncBtn.classList.add("loading");
 
   try {
+    await loadFixtures();
     await loadGameData();
-    if (!STATE.fixtures.length) await loadFixtures();
     if (!Object.keys(STATE.results).length) await loadResults();
     if (!STATE.leaderboard.length) await loadLeaderboard();
     await loadPredictions();
@@ -448,34 +448,63 @@ async function loadAccountRequests() {
 }
 
 async function loadFixtures() {
-  let fixtures = [];
-
-  const apiFixtures = await loadFixturesFromApi();
-  if (apiFixtures.length) {
-    STATE.fixtures = apiFixtures;
-    return;
-  }
+  const localFixtures = await loadLocalFixtures();
+  let fixtures = localFixtures;
 
   if (db) {
     try {
       const snap = await db.collection("fixtures").get();
-      fixtures = snap.docs.map((doc) =>
+      const firestoreFixtures = snap.docs.map((doc) =>
         normalizeFixture({ id: doc.id, ...doc.data() }),
       );
+      fixtures = mergeFixturesWithSchedule(firestoreFixtures, localFixtures);
     } catch (error) {
       console.warn("Could not load Firestore fixtures.", error.message);
     }
   }
 
-  if (!fixtures.length) {
-    fixtures = await loadLocalFixtures();
+  const apiFixtures = await loadFixturesFromApi();
+  if (apiFixtures.length) {
+    fixtures = mergeFixturesWithSchedule(apiFixtures, fixtures);
   }
 
-  STATE.fixtures = fixtures.sort((a, b) => {
+  STATE.fixtures = sortFixtures(fixtures);
+}
+
+function sortFixtures(fixtures) {
+  return [...fixtures].sort((a, b) => {
     const aTime = a.kickoffDate ? a.kickoffDate.getTime() : 0;
     const bTime = b.kickoffDate ? b.kickoffDate.getTime() : 0;
     return aTime - bTime || Number(a.matchId) - Number(b.matchId);
   });
+}
+
+function mergeFixturesWithSchedule(remoteFixtures, scheduleFixtures) {
+  if (!scheduleFixtures.length) return sortFixtures(remoteFixtures.map(normalizeFixture));
+  if (!remoteFixtures.length) return sortFixtures(scheduleFixtures.map(normalizeFixture));
+
+  const remoteById = remoteFixtures.reduce((acc, fixture) => {
+    const matchId = String(fixture.matchId || fixture.num || fixture.id || "").replace(/^match_/, "");
+    if (matchId) acc[matchId] = fixture;
+    return acc;
+  }, {});
+
+  const merged = scheduleFixtures.map((scheduleFixture) => {
+    const matchId = String(scheduleFixture.matchId || "").replace(/^match_/, "");
+    return normalizeFixture({
+      ...(remoteById[matchId] || {}),
+      ...scheduleFixture,
+    });
+  });
+
+  remoteFixtures.forEach((remoteFixture) => {
+    const matchId = String(remoteFixture.matchId || remoteFixture.num || remoteFixture.id || "").replace(/^match_/, "");
+    if (matchId && !merged.some((fixture) => fixture.matchId === matchId)) {
+      merged.push(normalizeFixture(remoteFixture));
+    }
+  });
+
+  return sortFixtures(merged);
 }
 
 async function loadLocalFixtures() {
@@ -1490,7 +1519,10 @@ async function loadGameData() {
     const data = await response.json();
 
     if (Array.isArray(data.fixtures) && data.fixtures.length) {
-      STATE.fixtures = data.fixtures.map(normalizeFixture);
+      STATE.fixtures = mergeFixturesWithSchedule(
+        data.fixtures.map(normalizeFixture),
+        STATE.fixtures,
+      );
     }
     if (data.results) {
       STATE.results = normalizeResultsPayload(data.results);
