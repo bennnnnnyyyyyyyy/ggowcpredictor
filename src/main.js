@@ -61,6 +61,9 @@ function doPost(e) {
       case "calculateScores":
         response = calculateAndUpdateLeaderboard();
         break;
+      case "migrateToSupabase":
+        response = migrateFirestoreToSupabase();
+        break;
       default:
         response = { error: "Unknown action" };
     }
@@ -79,81 +82,75 @@ function doPost(e) {
  * Get all fixtures from Firebase
  */
 function getFixtures() {
-  const projectId = "ggowcpredictor";
-  const apiKey = firebaseConfig.apiKey;
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/fixtures?pageSize=200&key=${apiKey}`;
-  const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  const data = JSON.parse(resp.getContentText());
-  const fixtures = (data.documents || []).map(d => {
-    const f = d.fields;
-    const get = (k) => f[k] ? (f[k].stringValue ?? f[k].integerValue ?? null) : null;
-    return {
-      matchId: get("matchId"),
-      round: get("round"),
-      group: get("group"),
-      date: get("date"),
-      time: get("time"),
-      kickoffUTC: get("kickoffUTC"),
-      team1: get("team1"),
-      team2: get("team2"),
-      ground: get("ground"),
-      stage: get("stage"),
-    };
-  });
+  const fixtures = loadCollectionRows_("fixtures").map((fixture) => ({
+    matchId: String(fixture.matchId || fixture.id || "").replace(/^match_/, ""),
+    round: fixture.round || "",
+    group: fixture.group || "",
+    date: fixture.date || "",
+    time: fixture.time || "",
+    kickoffUTC: fixture.kickoffUTC || null,
+    team1: fixture.team1 || "",
+    team2: fixture.team2 || "",
+    ground: fixture.ground || "",
+    stage: fixture.stage || "",
+  }));
   return { fixtures, timestamp: new Date().toISOString(), status: "ok" };
 }
 /**
  * Sync all data (fixtures, results, leaderboard)
  */
 function syncAllData() {
-  const projectId = "ggowcpredictor";
-  const apiKey = firebaseConfig.apiKey;
-  const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
-
-  function fetchCollection(name) {
-    const resp = UrlFetchApp.fetch(`${base}/${name}?pageSize=500&key=${apiKey}`, { muteHttpExceptions: true });
-    return JSON.parse(resp.getContentText()).documents || [];
-  }
-
-  function field(f, k) {
-    if (!f[k]) return null;
-    return f[k].stringValue ?? f[k].integerValue ?? f[k].doubleValue ?? f[k].nullValue ?? null;
-  }
-
-  const fixtureDocs = fetchCollection("fixtures");
-  const resultDocs  = fetchCollection("results");
-
-  const fixtures = fixtureDocs.map(d => {
-    const f = d.fields;
-    return {
-      matchId: field(f,"matchId"), round: field(f,"round"), group: field(f,"group"),
-      date: field(f,"date"), time: field(f,"time"), kickoffUTC: field(f,"kickoffUTC"),
-      team1: field(f,"team1"), team2: field(f,"team2"), ground: field(f,"ground"), stage: field(f,"stage"),
-    };
-  });
+  const fixtures = loadCollectionRows_("fixtures").map((fixture) => ({
+    matchId: String(fixture.matchId || fixture.id || "").replace(/^match_/, ""),
+    round: fixture.round || "",
+    group: fixture.group || "",
+    date: fixture.date || "",
+    time: fixture.time || "",
+    kickoffUTC: fixture.kickoffUTC || null,
+    team1: fixture.team1 || "",
+    team2: fixture.team2 || "",
+    ground: fixture.ground || "",
+    stage: fixture.stage || "",
+  }));
 
   const results = {};
-  resultDocs.forEach(d => {
-    const f = d.fields;
-    const matchId = field(f,"matchId");
-    if (matchId) results[matchId] = {
+  loadCollectionRows_("results").forEach((result) => {
+    const matchId = String(result.matchId || result.id || "").replace(/^match_/, "");
+    if (!matchId) return;
+    results[matchId] = {
       matchId,
-      score1: field(f,"score1"),
-      score2: field(f,"score2"),
-      status: field(f,"status") || "NS",
+      score1: nullableNumber_(result.score1),
+      score2: nullableNumber_(result.score2),
+      status: String(result.status || "NS").toUpperCase(),
     };
   });
 
-  const leaderboard = buildLeaderboard(projectId, apiKey, base, results);
+  const users = loadCollectionRows_("users", { optional: true }).map((user) => ({
+    username: String(user.username || user.id || "").trim(),
+    displayName: user.displayName || user.username || user.id || "",
+    isAdmin: Boolean(user.isAdmin),
+  })).filter((user) => user.username);
 
-  return { fixtures, results, leaderboard, timestamp: new Date().toISOString() };
+  const leaderboardSnapshot = getLeaderboardSnapshot();
+
+  return {
+    fixtures,
+    results,
+    users,
+    leaderboard: leaderboardSnapshot.leaderboard,
+    timestamp: new Date().toISOString(),
+  };
 }
 /**
  * Calculate and return leaderboard
  */
 function calculateLeaderboard() {
-  const sync = syncAllData();
-  return { leaderboard: sync.leaderboard, timestamp: sync.timestamp };
+  const snapshot = getLeaderboardSnapshot();
+  return {
+    leaderboard: snapshot.leaderboard,
+    scoredMatches: snapshot.scoredMatches,
+    timestamp: snapshot.timestamp,
+  };
 }
 
 /**
@@ -167,58 +164,4 @@ function scheduledLiveScoresUpdate() {
   } catch (error) {
     Logger.log("Error in scheduledLiveScoresUpdate: " + error.toString());
   }
-}
-
-/**
- * Scheduled trigger: Runs daily to recalculate leaderboard
- */
-function scheduledLeaderboardUpdate() {
-  try {
-    Logger.log("Starting leaderboard calculation...");
-    const result = calculateAndUpdateLeaderboard();
-    Logger.log("Leaderboard update completed: " + JSON.stringify(result));
-  } catch (error) {
-    Logger.log("Error in scheduledLeaderboardUpdate: " + error.toString());
-  }
-}
-function buildLeaderboard(projectId, apiKey, base, results) {
-  try {
-    const predDocs = UrlFetchApp.fetch(`${base}/predictions?pageSize=500&key=${apiKey}`, { muteHttpExceptions: true });
-    const predictions = JSON.parse(predDocs.getContentText()).documents || [];
-    const userMap = {};
-
-    predictions.forEach(d => {
-      const f = d.fields;
-      const get = k => f[k] ? (f[k].stringValue ?? f[k].integerValue ?? null) : null;
-      const username = get("username");
-      const matchId  = get("matchId");
-      const pred1    = Number(get("pred1"));
-      const pred2    = Number(get("pred2"));
-      if (!username || !matchId) return;
-
-      if (!userMap[username]) userMap[username] = { username, totalPoints:0, exactScores:0, correctOutcomes:0, predicted:0 };
-      userMap[username].predicted++;
-
-      const result = results[matchId];
-      if (!result || result.score1 === null || result.score2 === null) return;
-
-      const pts = scoreMatch(pred1, pred2, Number(result.score1), Number(result.score2));
-      userMap[username].totalPoints += pts;
-      if (pts === 15) userMap[username].exactScores++;
-      if (pts > 0)    userMap[username].correctOutcomes++;
-    });
-
-    return Object.values(userMap)
-      .sort((a,b) => b.totalPoints - a.totalPoints)
-      .map((p,i) => ({ ...p, rank: i+1 }));
-  } catch(e) {
-    return [];
-  }
-}
-
-function scoreMatch(p1, p2, a1, a2) {
-  if (p1===a1 && p2===a2) return 15;
-  const po = Math.sign(p1-p2), ao = Math.sign(a1-a2);
-  if (po !== ao) return 0;
-  return Math.abs((p1-p2)-(a1-a2)) <= 1 ? 8 : 5;
 }

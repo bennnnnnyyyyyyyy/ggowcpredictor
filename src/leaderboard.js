@@ -1,12 +1,12 @@
 // leaderboard.gs
-// Reads predictions + results from Firestore, scores every player,
-// writes results to two Sheets tabs (Scores, Leaderboard) and back
-// to Firestore leaderboard/current so the website can consume it.
+// Reads predictions + results, scores every player, writes Sheets tabs and
+// persists leaderboard/current to Firestore with Supabase fallback.
 //
 // Trigger: scheduledLeaderboardUpdate() every 30 minutes.
 
-// ─── Scoring (mirrors app.js calculateMatchPoints exactly) ──────────────────
+const FINAL_STATUSES = ["FT", "AET", "PEN", "COMPLETED", "FINAL"];
 
+// Scoring mirrors scripts/app.js calculateMatchPoints.
 function scoreMatch_(p1, p2, a1, a2) {
   if (p1 === a1 && p2 === a2) return 15;
 
@@ -18,12 +18,9 @@ function scoreMatch_(p1, p2, a1, a2) {
     return diffGap <= 1 ? 8 : 5;
   }
 
-  // Wrong outcome — partial credit if total goal gap ≤ 2
   const totalGap = Math.abs(p1 - a1) + Math.abs(p2 - a2);
   return totalGap <= 2 ? 3 : 0;
 }
-
-// ─── Firestore helpers ───────────────────────────────────────────────────────
 
 function fsBase_() {
   const pid = firebaseConfig.projectId;
@@ -32,143 +29,195 @@ function fsBase_() {
 
 function fsGet_(collection, pageSize) {
   pageSize = pageSize || 500;
-  const url = `${fsBase_()}/${collection}?pageSize=${pageSize}&key=${firebaseConfig.apiKey}`;
-  const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  const data = JSON.parse(resp.getContentText());
-  return data.documents || [];
+  let pageToken = "";
+  const documents = [];
+
+  while (true) {
+    const tokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
+    const url = `${fsBase_()}/${collection}?pageSize=${pageSize}${tokenParam}&key=${firebaseConfig.apiKey}`;
+    const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    const code = resp.getResponseCode();
+    const body = resp.getContentText();
+
+    if (code < 200 || code >= 300) {
+      const error = new Error(`Firestore ${collection} failed with HTTP ${code}: ${body}`);
+      error.statusCode = code;
+      throw error;
+    }
+
+    const data = JSON.parse(body || "{}");
+    documents.push.apply(documents, data.documents || []);
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+
+  return documents;
 }
 
 function fsPatch_(collection, docId, fields) {
   const url = `${fsBase_()}/${collection}/${docId}?key=${firebaseConfig.apiKey}`;
-  UrlFetchApp.fetch(url, {
+  const resp = UrlFetchApp.fetch(url, {
     method: "patch",
     contentType: "application/json",
     payload: JSON.stringify({ fields }),
     muteHttpExceptions: true,
   });
+  const code = resp.getResponseCode();
+  if (code < 200 || code >= 300) {
+    throw new Error(
+      `Firestore write ${collection}/${docId} failed with HTTP ${code}: ${resp.getContentText()}`,
+    );
+  }
 }
 
-// Extract a scalar value from a Firestore field map entry
 function fsVal_(entry) {
   if (!entry) return null;
-  return entry.stringValue !== undefined
-    ? entry.stringValue
-    : entry.integerValue !== undefined
-      ? Number(entry.integerValue)
-      : entry.doubleValue !== undefined
-        ? Number(entry.doubleValue)
-        : entry.booleanValue !== undefined
-          ? entry.booleanValue
-          : null;
+  if (entry.stringValue !== undefined) return entry.stringValue;
+  if (entry.integerValue !== undefined) return Number(entry.integerValue);
+  if (entry.doubleValue !== undefined) return Number(entry.doubleValue);
+  if (entry.booleanValue !== undefined) return entry.booleanValue;
+  if (entry.timestampValue !== undefined) return entry.timestampValue;
+  if (entry.nullValue !== undefined) return null;
+  return null;
 }
 
-// ─── Main: build and persist leaderboard ────────────────────────────────────
+function firestoreDocId_(doc) {
+  return String(doc.name || "").split("/").pop();
+}
 
-function calculateAndUpdateLeaderboard() {
-  const base = fsBase_();
-  const apiKey = firebaseConfig.apiKey;
-
-  // 1. Load results (only FT / AET / PEN qualify for points)
-  const FINAL_STATUSES = ["FT", "AET", "PEN", "COMPLETED", "FINAL"];
-  const resultDocs = fsGet_("results");
-  const results = {}; // keyed by matchId (string)
-
-  resultDocs.forEach(function (doc) {
-    const f = doc.fields || {};
-    const matchId = String(fsVal_(f.matchId) || "");
-    const status = String(fsVal_(f.status) || "").toUpperCase();
-    const s1 = fsVal_(f.score1);
-    const s2 = fsVal_(f.score2);
-    if (!matchId || s1 === null || s2 === null) return;
-    if (!FINAL_STATUSES.includes(status)) return;
-    results[matchId] = { score1: Number(s1), score2: Number(s2), status };
+function firestoreDocToRow_(doc) {
+  const row = { id: firestoreDocId_(doc) };
+  const fields = doc.fields || {};
+  Object.keys(fields).forEach(function (key) {
+    row[key] = fsVal_(fields[key]);
   });
+  return row;
+}
 
-  const scoredMatches = Object.keys(results).length;
-  Logger.log("Scored matches available: " + scoredMatches);
+function loadCollectionRows_(collection, options) {
+  options = options || {};
 
-  // 2. Load predictions
-  const predDocs = fsGet_("predictions");
+  try {
+    const docs = fsGet_(collection, options.pageSize || 500);
+    return docs.map(firestoreDocToRow_);
+  } catch (error) {
+    Logger.log(
+      `[FALLBACK] Firestore ${collection} unavailable (${error.message}). Trying Supabase.`,
+    );
+    try {
+      return fetchSupabaseCollection(collection);
+    } catch (supabaseError) {
+      Logger.log(
+        `[FALLBACK] Supabase ${collection} unavailable (${supabaseError.message}).`,
+      );
+      if (options.optional) return [];
+      throw supabaseError;
+    }
+  }
+}
 
-  // 3. Load users for display names
-  const userDocs = fsGet_("users");
+function buildLeaderboardSnapshot_() {
+  const resultRows = loadCollectionRows_("results");
+  const predictionRows = loadCollectionRows_("predictions");
+  const userRows = loadCollectionRows_("users");
+
   const displayNames = {};
-  userDocs.forEach(function (doc) {
-    const f = doc.fields || {};
-    const username = doc.name.split("/").pop();
-    displayNames[username] = fsVal_(f.displayName) || username;
+  userRows.forEach(function (user) {
+    const username = String(user.username || user.id || "").trim();
+    if (username) displayNames[username] = user.displayName || username;
   });
 
-  // 4. Aggregate per-user stats
-  const userMap = {}; // username → stats object
+  const results = {};
+  resultRows.forEach(function (result) {
+    const matchId = String(result.matchId || result.id || "").replace(/^match_/, "");
+    const status = String(result.status || "").toUpperCase();
+    const score1 = nullableNumber_(result.score1);
+    const score2 = nullableNumber_(result.score2);
+    if (!matchId || score1 === null || score2 === null) return;
+    if (!FINAL_STATUSES.includes(status)) return;
+    results[matchId] = { matchId, score1, score2, status };
+  });
 
-  predDocs.forEach(function (doc) {
-    const f = doc.fields || {};
-    const username = String(fsVal_(f.username) || "");
-    const matchId = String(fsVal_(f.matchId) || "");
-    const pred1 = Number(fsVal_(f.pred1));
-    const pred2 = Number(fsVal_(f.pred2));
+  const userMap = {};
+  predictionRows.forEach(function (prediction) {
+    const username = String(prediction.username || "").trim();
+    const matchId = String(prediction.matchId || "").replace(/^match_/, "");
+    const pred1 = nullableNumber_(prediction.pred1);
+    const pred2 = nullableNumber_(prediction.pred2);
 
-    if (!username || !matchId) return;
-    if (isNaN(pred1) || isNaN(pred2)) return;
+    if (!username || !matchId || pred1 === null || pred2 === null) return;
 
     if (!userMap[username]) {
       userMap[username] = {
         username,
         displayName: displayNames[username] || username,
         totalPoints: 0,
-        exactScores: 0, // 15-pt hits
-        correctOutcomes: 0, // any positive score
-        predicted: 0, // total predictions placed
-        scored: 0, // predictions against a final result
+        exactScores: 0,
+        correctOutcomes: 0,
+        predicted: 0,
+        scored: 0,
       };
     }
 
     userMap[username].predicted++;
-
     const result = results[matchId];
-    if (!result) return; // match not yet final
+    if (!result) return;
 
-    const pts = scoreMatch_(pred1, pred2, result.score1, result.score2);
-    userMap[username].totalPoints += pts;
+    const points = scoreMatch_(pred1, pred2, result.score1, result.score2);
+    userMap[username].totalPoints += points;
     userMap[username].scored++;
-    if (pts === 15) userMap[username].exactScores++;
-    if (pts > 0) userMap[username].correctOutcomes++;
+    if (points === 15) userMap[username].exactScores++;
+    if (points > 0) userMap[username].correctOutcomes++;
   });
 
-  // 5. Sort and rank
   const ranked = Object.values(userMap)
     .sort(function (a, b) {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
       if (b.exactScores !== a.exactScores) return b.exactScores - a.exactScores;
-      return b.correctOutcomes - a.correctOutcomes;
+      if (b.correctOutcomes !== a.correctOutcomes) return b.correctOutcomes - a.correctOutcomes;
+      return a.username.localeCompare(b.username);
     })
-    .map(function (p, i) {
-      return Object.assign({}, p, { rank: i + 1 });
+    .map(function (player, index) {
+      return Object.assign({}, player, { rank: index + 1 });
     });
 
-  Logger.log("Players ranked: " + ranked.length);
-
-  // 6. Write to Google Sheets
-  writeToSheets_(ranked, results);
-
-  // 7. Write back to Firestore leaderboard/current
-  writeToFirestore_(ranked);
-
   return {
-    success: true,
-    playersScored: ranked.length,
-    scoredMatches,
+    leaderboard: ranked,
+    predictions: predictionRows,
+    results,
+    scoredMatches: Object.keys(results).length,
     timestamp: new Date().toISOString(),
   };
 }
 
-// ─── Sheet writer ────────────────────────────────────────────────────────────
+function getLeaderboardSnapshot() {
+  const snapshot = buildLeaderboardSnapshot_();
+  return {
+    leaderboard: snapshot.leaderboard,
+    scoredMatches: snapshot.scoredMatches,
+    timestamp: snapshot.timestamp,
+  };
+}
 
-function writeToSheets_(ranked, results) {
+function calculateAndUpdateLeaderboard() {
+  const snapshot = buildLeaderboardSnapshot_();
+  Logger.log("Scored matches available: " + snapshot.scoredMatches);
+  Logger.log("Players ranked: " + snapshot.leaderboard.length);
+
+  writeToSheets_(snapshot.leaderboard, snapshot.results, snapshot.predictions);
+  persistLeaderboard_(snapshot.leaderboard);
+
+  return {
+    success: true,
+    playersScored: snapshot.leaderboard.length,
+    scoredMatches: snapshot.scoredMatches,
+    timestamp: snapshot.timestamp,
+  };
+}
+
+function writeToSheets_(ranked, results, predictions) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // ── Tab 1: Leaderboard ───────────────────────────────────────────────────
   const lbTab = getOrCreateSheet_(ss, "Leaderboard");
   lbTab.clearContents();
 
@@ -180,6 +229,7 @@ function writeToSheets_(ranked, results) {
     "Exact Scores",
     "Correct Outcomes",
     "Predictions",
+    "Scored",
   ];
   lbTab.getRange(1, 1, 1, lbHeaders.length).setValues([lbHeaders]);
   styleHeader_(lbTab, lbHeaders.length);
@@ -194,22 +244,16 @@ function writeToSheets_(ranked, results) {
         p.exactScores,
         p.correctOutcomes,
         p.predicted,
+        p.scored,
       ];
     });
     lbTab.getRange(2, 1, lbRows.length, lbHeaders.length).setValues(lbRows);
-    highlightTopThree_(lbTab, lbRows.length);
+    highlightTopThree_(lbTab, lbRows.length, lbHeaders.length);
   }
 
   lbTab.autoResizeColumns(1, lbHeaders.length);
-  lbTab
-    .getRange("A1")
-    .getSheet()
-    .getRange(1, 1, 1, 1) // timestamp note in A1 note
-    .setNote("Last updated: " + new Date().toLocaleString());
+  lbTab.getRange(1, 1, 1, 1).setNote("Last updated: " + new Date().toLocaleString());
 
-  // ── Tab 2: Scores (per-match breakdown) ──────────────────────────────────
-  // Rebuild from Firestore predictions so we get one row per prediction
-  const predDocs = fsGet_("predictions");
   const scoresTab = getOrCreateSheet_(ss, "Scores");
   scoresTab.clearContents();
 
@@ -226,22 +270,16 @@ function writeToSheets_(ranked, results) {
   scoresTab.getRange(1, 1, 1, scHeaders.length).setValues([scHeaders]);
   styleHeader_(scoresTab, scHeaders.length);
 
-  const FINAL_STATUSES = ["FT", "AET", "PEN", "COMPLETED", "FINAL"];
   const scRows = [];
-
-  predDocs.forEach(function (doc) {
-    const f = doc.fields || {};
-    const username = String(fsVal_(f.username) || "");
-    const matchId = String(fsVal_(f.matchId) || "");
-    const pred1 = Number(fsVal_(f.pred1));
-    const pred2 = Number(fsVal_(f.pred2));
-    if (!username || !matchId || isNaN(pred1) || isNaN(pred2)) return;
+  predictions.forEach(function (prediction) {
+    const username = String(prediction.username || "");
+    const matchId = String(prediction.matchId || "").replace(/^match_/, "");
+    const pred1 = nullableNumber_(prediction.pred1);
+    const pred2 = nullableNumber_(prediction.pred2);
+    if (!username || !matchId || pred1 === null || pred2 === null) return;
 
     const result = results[matchId];
-    const isFinal = result && FINAL_STATUSES.includes(result.status);
-    const pts = isFinal
-      ? scoreMatch_(pred1, pred2, result.score1, result.score2)
-      : "";
+    const points = result ? scoreMatch_(pred1, pred2, result.score1, result.score2) : "";
 
     scRows.push([
       username,
@@ -251,11 +289,10 @@ function writeToSheets_(ranked, results) {
       result ? result.score1 : "",
       result ? result.score2 : "",
       result ? result.status : "NS",
-      pts,
+      points,
     ]);
   });
 
-  // Sort: username asc, then matchId asc
   scRows.sort(function (a, b) {
     if (a[0] < b[0]) return -1;
     if (a[0] > b[0]) return 1;
@@ -268,14 +305,27 @@ function writeToSheets_(ranked, results) {
   scoresTab.autoResizeColumns(1, scHeaders.length);
 }
 
-// ─── Firestore writer ────────────────────────────────────────────────────────
+function persistLeaderboard_(ranked) {
+  try {
+    writeToFirestore_(ranked);
+  } catch (error) {
+    Logger.log(`[FALLBACK] Firestore leaderboard write failed: ${error.message}`);
+  }
+
+  try {
+    writeToSupabaseBackup(
+      "leaderboard",
+      ranked.map(function (player) {
+        return Object.assign({}, player, { updatedAt: new Date().toISOString() });
+      }),
+    );
+    Logger.log("Supabase leaderboard table updated.");
+  } catch (error) {
+    Logger.log(`[FALLBACK] Supabase leaderboard write failed: ${error.message}`);
+  }
+}
 
 function writeToFirestore_(ranked) {
-  // Firestore can't store arrays of objects natively in a single field without
-  // the Admin SDK, so we serialise to JSON string and store it as stringValue.
-  // The website's loadLeaderboard() already reads leaderboard/current.players
-  // as an array — so we use an arrayValue instead.
-
   const playerValues = ranked.map(function (p) {
     return {
       mapValue: {
@@ -287,15 +337,14 @@ function writeToFirestore_(ranked) {
           exactScores: { integerValue: String(p.exactScores) },
           correctOutcomes: { integerValue: String(p.correctOutcomes) },
           predicted: { integerValue: String(p.predicted) },
+          scored: { integerValue: String(p.scored) },
         },
       },
     };
   });
 
   const fields = {
-    players: {
-      arrayValue: { values: playerValues.length ? playerValues : [] },
-    },
+    players: { arrayValue: { values: playerValues.length ? playerValues : [] } },
     updatedAt: { stringValue: new Date().toISOString() },
     playerCount: { integerValue: String(ranked.length) },
   };
@@ -304,7 +353,28 @@ function writeToFirestore_(ranked) {
   Logger.log("Firestore leaderboard/current updated.");
 }
 
-// ─── Sheet helpers ───────────────────────────────────────────────────────────
+function migrateFirestoreToSupabase() {
+  const collections = ["users", "fixtures", "predictions", "results"];
+  const summary = {};
+
+  collections.forEach(function (collection) {
+    const rows = fsGet_(collection).map(firestoreDocToRow_);
+    const normalized = rows
+      .map(function (row) {
+        return normalizeSupabaseRow_(collection, row);
+      })
+      .filter(Boolean);
+    writeToSupabaseBackup(collection, normalized);
+    summary[collection] = normalized.length;
+  });
+
+  Logger.log("Firestore to Supabase migration complete: " + JSON.stringify(summary));
+  return {
+    success: true,
+    migrated: summary,
+    timestamp: new Date().toISOString(),
+  };
+}
 
 function getOrCreateSheet_(ss, name) {
   return ss.getSheetByName(name) || ss.insertSheet(name);
@@ -316,15 +386,13 @@ function styleHeader_(sheet, numCols) {
   sheet.setFrozenRows(1);
 }
 
-function highlightTopThree_(sheet, numRows) {
+function highlightTopThree_(sheet, numRows, numCols) {
   if (numRows < 1) return;
-  const colours = ["#FFD700", "#C0C0C0", "#CD7F32"]; // gold, silver, bronze
+  const colours = ["#FFD700", "#C0C0C0", "#CD7F32"];
   for (var i = 0; i < Math.min(3, numRows); i++) {
-    sheet.getRange(i + 2, 1, 1, 7).setBackground(colours[i]);
+    sheet.getRange(i + 2, 1, 1, numCols || 8).setBackground(colours[i]);
   }
 }
-
-// ─── Scheduled trigger entry point ──────────────────────────────────────────
 
 function scheduledLeaderboardUpdate() {
   try {

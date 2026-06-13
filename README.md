@@ -14,6 +14,7 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 | [docs/SCORING.md](docs/SCORING.md) | **Canonical scoring system** — 15/8/5/3/0 + multipliers + mini tourney |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagram, Firestore schema, backend status |
 | [docs/SETUP.md](docs/SETUP.md) | Admin setup: Firebase, seeding, API key, triggers |
+| [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) | Supabase backup tables, migration, and fallback behavior |
 | [docs/WORKLOG.md](docs/WORKLOG.md) | Chronological work log |
 | [docs/ERROR_REDUCTION.md](docs/ERROR_REDUCTION.md) | Rules to follow before editing code |
 | [docs/project-tracker.html](docs/project-tracker.html) | Interactive visualizer — open directly in browser |
@@ -21,8 +22,10 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 ## Current Status (Jun 13, 2026)
 
 - **Audit score**: 10/20 (Acceptable — significant work needed)
+- **Resolved**: post-merge `scripts/app.js` syntax break that prevented the browser app from loading and blocked login
 - **P0 open**: `savePrediction` crashes when match is locked
-- **P1 open**: `firebaseConfig` reference error in Apps Script, matchId mismatch, seed Drive path wrong
+- **P1 open**: matchId mismatch, seed Drive path wrong
+- **Backend backup**: Apps Script now tries Firebase first, falls back to Supabase, and includes a one-shot Firestore-to-Supabase migration
 - **Working**: Login, fixture loading, country flags, prediction inputs (UI), group standings, lock at kickoff
 - **Responsive UI**: Header controls, filters, match cards, and leaderboard/group tables now reflow more cleanly on phones
 

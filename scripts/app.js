@@ -1598,7 +1598,6 @@ function stageLabel(stage) {
 function isLocked(match) {
   if (!match.kickoffDate) return false;
   return Date.now() >= match.kickoffDate.getTime() - 1 * 60 * 1000;
-  return Date.now() >= match.kickoffDate.getTime();
 }
 
 function getMatchStatus(match, result) {
@@ -1622,11 +1621,10 @@ function hasPrediction(prediction) {
 
 function hasResult(result) {
   if (!result) return false;
-  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false; &&
-    (isLiveStatus(result.status) || isFinalStatus(result.status))
+  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
   const status = String(result.status || "").toUpperCase();
   if (status === "NS" || status === "") return false;
-  return true;
+  return isLiveStatus(status) || isFinalStatus(status);
 }
 
 /**

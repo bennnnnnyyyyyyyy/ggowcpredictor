@@ -16,6 +16,7 @@ Use this file before making code changes.
 - `index.html` loads `scripts/app.js`; it does not load `src/main.js`.
 - `src/` files are Apps Script files deployed through clasp.
 - Firebase SDK scripts in `index.html` are non-module CDN scripts. If they do not expose global `firebase`, login will fail.
+- After any merge or conflict resolution in `scripts/app.js`, run `node --check scripts/app.js` before testing login. A single syntax error anywhere in the file blocks the entire browser app.
 - `requestSync()` references `.sync-btn`, but `index.html` currently has no visible button with that class.
 - `seedFixturesFromJSON()` expects a Drive file named `worldcup.json`, not the local `2026/worldcup.json`.
 - `src/fixtures.js` uses both `firebaseConfig` and hardcoded project values. Keep one canonical config.

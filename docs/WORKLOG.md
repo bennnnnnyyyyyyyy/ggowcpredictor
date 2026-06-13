@@ -70,6 +70,19 @@
 - No browser run was captured in this session.
 - Reviewed the responsive CSS and table renderers after the edits to confirm the new mobile data labels and stacked layouts are in place.
 
+## 2026-06-13 - Post-merge login recovery
+
+### What changed
+
+- Repaired a merge-broken syntax error in `scripts/app.js` that prevented the browser script from loading and blocked login.
+- Removed an unreachable duplicate return in `isLocked(match)` while preserving the 1-minute pre-kickoff lock rule.
+- Kept `hasResult(result)` aligned with the current app behavior by requiring numeric scores plus a live/final status.
+
+### Verification
+
+- Ran `node --check scripts/app.js` successfully.
+- Searched `scripts/app.js` for leftover merge markers and found none.
+
 ## 2026-06-11 - Full audit, canonical docs, and project visualizer
 
 ### What changed
