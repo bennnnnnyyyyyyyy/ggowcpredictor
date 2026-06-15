@@ -691,12 +691,20 @@ async function loadAccountRequests() {
   }
 }
 
+function sortFixtures(fixtures) {
+  return fixtures.sort((a, b) => {
+    const aTime = a.kickoffDate ? a.kickoffDate.getTime() : 0;
+    const bTime = b.kickoffDate ? b.kickoffDate.getTime() : 0;
+    return aTime - bTime || Number(a.matchId) - Number(b.matchId);
+  });
+}
+
 async function loadFixtures() {
   let fixtures = [];
 
   const apiFixtures = await loadFixturesFromApi();
   if (apiFixtures.length) {
-    STATE.fixtures = apiFixtures;
+    STATE.fixtures = sortFixtures(apiFixtures);
     return;
   }
 
@@ -704,11 +712,7 @@ async function loadFixtures() {
   try {
     const data = await supabaseSelect("fixtures");
     if (data && data.length) {
-      STATE.fixtures = data.map(normalizeFixture).sort((a, b) => {
-        const aTime = a.kickoffDate ? a.kickoffDate.getTime() : 0;
-        const bTime = b.kickoffDate ? b.kickoffDate.getTime() : 0;
-        return aTime - bTime || Number(a.matchId) - Number(b.matchId);
-      });
+      STATE.fixtures = sortFixtures(data.map(normalizeFixture));
       return;
     }
   } catch (error) {
@@ -731,11 +735,7 @@ async function loadFixtures() {
     fixtures = await loadLocalFixtures();
   }
 
-  STATE.fixtures = fixtures.sort((a, b) => {
-    const aTime = a.kickoffDate ? a.kickoffDate.getTime() : 0;
-    const bTime = b.kickoffDate ? b.kickoffDate.getTime() : 0;
-    return aTime - bTime || Number(a.matchId) - Number(b.matchId);
-  });
+  STATE.fixtures = sortFixtures(fixtures);
 }
 
 async function loadLocalFixtures() {
@@ -1965,7 +1965,7 @@ async function loadGameData() {
     const data = await response.json();
 
     if (Array.isArray(data.fixtures) && data.fixtures.length) {
-      STATE.fixtures = data.fixtures.map(normalizeFixture);
+      STATE.fixtures = sortFixtures(data.fixtures.map(normalizeFixture));
     }
     if (data.results) {
       STATE.results = normalizeResultsPayload(data.results);

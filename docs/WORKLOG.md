@@ -1,5 +1,17 @@
 # Work Log
 
+## 2026-06-15 - Chronological fixtures sorting fix
+
+### What changed
+
+- **`scripts/app.js`**: Introduced a `sortFixtures(fixtures)` helper function and integrated it across all data loading pathways (`loadFixtures()` and `loadGameData()`). Previously, fixtures loaded from the API/Worker sync were not sorted, causing date headers on the Predictions page to display out of order (e.g., jumping from June 11 to June 18 and then back to June 12). Fixtures and Results are now consistently sorted in ascending chronological order by kickoff date and time.
+
+### Verification
+
+- Syntax validation of `scripts/app.js` using `node --check` succeeded.
+
+---
+
 ## 2026-06-15 - System Settings accessibility fix
 
 ### What changed

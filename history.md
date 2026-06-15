@@ -434,3 +434,10 @@ esbuild fails with "No loader is configured for .html files: index.html" because
 - **`scripts/app.js`**: Added a **System Settings** button directly inside the **Admin Panel** (`renderAdmin()` function).
 - **`index.html`**: Added a **Connection Settings** button to the login card and a **Settings** button next to the **Sync** button in the main app header. This resolves the chicken-and-egg issue where users couldn't modify connection URLs before logging in, or when logged in as non-admins.
 - **Verification**: Verified syntax parsing with `node --check scripts/app.js` successfully.
+
+---
+## 2026-06-15 - Chronological fixtures sorting fix (2:29 PM)
+
+### What changed:
+- **`scripts/app.js`**: Created a `sortFixtures(fixtures)` utility and integrated it into the `loadFixtures` and `loadGameData` routines. This guarantees that all matches are sorted in ascending order by their kickoff timestamp (and falling back to matchId). Previously, unsorted API payloads caused dates to render out of order (e.g. jumping from June 11 to June 18 and back to June 12) under the Predictions list.
+- **Verification**: Syntax parsing validation checked successfully.
