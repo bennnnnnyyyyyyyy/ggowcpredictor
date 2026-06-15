@@ -441,3 +441,11 @@ esbuild fails with "No loader is configured for .html files: index.html" because
 ### What changed:
 - **`scripts/app.js`**: Created a `sortFixtures(fixtures)` utility and integrated it into the `loadFixtures` and `loadGameData` routines. This guarantees that all matches are sorted in ascending order by their kickoff timestamp (and falling back to matchId). Previously, unsorted API payloads caused dates to render out of order (e.g. jumping from June 11 to June 18 and back to June 12) under the Predictions list.
 - **Verification**: Syntax parsing validation checked successfully.
+
+---
+## 2026-06-15 - Launch Preparation & Documentation Alignment (2:32 PM)
+
+### What changed:
+- **`docs/ARCHITECTURE.md`**: Rewrote system architecture documentation to map out the complete and finalized Cloudflare Worker + Supabase (primary) + Firestore (backup) flow. Added system diagrams and revised browser data loading priority tables.
+- **`docs/migration_plan.md`**: Marked all steps (specifically Step 2.5 data recovery and leaderboard verification) as **100% completed**.
+- **Verification**: Remote query verification of Supabase database shows perfect table counts matching the production Firestore records (0 gap across all collections). Verified Supabase local CLI availability.

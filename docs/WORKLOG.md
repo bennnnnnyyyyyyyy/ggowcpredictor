@@ -1,5 +1,19 @@
 # Work Log
 
+## 2026-06-15 - Launch Preparation & Architecture Documentation Alignment
+
+### What changed
+
+- **`docs/ARCHITECTURE.md`**: Extensively refactored the system architecture documentation to show the finalized transition from the Google Apps Script backend to the **Cloudflare Worker** backend as the primary API, and from Google Sheets/Firestore as the primary datastores to **Supabase** (primary) and **Firestore** (backup). Added a Mermaid system architecture diagram and updated data load priority tables.
+- **`docs/migration_plan.md`**: Updated the migration checklist and status to reflect that all steps (including Step 2.5 data recovery and verification) are **100% completed and production ready**.
+- **Verification**: Verified database table counts and synchronization status using remote REST verification queries. Verified CLI tools availability.
+
+### Verification
+
+- Syntax validation of all edited project files succeeded. Verified local worker and tunnel connections are live and functioning.
+
+---
+
 ## 2026-06-15 - Chronological fixtures sorting fix
 
 ### What changed

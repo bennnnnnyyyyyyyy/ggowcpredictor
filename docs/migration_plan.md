@@ -81,4 +81,7 @@ create table if not exists "accountRequests" (
 - **Step 2.2 (Cloudflare Worker backend)**: Completed & Optimized (including OAuth token caching & try-catch key imports).
 - **Step 2.3 (Frontend App integration)**: Completed (Supabase prioritized client, settings updated for Cloudflare Worker URL).
 - **Step 2.4 (Apps Script pull script)**: Completed (pullLeaderboardFromWorker hourly trigger added to main.js).
+- **Step 2.5 (Recover June 14th Calculations)**: Completed (Data gap closed, predictions & results synced Firestore -> Supabase, score-flip bug resolved, and leaderboard successfully verified).
+
+**Migration Status: 100% Complete & Production Ready.**
 
