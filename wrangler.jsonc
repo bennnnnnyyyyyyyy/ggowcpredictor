@@ -11,7 +11,14 @@
     // Environment variables accessible inside your worker via env.KV_KEY, etc.
     "vars": {
         "ENVIRONMENT": "production"
-    }
+    },
+    "rules": [
+        {
+            "type": "Text",
+            "globs": ["**/*.html"],
+            "fallthrough": false
+        }
+    ]
     // Uncomment if you need a KV Namespace for storing data (like match predictions)
     // "kv_namespaces": [
     //   {

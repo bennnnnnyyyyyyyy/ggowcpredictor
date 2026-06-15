@@ -1,5 +1,45 @@
 # Work Log
 
+## 2026-06-15 - Critical Bug Fixes: Score Flip & Group Standings
+
+### What changed
+
+- **`workers/live-results.js`**: Fixed P0 home/away score flip in `syncLiveResults`. When the live API returns teams in reversed order from the fixture database, scores were saved in the wrong columns (score1 got the away team's goals). Added a `flipped` flag that swaps scores when team order is reversed.
+- **`scripts/app.js`**: Fixed P0 group standings rendering. `renderGroupTable()` was using `STATE.predictions` (user's guesses) to build the standings table instead of `STATE.results` (actual match outcomes). Now prioritizes actual results, falling back to predictions only for unplayed matches.
+- **`wrangler.jsonc`**: Added `rules` config to handle `.html` files as `Text` type, fixing the Cloudflare build error `No loader is configured for ".html" files: index.html`.
+
+### Verification
+
+- Ran `node --check workers/live-results.js` successfully.
+- Ran `node --check scripts/app.js` successfully.
+
+### Impact
+
+- All group standings will now show real match outcomes.
+- Leaderboard scoring will use correctly-oriented scores.
+- Next `sync-scores` run will re-fetch and store scores in the correct order.
+- Cloudflare deployment build should now succeed.
+
+---
+
+## 2026-06-15 - Cloudflare Worker integration
+
+### What changed
+
+- Added Supabase REST config & fetch helper wrappers (`supabaseSelect`, `supabaseUpsert`) in `scripts/app.js`.
+- Refactored `handleLogin`, `hydrateLoginUsers`, `submitAccountRequest`, `approveAccountRequest`, `rejectAccountRequest`, predictions loading/saving, results loading, and leaderboard to prioritize checking Supabase, falling back/mirroring to Firestore SDK/REST.
+- Updated Settings modal label in `index.html` to "Cloudflare Worker URL" and defaulted the connection URL to `http://localhost:8787` for local development.
+- Implemented `pullLeaderboardFromWorker()`, hourly cron trigger `scheduledLeaderboardPull`, and `pullLeaderboard` action handler in `src/main.js` to periodically fetch data from the Cloudflare Worker and back up the leaderboard visually in Sheets.
+- Conducted technical audit scoring 18/20 and updated status checklist in `docs/migration_plan.md`.
+
+### Verification
+
+- Ran `node --check scripts/app.js` successfully.
+- Ran `node --check src/main.js` successfully.
+- Generated `audit_report.md` with 18/20 audit health score.
+
+---
+
 ## 2026-06-13 - Supabase fallback and leaderboard repair
 
 ### What changed

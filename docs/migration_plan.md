@@ -76,5 +76,9 @@ create table if not exists "accountRequests" (
 
 ---
 
-## Proceed
-Click **Proceed** to begin the code changes.
+## 📈 Migration Status
+- **Step 2.1 (Supabase `accountRequests` table)**: Completed.
+- **Step 2.2 (Cloudflare Worker backend)**: Completed & Optimized (including OAuth token caching & try-catch key imports).
+- **Step 2.3 (Frontend App integration)**: Completed (Supabase prioritized client, settings updated for Cloudflare Worker URL).
+- **Step 2.4 (Apps Script pull script)**: Completed (pullLeaderboardFromWorker hourly trigger added to main.js).
+

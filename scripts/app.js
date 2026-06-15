@@ -11,6 +11,59 @@ const firebaseConfig = {
   measurementId: "G-YQLEYQ386D",
 };
 
+const supabaseConfig = {
+  url: "https://nthnysznieivbkncpqrk.supabase.co",
+  key: "sb_publishable_q4iEOMH_S09dgmg3mHtK-w_08jFDVUo",
+};
+
+function supabaseHeaders(extra = {}) {
+  return Object.assign(
+    {
+      apikey: supabaseConfig.key,
+      Authorization: `Bearer ${supabaseConfig.key}`,
+    },
+    extra
+  );
+}
+
+function getSupabaseUrl(table, query = "") {
+  const base = supabaseConfig.url.replace(/\/$/, "");
+  const suffix = query ? `?${query}` : "";
+  return `${base}/rest/v1/${table}${suffix}`;
+}
+
+async function supabaseSelect(table, selectQuery = "*", extraQuery = "") {
+  let query = `select=${encodeURIComponent(selectQuery)}`;
+  if (extraQuery) {
+    query += `&${extraQuery}`;
+  }
+  const url = getSupabaseUrl(table, query);
+  const response = await fetch(url, {
+    headers: supabaseHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`Supabase GET ${table} HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+async function supabaseUpsert(table, rows, conflictKey) {
+  if (!rows || (Array.isArray(rows) && !rows.length)) return;
+  const query = conflictKey ? `on_conflict=${encodeURIComponent(conflictKey)}` : "";
+  const response = await fetch(getSupabaseUrl(table, query), {
+    method: "POST",
+    headers: supabaseHeaders({
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    }),
+    body: JSON.stringify(rows),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Supabase upsert ${table} HTTP ${response.status}: ${text}`);
+  }
+}
+
 const DEMO_USERS = {
   ben_arthur: { displayName: "Ben Arthur", isAdmin: true, code: "GGO2026" },
   jimmy: { displayName: "Jimmy", isAdmin: false, code: "GGO2026" },
@@ -29,7 +82,7 @@ const SESSION = {
   isAdmin: localStorage.getItem("ggo_wc_admin") === "true",
 };
 const CONFIG = {
-  appsScriptUrl: localStorage.getItem("ggo_wc_url") || "",
+  appsScriptUrl: localStorage.getItem("ggo_wc_url") || "http://localhost:8787",
   apiKey: localStorage.getItem("ggo_wc_key") || "",
 };
 
@@ -178,18 +231,36 @@ async function hydrateLoginUsers() {
     isAdmin: user.isAdmin,
   }));
 
-  if (!db) return;
+  let loaded = false;
 
+  // 1. Try Supabase
   try {
-    const snap = await db.collection("users").get();
-    if (!snap.empty) {
-      STATE.users = snap.docs.map((doc) => ({
-        username: doc.id,
-        ...doc.data(),
+    const data = await supabaseSelect("users");
+    if (data && data.length) {
+      STATE.users = data.map((u) => ({
+        username: u.username || u.id,
+        displayName: u.displayName || u.username || u.id,
+        isAdmin: Boolean(u.isAdmin),
       }));
+      loaded = true;
     }
   } catch (error) {
-    console.warn("Could not load Firestore users.", error.message);
+    console.warn("Could not load Supabase users.", error.message);
+  }
+
+  // 2. Try Firestore
+  if (!loaded && db) {
+    try {
+      const snap = await db.collection("users").get();
+      if (!snap.empty) {
+        STATE.users = snap.docs.map((doc) => ({
+          username: doc.id,
+          ...doc.data(),
+        }));
+      }
+    } catch (error) {
+      console.warn("Could not load Firestore users.", error.message);
+    }
   }
 
   renderUsernameOptions();
@@ -213,13 +284,27 @@ async function handleLogin(event) {
   try {
     let userData = null;
 
-    // 1. Firestore SDK
-    if (db) {
+    // 1. Supabase
+    try {
+      const data = await supabaseSelect("users", "username,displayName,secretCode,isAdmin", `username=eq.${encodeURIComponent(username)}`);
+      if (data && data.length) {
+        userData = {
+          displayName: data[0].displayName || username,
+          secretCode: data[0].secretCode || "",
+          isAdmin: Boolean(data[0].isAdmin),
+        };
+      }
+    } catch (error) {
+      console.warn("Could not authenticate with Supabase.", error.message);
+    }
+
+    // 2. Firestore SDK
+    if (!userData && db) {
       const userSnap = await db.collection("users").doc(username).get();
       if (userSnap.exists) userData = userSnap.data();
     }
 
-    // 2. Firestore REST fallback (SDK not loaded)
+    // 3. Firestore REST fallback (SDK not loaded)
     if (!userData) {
       try {
         const restUrl = `https://firestore.googleapis.com/v1/projects/ggowcpredictor/databases/(default)/documents/users/${encodeURIComponent(username)}`;
@@ -237,7 +322,7 @@ async function handleLogin(event) {
       } catch (_) {}
     }
 
-    // 3. Demo users last resort
+    // 4. Demo users last resort
     if (!userData && DEMO_USERS[username]) {
       userData = {
         displayName: DEMO_USERS[username].displayName,
@@ -364,35 +449,88 @@ async function submitAccountRequest(event) {
     return;
   }
 
-  if (!db) {
-    showLoginError("Account requests need Firebase to be connected.");
-    return;
-  }
-
   try {
-    const existingUser = await db.collection("users").doc(username).get();
-    if (existingUser.exists) {
+    // Check if user exists in Supabase or Firestore
+    let userExists = false;
+    try {
+      const users = await supabaseSelect("users", "username", `username=eq.${encodeURIComponent(username)}`);
+      if (users && users.length) userExists = true;
+    } catch (e) {
+      if (db) {
+        const userSnap = await db.collection("users").doc(username).get();
+        if (userSnap.exists) userExists = true;
+      }
+    }
+
+    if (userExists) {
       showLoginError("That username is already approved. Try logging in.");
       return;
     }
 
-    const requestRef = db.collection("accountRequests").doc(username);
-    const current = await requestRef.get();
-    if (current.exists && current.data().status === "pending") {
+    // Check if pending request exists in Supabase or Firestore
+    let requestExists = false;
+    let existingRequest = null;
+    try {
+      const requests = await supabaseSelect("accountRequests", "status", `username=eq.${encodeURIComponent(username)}`);
+      if (requests && requests.length) {
+        requestExists = true;
+        existingRequest = requests[0];
+      }
+    } catch (e) {
+      if (db) {
+        const reqSnap = await db.collection("accountRequests").doc(username).get();
+        if (reqSnap.exists) {
+          requestExists = true;
+          existingRequest = reqSnap.data();
+        }
+      }
+    }
+
+    if (requestExists && existingRequest && existingRequest.status === "pending") {
       showLoginError("That request is already pending approval.");
       return;
     }
 
-    await requestRef.set(
-      {
-        username,
-        displayName,
-        note,
-        status: "pending",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
+    const row = {
+      username,
+      displayName,
+      note,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+
+    let saved = false;
+
+    // Save to Supabase
+    try {
+      await supabaseUpsert("accountRequests", [row], "username");
+      saved = true;
+    } catch (error) {
+      console.warn("Could not send request to Supabase.", error.message);
+    }
+
+    // Save to Firestore
+    if (db) {
+      try {
+        await db.collection("accountRequests").doc(username).set(
+          {
+            username,
+            displayName,
+            note,
+            status: "pending",
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+        saved = true;
+      } catch (error) {
+        console.error("Could not send request to Firestore.", error);
+      }
+    }
+
+    if (!saved) {
+      throw new Error("Could not save request to either database.");
+    }
 
     toggleAccountRequest(false);
     showToast("Request sent. An admin will review it soon.");
@@ -524,6 +662,19 @@ async function requestSync() {
 
 async function loadAccountRequests() {
   STATE.accountRequests = [];
+
+  // 1. Try Supabase
+  try {
+    const data = await supabaseSelect("accountRequests", "*", "order=createdAt.desc");
+    if (data && data.length) {
+      STATE.accountRequests = data;
+      return;
+    }
+  } catch (error) {
+    console.warn("Could not load Supabase account requests.", error.message);
+  }
+
+  // 2. Try Firestore
   if (!db) return;
 
   try {
@@ -536,7 +687,7 @@ async function loadAccountRequests() {
       ...doc.data(),
     }));
   } catch (error) {
-    console.warn("Could not load account requests.", error.message);
+    console.warn("Could not load Firestore account requests.", error.message);
   }
 }
 
@@ -549,6 +700,22 @@ async function loadFixtures() {
     return;
   }
 
+  // 1. Try Supabase
+  try {
+    const data = await supabaseSelect("fixtures");
+    if (data && data.length) {
+      STATE.fixtures = data.map(normalizeFixture).sort((a, b) => {
+        const aTime = a.kickoffDate ? a.kickoffDate.getTime() : 0;
+        const bTime = b.kickoffDate ? b.kickoffDate.getTime() : 0;
+        return aTime - bTime || Number(a.matchId) - Number(b.matchId);
+      });
+      return;
+    }
+  } catch (error) {
+    console.warn("Could not load Supabase fixtures.", error.message);
+  }
+
+  // 2. Try Firestore
   if (db) {
     try {
       const snap = await db.collection("fixtures").get();
@@ -597,7 +764,27 @@ async function loadResults() {
     return;
   }
 
-  if (db) {
+  let loaded = false;
+
+  // 1. Try Supabase
+  try {
+    const data = await supabaseSelect("results");
+    if (data && data.length) {
+      data.forEach((r) => {
+        const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
+        STATE.results[matchId] = normalizeResult({
+          ...r,
+          matchId,
+        });
+      });
+      loaded = true;
+    }
+  } catch (error) {
+    console.warn("Could not load Supabase results.", error.message);
+  }
+
+  // 2. Try Firestore
+  if (!loaded && db) {
     try {
       const snap = await db.collection("results").get();
       snap.docs.forEach((doc) => {
@@ -609,6 +796,7 @@ async function loadResults() {
           matchId,
         });
       });
+      loaded = true;
     } catch (error) {
       console.warn("Could not load Firestore results.", error.message);
     }
@@ -634,20 +822,39 @@ async function loadPredictions() {
     `ggo_wc_predictions_${SESSION.username || "demo"}`,
   );
 
-  if (!db || !SESSION.username) return;
+  if (!SESSION.username) return;
 
+  let loaded = false;
+
+  // 1. Try Supabase
   try {
-    const snap = await db
-      .collection("predictions")
-      .where("username", "==", SESSION.username)
-      .get();
-    snap.docs.forEach((doc) => {
-      const prediction = doc.data();
-      STATE.predictions[String(prediction.matchId)] =
-        normalizePrediction(prediction);
-    });
+    const data = await supabaseSelect("predictions", "*", `username=eq.${encodeURIComponent(SESSION.username)}`);
+    if (data && data.length) {
+      data.forEach((prediction) => {
+        STATE.predictions[String(prediction.matchId)] =
+          normalizePrediction(prediction);
+      });
+      loaded = true;
+    }
   } catch (error) {
-    console.warn("Could not load Firestore predictions.", error.message);
+    console.warn("Could not load Supabase predictions.", error.message);
+  }
+
+  // 2. Try Firestore
+  if (!loaded && db) {
+    try {
+      const snap = await db
+        .collection("predictions")
+        .where("username", "==", SESSION.username)
+        .get();
+      snap.docs.forEach((doc) => {
+        const prediction = doc.data();
+        STATE.predictions[String(prediction.matchId)] =
+          normalizePrediction(prediction);
+      });
+    } catch (error) {
+      console.warn("Could not load Firestore predictions.", error.message);
+    }
   }
 }
 
@@ -660,6 +867,18 @@ async function loadLeaderboard() {
     return;
   }
 
+  // 1. Try Supabase
+  try {
+    const data = await supabaseSelect("leaderboard", "*", "order=rank.asc");
+    if (data && data.length) {
+      STATE.leaderboard = data;
+      return;
+    }
+  } catch (error) {
+    console.warn("Could not load Supabase leaderboard.", error.message);
+  }
+
+  // 2. Try Firestore
   if (db) {
     try {
       const current = await db.collection("leaderboard").doc("current").get();
@@ -889,21 +1108,49 @@ async function savePrediction(matchId, pred1, pred2) {
   );
   showToast(`Saved: ${fixture.team1} ${score1}-${score2} ${fixture.team2}`);
 
-  if (db && SESSION.username) {
+  if (SESSION.username) {
+    let saved = false;
+
+    // 1. Try Supabase
     try {
-      await db
-        .collection("predictions")
-        .doc(`${SESSION.username}_${matchId}`)
-        .set(
-          {
-            ...prediction,
-            submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
+      const docId = `${SESSION.username}_${matchId}`;
+      const row = {
+        id: docId,
+        username: SESSION.username,
+        matchId: String(matchId),
+        pred1: score1,
+        pred2: score2,
+        submittedAt: new Date().toISOString(),
+        pointsAwarded: null,
+        scoredAt: null,
+      };
+      await supabaseUpsert("predictions", [row], "id");
+      saved = true;
     } catch (error) {
+      console.warn("Could not save prediction to Supabase.", error.message);
+    }
+
+    // 2. Try/Mirror to Firestore
+    if (db) {
+      try {
+        await db
+          .collection("predictions")
+          .doc(`${SESSION.username}_${matchId}`)
+          .set(
+            {
+              ...prediction,
+              submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        saved = true;
+      } catch (error) {
+        console.error("Could not save prediction to Firestore.", error);
+      }
+    }
+
+    if (!saved) {
       showToast("Save failed - stored locally", "error");
-      console.error("Could not save prediction to Firestore.", error);
     }
   }
 
@@ -1124,15 +1371,25 @@ function renderGroupTable(groupName, fixtures) {
       }
     });
 
+    const result = STATE.results[fixture.matchId];
     const pred = STATE.predictions[fixture.matchId];
-    if (!hasPrediction(pred)) return;
 
-    applyTableResult(
-      teamMap.get(fixture.team1),
-      teamMap.get(fixture.team2),
-      pred.pred1,
-      pred.pred2,
-    );
+    // Use actual result if available, otherwise fall back to prediction for preview
+    if (result && hasResult(result)) {
+      applyTableResult(
+        teamMap.get(fixture.team1),
+        teamMap.get(fixture.team2),
+        result.score1,
+        result.score2,
+      );
+    } else if (hasPrediction(pred)) {
+      applyTableResult(
+        teamMap.get(fixture.team1),
+        teamMap.get(fixture.team2),
+        pred.pred1,
+        pred.pred2,
+      );
+    }
   });
 
   const standings = Array.from(teamMap.values()).sort((a, b) => {
@@ -1414,43 +1671,95 @@ function generateAccessCode(username) {
 }
 
 async function approveAccountRequest(username) {
-  if (!db) return;
-
   try {
-    const requestDoc = db.collection("accountRequests").doc(username);
-    const userDoc = db.collection("users").doc(username);
-    const requestSnap = await requestDoc.get();
+    let requestData = null;
 
-    if (!requestSnap.exists) {
+    // Load from Supabase first
+    try {
+      const reqs = await supabaseSelect("accountRequests", "*", `username=eq.${encodeURIComponent(username)}`);
+      if (reqs && reqs.length) {
+        requestData = reqs[0];
+      }
+    } catch (e) {
+      console.warn("Supabase request load failed:", e.message);
+    }
+
+    // Fallback to Firestore
+    if (!requestData && db) {
+      const requestDoc = db.collection("accountRequests").doc(username);
+      const requestSnap = await requestDoc.get();
+      if (requestSnap.exists) {
+        requestData = requestSnap.data();
+      }
+    }
+
+    if (!requestData) {
       showToast("Request not found.", "error");
       return;
     }
 
-    const requestData = requestSnap.data();
     const secretCode = generateAccessCode(username);
 
-    await userDoc.set(
-      {
+    // 1. Save to Supabase
+    let saved = false;
+    try {
+      const userRow = {
         username,
         displayName: requestData.displayName || username,
         secretCode,
         isAdmin: false,
-        accountStatus: "approved",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
-
-    await requestDoc.set(
-      {
-        ...requestData,
+        joinedAt: new Date().toISOString()
+      };
+      const reqUpdateRow = {
+        username,
         status: "approved",
-        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        approvedAt: new Date().toISOString(),
         secretCode,
-      },
-      { merge: true },
-    );
+      };
+
+      await supabaseUpsert("users", [userRow], "username");
+      await supabaseUpsert("accountRequests", [reqUpdateRow], "username");
+      saved = true;
+    } catch (error) {
+      console.warn("Supabase approval failed:", error.message);
+    }
+
+    // 2. Save to Firestore
+    if (db) {
+      try {
+        const userDoc = db.collection("users").doc(username);
+        const requestDoc = db.collection("accountRequests").doc(username);
+
+        await userDoc.set(
+          {
+            username,
+            displayName: requestData.displayName || username,
+            secretCode,
+            isAdmin: false,
+            accountStatus: "approved",
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+
+        await requestDoc.set(
+          {
+            status: "approved",
+            approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            secretCode,
+          },
+          { merge: true },
+        );
+        saved = true;
+      } catch (error) {
+        console.error("Firestore approval failed:", error);
+      }
+    }
+
+    if (!saved) {
+      throw new Error("Could not write approval to any database.");
+    }
 
     showToast(`Approved ${username}. Code: ${secretCode}`, "success");
     await loadAccountRequests();
@@ -1462,16 +1771,42 @@ async function approveAccountRequest(username) {
 }
 
 async function rejectAccountRequest(username) {
-  if (!db) return;
-
   try {
-    await db.collection("accountRequests").doc(username).set(
-      {
+    let saved = false;
+
+    // 1. Supabase
+    try {
+      const reqUpdateRow = {
+        username,
         status: "rejected",
-        rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
+        rejectedAt: new Date().toISOString(),
+      };
+      await supabaseUpsert("accountRequests", [reqUpdateRow], "username");
+      saved = true;
+    } catch (error) {
+      console.warn("Supabase rejection failed:", error.message);
+    }
+
+    // 2. Firestore
+    if (db) {
+      try {
+        await db.collection("accountRequests").doc(username).set(
+          {
+            status: "rejected",
+            rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+        saved = true;
+      } catch (error) {
+        console.error("Firestore rejection failed:", error);
+      }
+    }
+
+    if (!saved) {
+      throw new Error("Could not write rejection to any database.");
+    }
+
     showToast(`Rejected ${username}.`, "warning");
     await loadAccountRequests();
     renderAdmin();

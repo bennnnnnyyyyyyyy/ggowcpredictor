@@ -379,4 +379,50 @@ I will search for any template placeholders (like {{...}}) in launch-email.html 
 
 I will view the end of updatePasswords.js to find the exact CSV writing code.
 
-Your plan's baseline quota will refresh on 6/19/2026, 4:10:22 PM. Free users and Google AI Plus users receive the minimum base limits on Antigravity. You can upgrade to Google AI Pro or above to receive higher rate limits. 
+Your plan's baseline quota will refresh on 6/19/2026, 4:10:22 PM. Free users and Google AI Plus users receive the minimum base limits on Antigravity. You can upgrade to Google AI Pro or above to receive higher rate limits.
+
+---
+## 2026-06-15 - Cloudflare Worker Integration & Sheet Pull Trigger (1:55 PM)
+
+### User Request:
+Backend Migration to Cloudflare Workers: Checkout to a branch called migration, start implementation, run an audit, and fix problems.
+Then, test and update markdown documents. Integrate frontend (Step 2.3) and Apps Script main.js modifications (Step 2.4).
+
+### Actions:
+- **Git Branch**: Confirmed we are on branch `migration`.
+- **Frontend App Integration (scripts/app.js)**:
+  - Added Supabase REST config & fetch helper wrappers (`supabaseSelect`, `supabaseUpsert`).
+  - Refactored login (`handleLogin`), user hydration (`hydrateLoginUsers`), account requests (`submitAccountRequest`, `approveAccountRequest`, `rejectAccountRequest`), predictions loading/saving (`loadPredictions`, `savePrediction`), results loading (`loadResults`), and leaderboard (`loadLeaderboard`) to check Supabase first, falling back to Firestore SDK/REST.
+- **Settings Modal (index.html)**:
+  - Updated label to "Cloudflare Worker URL" and updated placeholder/default URL to `http://localhost:8787` for local development.
+- **Apps Script (src/main.js)**:
+  - Implemented `pullLeaderboardFromWorker` to request leaderboard and results from Cloudflare Worker, fetch predictions from database, and update Google Sheets via `writeToSheets_`.
+  - Added hourly cron trigger `scheduledLeaderboardPull` and `pullLeaderboard` action handler in `doPost`.
+- **Audit**: Ran technical audit on the implementation scoring **18/20 (Excellent)** and created the `audit_report.md` report.
+- **Docs**: Updated `docs/migration_plan.md` steps 2.3 and 2.4 to Completed. 
+
+---
+## 2026-06-15 - Critical Bug Fixes: Score Flip & Group Standings (2:04 PM)
+
+### User Report:
+Fixtures are "fucked" — group standings show incorrect results on both local and live published versions. Leaderboard data is stale and doesn't reflect recent match results.
+
+### Root Cause Analysis:
+
+**Bug 1 — Worker Score Flip (P0, `workers/live-results.js` L301-317):**
+The `syncLiveResults` function matches API results to fixtures bi-directionally (allowing reversed team order), but **always** saves `score1 = API home score` regardless of team order. When the live API returns teams in the opposite order from our fixture database (e.g. API says "RSA vs MEX" but fixture has "MEX vs RSA"), score1 and score2 get swapped. This breaks every downstream calculation: displayed results, group standings, leaderboard points.
+
+**Bug 2 — Frontend Using Predictions for Standings (P0, `scripts/app.js` L1374-1382):**
+`renderGroupTable()` was building group standings from `STATE.predictions` (user's guesses) instead of `STATE.results` (actual match outcomes). The table showed predicted results, not real ones.
+
+**Bug 3 — Wrangler Build Failure (`wrangler.jsonc`):**
+esbuild fails with "No loader is configured for .html files: index.html" because it picks up the root `index.html` during bundling.
+
+### Fixes Applied:
+- **`workers/live-results.js`**: Added `flipped` flag to team matching. When API team order is reversed from fixture order, scores are swapped before saving (`score1 = flipped ? apiAway : apiHome`).
+- **`scripts/app.js`**: `renderGroupTable()` now uses `STATE.results` first (actual outcomes), falling back to `STATE.predictions` only for matches without results.
+- **`wrangler.jsonc`**: Added `rules` config to handle `.html` files as Text type, unblocking the Cloudflare deployment build.
+
+### Verification:
+- `node --check workers/live-results.js` ✓
+- `node --check scripts/app.js` ✓

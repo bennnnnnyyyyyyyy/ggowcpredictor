@@ -1,3 +1,6 @@
+// GGO WC 2026 — Cloudflare Worker Backend
+// Primary API: Supabase reads/writes, Firestore backup, leaderboard engine.
+
 const WORLDCUP26_GAMES_URL = "https://worldcup26.ir/get/games";
 const ZAFRONIX_URL =
   "https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026/matches";
@@ -6,62 +9,287 @@ const LIVESCORE_FIXTURES_URL =
 const LIVESCORE_LIVE_URL =
   "https://livescore-api.com/api-client/matches/live.json?competition_id=362";
 
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    if (url.pathname === "/seed" || url.searchParams.get("action") === "seed") {
-      if (!isAuthorized(request, env)) {
-        return jsonResponse({ success: false, error: "Unauthorized" }, 401);
-      }
-      try {
-        const result = await syncLiveResults(env);
-        return jsonResponse({ ...result, mode: "manual-seed" });
-      } catch (error) {
-        return jsonResponse({ success: false, error: error.message }, 500);
-      }
-    }
+const FINAL_STATUSES = ["FT", "AET", "PEN", "COMPLETED", "FINAL"];
 
-    if (url.pathname === "/sync" || url.searchParams.get("action") === "sync") {
-      if (!isAuthorized(request, env)) {
-        return jsonResponse({ success: false, error: "Unauthorized" }, 401);
-      }
-      try {
-        const result = await syncLiveResults(env);
-        return jsonResponse({ ...result, mode: "manual-sync" });
-      } catch (error) {
-        return jsonResponse({ success: false, error: error.message }, 500);
-      }
-    }
+// ─── Supabase REST helpers ──────────────────────────────────────────────────
 
-    return jsonResponse({
-      ok: true,
-      routes: ["/seed", "/sync"],
-      message:
-        "Use /seed once for initial population or /sync for a manual update.",
-    });
-  },
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(syncLiveResults(env));
-  },
+function supabaseHeaders(env, extra) {
+  const key = env.SUPABASE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return Object.assign(
+    {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+    },
+    extra || {},
+  );
+}
+
+function supabaseUrl(env, table, query) {
+  const urlVal = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
+  const base = String(urlVal || "")
+    .replace(/\/rest\/v1\/?$/, "")
+    .replace(/\/$/, "");
+  const suffix = query ? `?${query}` : "";
+  return `${base}/rest/v1/${table}${suffix}`;
+}
+
+async function supabaseSelect(env, table, query) {
+  const url = supabaseUrl(env, table, `select=${encodeURIComponent(query || "*")}`);
+  const response = await fetch(url, {
+    headers: supabaseHeaders(env),
+  });
+  if (!response.ok) {
+    throw new Error(`Supabase GET ${table} HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+const SUPABASE_CONFLICT_KEYS = {
+  fixtures: "matchId",
+  results: "matchId",
+  predictions: "id",
+  users: "username",
+  leaderboard: "username",
+  accountRequests: "username",
 };
 
-async function syncLiveResults(env) {
+async function supabaseUpsert(env, table, rows) {
+  if (!rows.length) return;
+  const conflictKey = SUPABASE_CONFLICT_KEYS[table] || "";
+  const query = conflictKey ? `on_conflict=${encodeURIComponent(conflictKey)}` : "";
+  const response = await fetch(supabaseUrl(env, table, query), {
+    method: "POST",
+    headers: supabaseHeaders(env, {
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    }),
+    body: JSON.stringify(Array.isArray(rows) ? rows : [rows]),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Supabase upsert ${table} HTTP ${response.status}: ${text}`);
+  }
+}
+
+// ─── Firestore REST helpers (backup / fallback) ─────────────────────────────
+
+async function firestoreCollection(env, collectionId) {
   const projectId = env.FIREBASE_PROJECT_ID || "ggowcpredictor";
-  const zafronixKey = env.ZAFRONIX_API_KEY;
-  const livescoreApiKey = env.LIVESCORE_API_KEY;
-  const livescoreApiSecret = env.LIVESCORE_API_SECRET;
   const serviceAccount = parseJsonSecret(env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  if (!serviceAccount) throw new Error("Missing FIREBASE_SERVICE_ACCOUNT_JSON");
 
-  if (!serviceAccount)
-    throw new Error("Missing FIREBASE_SERVICE_ACCOUNT_JSON.");
+  const token = await getAccessToken(serviceAccount);
+  const allDocs = [];
+  let pageToken = "";
 
-  const [fixtures, apiMatches] = await Promise.all([
-    fetchFirestoreCollection(projectId, serviceAccount, "fixtures"),
-    fetchPrimaryOrBackupMatches(
-      zafronixKey,
-      livescoreApiKey,
-      livescoreApiSecret,
-    ),
+  while (true) {
+    const tokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collectionId}?pageSize=500${tokenParam}`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error(`Firestore HTTP ${response.status}`);
+    const data = await response.json();
+    const docs = (data.documents || []).map(firestoreDocToRow);
+    allDocs.push(...docs);
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+
+  return allDocs;
+}
+
+function firestoreDocToRow(doc) {
+  const row = { id: String(doc.name || "").split("/").pop() };
+  const fields = doc.fields || {};
+  for (const key of Object.keys(fields)) {
+    row[key] = readFirestoreField(fields[key]);
+  }
+  return row;
+}
+
+function readFirestoreField(entry) {
+  if (!entry) return null;
+  if (entry.stringValue !== undefined) return entry.stringValue;
+  if (entry.integerValue !== undefined) return Number(entry.integerValue);
+  if (entry.doubleValue !== undefined) return Number(entry.doubleValue);
+  if (entry.booleanValue !== undefined) return entry.booleanValue;
+  if (entry.timestampValue !== undefined) return entry.timestampValue;
+  if (entry.nullValue !== undefined) return null;
+  if (entry.arrayValue) {
+    return (entry.arrayValue.values || []).map(readFirestoreField);
+  }
+  if (entry.mapValue) {
+    const obj = {};
+    for (const [k, v] of Object.entries(entry.mapValue.fields || {})) {
+      obj[k] = readFirestoreField(v);
+    }
+    return obj;
+  }
+  return null;
+}
+
+async function firestoreBatchWrite(env, collection, updates) {
+  const projectId = env.FIREBASE_PROJECT_ID || "ggowcpredictor";
+  const serviceAccount = parseJsonSecret(env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  if (!serviceAccount) return;
+  const token = await getAccessToken(serviceAccount);
+
+  const writes = updates.map((update) => ({
+    update: {
+      name: `projects/${projectId}/databases/(default)/documents/${collection}/${update._docId}`,
+      fields: convertToFirestoreFields(update),
+    },
+  }));
+
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:batchWrite`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ writes }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.warn(`Firestore batchWrite failed ${response.status}: ${text}`);
+  }
+}
+
+function convertToFirestoreFields(obj) {
+  const fields = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === "_docId") continue;
+    fields[key] = toFirestoreValue(value);
+  }
+  return fields;
+}
+
+function toFirestoreValue(value) {
+  if (value === null || value === undefined) return { nullValue: null };
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") {
+    return Number.isInteger(value)
+      ? { integerValue: String(value) }
+      : { doubleValue: value };
+  }
+  if (typeof value === "string") return { stringValue: value };
+  if (Array.isArray(value)) {
+    return { arrayValue: { values: value.map(toFirestoreValue) } };
+  }
+  if (typeof value === "object") {
+    const fields = {};
+    for (const [k, v] of Object.entries(value)) {
+      fields[k] = toFirestoreValue(v);
+    }
+    return { mapValue: { fields } };
+  }
+  return { stringValue: String(value) };
+}
+
+// ─── Generic collection loader: Supabase first, Firestore fallback ──────────
+
+async function loadCollection(env, table) {
+  try {
+    const rows = await supabaseSelect(env, table);
+    if (rows.length) return rows;
+  } catch (error) {
+    console.warn(`Supabase ${table} unavailable: ${error.message}`);
+  }
+
+  try {
+    return await firestoreCollection(env, table);
+  } catch (error) {
+    console.warn(`Firestore ${table} also unavailable: ${error.message}`);
+  }
+
+  return [];
+}
+
+// ─── Leaderboard Calculation Engine ─────────────────────────────────────────
+
+function scoreMatch(p1, p2, a1, a2) {
+  if (p1 === a1 && p2 === a2) return 15;
+  const predOutcome = Math.sign(p1 - p2);
+  const actualOutcome = Math.sign(a1 - a2);
+  if (predOutcome === actualOutcome) {
+    const diffGap = Math.abs(p1 - p2 - (a1 - a2));
+    return diffGap <= 1 ? 8 : 5;
+  }
+  const totalGap = Math.abs(p1 - a1) + Math.abs(p2 - a2);
+  return totalGap <= 2 ? 3 : 0;
+}
+
+function buildLeaderboard(resultRows, predictionRows, userRows) {
+  const displayNames = {};
+  for (const user of userRows) {
+    const username = String(user.username || user.id || "").trim();
+    if (username) displayNames[username] = user.displayName || username;
+  }
+
+  const results = {};
+  for (const r of resultRows) {
+    const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
+    const status = String(r.status || "").toUpperCase();
+    const score1 = toNullableNumber(r.score1);
+    const score2 = toNullableNumber(r.score2);
+    if (!matchId || score1 === null || score2 === null) continue;
+    if (!FINAL_STATUSES.includes(status)) continue;
+    results[matchId] = { matchId, score1, score2, status };
+  }
+
+  const userMap = {};
+  for (const prediction of predictionRows) {
+    const username = String(prediction.username || "").trim();
+    const matchId = String(prediction.matchId || "").replace(/^match_/, "");
+    const pred1 = toNullableNumber(prediction.pred1);
+    const pred2 = toNullableNumber(prediction.pred2);
+    if (!username || !matchId || pred1 === null || pred2 === null) continue;
+
+    if (!userMap[username]) {
+      userMap[username] = {
+        username,
+        displayName: displayNames[username] || username,
+        totalPoints: 0,
+        exactScores: 0,
+        correctOutcomes: 0,
+        predicted: 0,
+        scored: 0,
+      };
+    }
+
+    userMap[username].predicted++;
+    const result = results[matchId];
+    if (!result) continue;
+
+    const points = scoreMatch(pred1, pred2, result.score1, result.score2);
+    userMap[username].totalPoints += points;
+    userMap[username].scored++;
+    if (points === 15) userMap[username].exactScores++;
+    if (points > 0) userMap[username].correctOutcomes++;
+  }
+
+  const ranked = Object.values(userMap)
+    .sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      if (b.exactScores !== a.exactScores) return b.exactScores - a.exactScores;
+      if (b.correctOutcomes !== a.correctOutcomes)
+        return b.correctOutcomes - a.correctOutcomes;
+      return a.username.localeCompare(b.username);
+    })
+    .map((player, index) => ({ ...player, rank: index + 1 }));
+
+  return { leaderboard: ranked, results, scoredMatches: Object.keys(results).length };
+}
+
+// ─── Live Score Fetching & Syncing ──────────────────────────────────────────
+
+async function syncLiveResults(env) {
+  const [fixtureRows, apiMatches] = await Promise.all([
+    loadCollection(env, "fixtures"),
+    fetchPrimaryOrBackupMatches(env),
   ]);
 
   const matchedUpdates = [];
@@ -70,37 +298,229 @@ async function syncLiveResults(env) {
     const awayTeam = cleanTeamName(item.awayTeam || item.team2 || "");
     if (!homeTeam || !awayTeam) continue;
 
-    const matched = fixtures.find((f) => {
+    let flipped = false;
+    const matched = fixtureRows.find((f) => {
       const dbHome = cleanTeamName(f.team1);
       const dbAway = cleanTeamName(f.team2);
-      return (
-        (dbHome === homeTeam && dbAway === awayTeam) ||
-        (dbHome === awayTeam && dbAway === homeTeam)
-      );
+      if (dbHome === homeTeam && dbAway === awayTeam) {
+        flipped = false;
+        return true;
+      }
+      if (dbHome === awayTeam && dbAway === homeTeam) {
+        flipped = true;
+        return true;
+      }
+      return false;
     });
-
     if (!matched) continue;
 
+    const apiHome = toNullableNumber(readScore(item, "home"));
+    const apiAway = toNullableNumber(readScore(item, "away"));
+
     matchedUpdates.push({
-      matchId: String(matched.matchId),
-      score1: toNullableNumber(readScore(item, "home")),
-      score2: toNullableNumber(readScore(item, "away")),
+      matchId: String(matched.matchId || matched.id || "").replace(/^match_/, ""),
+      score1: flipped ? apiAway : apiHome,
+      score2: flipped ? apiHome : apiAway,
       status: mapStatus(item.status),
       lastUpdated: new Date().toISOString(),
     });
   }
 
-  const token = await getAccessToken(serviceAccount);
   if (matchedUpdates.length) {
-    await writeResultsBatch(projectId, token, matchedUpdates);
+    // Write to Supabase (primary)
+    try {
+      await supabaseUpsert(env, "results", matchedUpdates);
+    } catch (error) {
+      console.warn("Supabase results write failed:", error.message);
+    }
+
+    // Write to Firestore (backup)
+    try {
+      const firestoreUpdates = matchedUpdates.map((u) => ({
+        ...u,
+        _docId: `match_${u.matchId}`,
+      }));
+      await firestoreBatchWrite(env, "results", firestoreUpdates);
+    } catch (error) {
+      console.warn("Firestore results write failed:", error.message);
+    }
   }
 
-  return jsonResponse({
+  // Recalculate leaderboard after score sync
+  const leaderboardData = await recalculateLeaderboard(env);
+
+  return {
     success: true,
     matched: matchedUpdates.length,
     updated: matchedUpdates.length,
-  });
+    leaderboard: leaderboardData.leaderboard,
+  };
 }
+
+async function recalculateLeaderboard(env) {
+  const [resultRows, predictionRows, userRows] = await Promise.all([
+    loadCollection(env, "results"),
+    loadCollection(env, "predictions"),
+    loadCollection(env, "users"),
+  ]);
+
+  const data = buildLeaderboard(resultRows, predictionRows, userRows);
+
+  // Persist leaderboard to Supabase
+  if (data.leaderboard.length) {
+    try {
+      const rows = data.leaderboard.map((p) => ({
+        ...p,
+        updatedAt: new Date().toISOString(),
+      }));
+      await supabaseUpsert(env, "leaderboard", rows);
+    } catch (error) {
+      console.warn("Supabase leaderboard write failed:", error.message);
+    }
+  }
+
+  return data;
+}
+
+// ─── Main GET /sync endpoint ────────────────────────────────────────────────
+
+async function handleSyncGet(env) {
+  const [fixtureRows, resultRows, userRows, predictionRows] = await Promise.all([
+    loadCollection(env, "fixtures"),
+    loadCollection(env, "results"),
+    loadCollection(env, "users"),
+    loadCollection(env, "predictions"),
+  ]);
+
+  const fixtures = fixtureRows.map((f) => ({
+    matchId: String(f.matchId || f.id || "").replace(/^match_/, ""),
+    round: f.round || "",
+    group: f.group || "",
+    date: f.date || "",
+    time: f.time || "",
+    kickoffUTC: f.kickoffUTC || null,
+    team1: f.team1 || "",
+    team2: f.team2 || "",
+    ground: f.ground || "",
+    stage: f.stage || "",
+  }));
+
+  const results = {};
+  for (const r of resultRows) {
+    const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
+    if (!matchId) continue;
+    results[matchId] = {
+      matchId,
+      score1: toNullableNumber(r.score1),
+      score2: toNullableNumber(r.score2),
+      status: String(r.status || "NS").toUpperCase(),
+    };
+  }
+
+  const users = userRows
+    .map((u) => ({
+      username: String(u.username || u.id || "").trim(),
+      displayName: u.displayName || u.username || u.id || "",
+      isAdmin: Boolean(u.isAdmin),
+    }))
+    .filter((u) => u.username);
+
+  const { leaderboard } = buildLeaderboard(resultRows, predictionRows, userRows);
+
+  return {
+    fixtures,
+    results,
+    users,
+    leaderboard,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// ─── Endpoint Router ────────────────────────────────────────────────────────
+
+export default {
+  async fetch(request, env, ctx) {
+    // Handle CORS preflight
+    if (request.method === "OPTIONS") {
+      return corsResponse(new Response(null, { status: 204 }));
+    }
+
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const action = url.searchParams.get("action");
+
+    try {
+      // /sync-scores — trigger live score fetch + recalc
+      if (path === "/sync-scores" || action === "sync-scores") {
+        if (!isAuthorized(request, env)) {
+          return corsJson({ success: false, error: "Unauthorized" }, 401);
+        }
+        const result = await syncLiveResults(env);
+        return corsJson({ ...result, mode: "manual-sync-scores" });
+      }
+
+      // /seed — alias for sync-scores (backwards compat)
+      if (path === "/seed" || action === "seed") {
+        if (!isAuthorized(request, env)) {
+          return corsJson({ success: false, error: "Unauthorized" }, 401);
+        }
+        const result = await syncLiveResults(env);
+        return corsJson({ ...result, mode: "manual-seed" });
+      }
+
+      // /sync — returns all data (public, read-only)
+      if (path === "/sync" || action === "sync") {
+        const data = await handleSyncGet(env);
+        return corsJson(data);
+      }
+
+      // /fixtures — just fixtures
+      if (path === "/fixtures" || action === "fixtures") {
+        const fixtureRows = await loadCollection(env, "fixtures");
+        const fixtures = fixtureRows.map((f) => ({
+          matchId: String(f.matchId || f.id || "").replace(/^match_/, ""),
+          round: f.round || "",
+          group: f.group || "",
+          date: f.date || "",
+          time: f.time || "",
+          kickoffUTC: f.kickoffUTC || null,
+          team1: f.team1 || "",
+          team2: f.team2 || "",
+          ground: f.ground || "",
+          stage: f.stage || "",
+        }));
+        return corsJson({ fixtures, timestamp: new Date().toISOString() });
+      }
+
+      // /leaderboard — just the leaderboard
+      if (path === "/leaderboard" || action === "leaderboard") {
+        const data = await recalculateLeaderboard(env);
+        return corsJson({
+          leaderboard: data.leaderboard,
+          scoredMatches: data.scoredMatches,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Root — API info
+      return corsJson({
+        ok: true,
+        routes: ["/sync", "/sync-scores", "/fixtures", "/leaderboard"],
+        message:
+          "GGO WC 2026 Predictor API. Use /sync for all data, /sync-scores to trigger live score fetch.",
+      });
+    } catch (error) {
+      console.error("Worker error:", error);
+      return corsJson({ success: false, error: error.message }, 500);
+    }
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(syncLiveResults(env));
+  },
+};
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
 
 function isAuthorized(request, env) {
   const token = env.SEED_TOKEN;
@@ -110,35 +530,52 @@ function isAuthorized(request, env) {
   return header === `Bearer ${token}` || queryToken === token;
 }
 
-async function fetchPrimaryOrBackupMatches(
-  zafronixKey,
-  livescoreApiKey,
-  livescoreApiSecret,
-) {
+// ─── CORS ───────────────────────────────────────────────────────────────────
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
+};
+
+function corsResponse(response) {
+  for (const [key, value] of Object.entries(CORS_HEADERS)) {
+    response.headers.set(key, value);
+  }
+  return response;
+}
+
+function corsJson(data, status = 200) {
+  const response = new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+  return corsResponse(response);
+}
+
+// ─── Live Match Fetching (same as before, cleaned up) ───────────────────────
+
+async function fetchPrimaryOrBackupMatches(env) {
+  const zafronixKey = env.ZAFRONIX_API_KEY;
+  const livescoreApiKey = env.LIVESCORE_API_KEY;
+  const livescoreApiSecret = env.LIVESCORE_API_SECRET;
+
   try {
     return await fetchWorldcup26Matches();
   } catch (error) {
-    console.warn(
-      "worldcup26.ir failed, falling back to Zafronix / livescore-api.com:",
-      error.message,
-    );
+    console.warn("worldcup26.ir failed:", error.message);
   }
 
   try {
-    if (zafronixKey) {
-      return await fetchZafronixMatches(zafronixKey);
-    }
+    if (zafronixKey) return await fetchZafronixMatches(zafronixKey);
   } catch (error) {
-    console.warn(
-      "Zafronix failed, falling back to livescore-api.com:",
-      error.message,
-    );
+    console.warn("Zafronix failed:", error.message);
   }
 
   if (!livescoreApiKey || !livescoreApiSecret) {
     throw new Error("No working live API configured.");
   }
-
   return fetchLivescoreMatches(livescoreApiKey, livescoreApiSecret);
 }
 
@@ -153,10 +590,7 @@ async function fetchWorldcup26Matches() {
 
 async function fetchZafronixMatches(apiKey) {
   const response = await fetch(ZAFRONIX_URL, {
-    headers: {
-      "X-API-Key": apiKey,
-      Accept: "application/json",
-    },
+    headers: { "X-API-Key": apiKey, Accept: "application/json" },
   });
   if (!response.ok) throw new Error(`Zafronix HTTP ${response.status}`);
   const data = await response.json();
@@ -172,17 +606,11 @@ async function fetchLivescoreMatches(apiKey, apiSecret) {
       `${LIVESCORE_LIVE_URL}&key=${encodeURIComponent(apiKey)}&secret=${encodeURIComponent(apiSecret)}`,
     ),
   ]);
-
-  if (!fixturesResponse.ok) {
-    throw new Error(`Livescore fixtures HTTP ${fixturesResponse.status}`);
-  }
-  if (!liveResponse.ok) {
-    throw new Error(`Livescore live HTTP ${liveResponse.status}`);
-  }
+  if (!fixturesResponse.ok) throw new Error(`Livescore fixtures HTTP ${fixturesResponse.status}`);
+  if (!liveResponse.ok) throw new Error(`Livescore live HTTP ${liveResponse.status}`);
 
   const fixturesData = await fixturesResponse.json();
   const liveData = await liveResponse.json();
-
   const fixtures = extractLivescoreArray(fixturesData);
   const live = extractLivescoreArray(liveData);
 
@@ -199,67 +627,7 @@ async function fetchLivescoreMatches(apiKey, apiSecret) {
   });
 }
 
-async function fetchFirestoreCollection(
-  projectId,
-  serviceAccount,
-  collectionId,
-) {
-  const token = await getAccessToken(serviceAccount);
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collectionId}?pageSize=500`;
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) throw new Error(`Firestore HTTP ${response.status}`);
-  const data = await response.json();
-  return (data.documents || []).map((doc) => {
-    const fields = doc.fields || {};
-    return {
-      id: doc.name?.split("/").pop(),
-      matchId: readField(fields, "matchId") || doc.id?.replace(/^match_/, ""),
-      team1: readField(fields, "team1") || "",
-      team2: readField(fields, "team2") || "",
-    };
-  });
-}
-
-async function writeResultsBatch(projectId, token, updates) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:batchWrite`;
-  const writes = updates.map((update) => ({
-    update: {
-      name: `projects/${projectId}/databases/(default)/documents/results/match_${update.matchId}`,
-      fields: {
-        matchId: { stringValue: update.matchId },
-        score1:
-          update.score1 === null
-            ? { nullValue: null }
-            : { integerValue: String(update.score1) },
-        score2:
-          update.score2 === null
-            ? { nullValue: null }
-            : { integerValue: String(update.score2) },
-        status: { stringValue: update.status },
-        lastUpdated: { stringValue: update.lastUpdated },
-      },
-    },
-    updateMask: {
-      fieldPaths: ["matchId", "score1", "score2", "status", "lastUpdated"],
-    },
-  }));
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ writes }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Firestore batchWrite failed ${response.status}: ${text}`);
-  }
-}
+// ─── Normalizers & Utilities ────────────────────────────────────────────────
 
 function cleanTeamName(name) {
   let clean = String(name || "")
@@ -267,14 +635,9 @@ function cleanTeamName(name) {
     .replace(/\band\b/g, "")
     .replace(/&/g, "")
     .replace(/[^a-z0-9]/g, "");
-  if (
-    clean === "korearepublic" ||
-    clean === "repofkorea" ||
-    clean === "koreasouth"
-  )
+  if (clean === "korearepublic" || clean === "repofkorea" || clean === "koreasouth")
     return "southkorea";
-  if (clean === "unitedstates" || clean === "unitedstatesofamerica")
-    return "usa";
+  if (clean === "unitedstates" || clean === "unitedstatesofamerica") return "usa";
   if (clean === "czechia") return "czechrepublic";
   if (clean === "cotedivoire" || clean === "ivorycoast") return "ivorycoast";
   if (clean === "curaao" || clean === "curacao") return "curacao";
@@ -292,11 +655,9 @@ function cleanTeamName(name) {
 function mapStatus(zStatus) {
   if (!zStatus) return "NS";
   const s = String(zStatus).toLowerCase();
-  if (["completed", "finished", "ft", "full-time", "fulltime"].includes(s))
-    return "FT";
+  if (["completed", "finished", "ft", "full-time", "fulltime"].includes(s)) return "FT";
   if (["halftime", "ht", "half-time"].includes(s)) return "HT";
-  if (["live", "in_play", "inplay", "1h", "first half"].includes(s))
-    return "1H";
+  if (["live", "in_play", "inplay", "1h", "first half"].includes(s)) return "1H";
   if (["second half", "2h"].includes(s)) return "2H";
   if (["aet", "extra time", "extra-time"].includes(s)) return "AET";
   if (["pen", "penalties", "pens"].includes(s)) return "PEN";
@@ -306,46 +667,17 @@ function mapStatus(zStatus) {
 function readScore(item, side) {
   const keys =
     side === "home"
-      ? [
-          "homeScore",
-          "score1",
-          "team1Score",
-          "home_goal",
-          "homeGoals",
-          "goalsHome",
-        ]
-      : [
-          "awayScore",
-          "score2",
-          "team2Score",
-          "away_goal",
-          "awayGoals",
-          "goalsAway",
-        ];
+      ? ["homeScore", "score1", "team1Score", "home_goal", "homeGoals", "goalsHome"]
+      : ["awayScore", "score2", "team2Score", "away_goal", "awayGoals", "goalsAway"];
   for (const key of keys) {
-    if (item[key] !== undefined && item[key] !== null && item[key] !== "")
-      return item[key];
+    if (item[key] !== undefined && item[key] !== null && item[key] !== "") return item[key];
   }
   const nested = item.score || item.result || item.scores;
   if (nested && typeof nested === "object") {
     const paths =
       side === "home"
-        ? [
-            ["home"],
-            ["local"],
-            ["team1"],
-            ["fulltime", "home"],
-            ["ft", "home"],
-            ["final", "home"],
-          ]
-        : [
-            ["away"],
-            ["visitor"],
-            ["team2"],
-            ["fulltime", "away"],
-            ["ft", "away"],
-            ["final", "away"],
-          ];
+        ? [["home"], ["local"], ["team1"], ["fulltime", "home"], ["ft", "home"], ["final", "home"]]
+        : [["away"], ["visitor"], ["team2"], ["fulltime", "away"], ["ft", "away"], ["final", "away"]];
     for (const path of paths) {
       let value = nested;
       let found = true;
@@ -357,8 +689,7 @@ function readScore(item, side) {
           break;
         }
       }
-      if (found && value !== undefined && value !== null && value !== "")
-        return value;
+      if (found && value !== undefined && value !== null && value !== "") return value;
     }
   }
   return null;
@@ -367,32 +698,15 @@ function readScore(item, side) {
 function extractLivescoreArray(payload) {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];
-  return (
-    payload.data ||
-    payload.matches ||
-    payload.fixtures ||
-    payload.results ||
-    payload.items ||
-    []
-  );
+  return payload.data || payload.matches || payload.fixtures || payload.results || payload.items || [];
 }
 
 function buildLivescoreKey(item) {
   const home = cleanTeamName(
-    item.home_name ||
-      item.home ||
-      item.team1 ||
-      item.localteam_name ||
-      item.localteam ||
-      "",
+    item.home_name || item.home || item.team1 || item.localteam_name || item.localteam || "",
   );
   const away = cleanTeamName(
-    item.away_name ||
-      item.away ||
-      item.team2 ||
-      item.visitorteam_name ||
-      item.visitorteam ||
-      "",
+    item.away_name || item.away || item.team2 || item.visitorteam_name || item.visitorteam || "",
   );
   if (!home || !away) return "";
   return `${home}__${away}`;
@@ -403,23 +717,9 @@ function mergeLivescoreFixtureAndLive(fixtureItem, liveItem) {
     ...fixtureItem,
     ...liveItem,
     homeTeam:
-      fixtureItem.homeTeam ||
-      fixtureItem.team1 ||
-      liveItem.homeTeam ||
-      liveItem.home ||
-      liveItem.home_name ||
-      liveItem.localteam_name ||
-      liveItem.localteam ||
-      "",
+      fixtureItem.homeTeam || fixtureItem.team1 || liveItem.homeTeam || liveItem.home || liveItem.home_name || liveItem.localteam_name || liveItem.localteam || "",
     awayTeam:
-      fixtureItem.awayTeam ||
-      fixtureItem.team2 ||
-      liveItem.awayTeam ||
-      liveItem.away ||
-      liveItem.away_name ||
-      liveItem.visitorteam_name ||
-      liveItem.visitorteam ||
-      "",
+      fixtureItem.awayTeam || fixtureItem.team2 || liveItem.awayTeam || liveItem.away || liveItem.away_name || liveItem.visitorteam_name || liveItem.visitorteam || "",
     status: liveItem.status || fixtureItem.status,
   };
 }
@@ -430,14 +730,11 @@ function normalizeWorldcup26Games(payload) {
     : Array.isArray(payload?.games)
       ? payload.games
       : [];
-
   return games.map((game) => ({
     source: "worldcup26",
     matchId: String(game.id || game.matchId || ""),
-    homeTeam:
-      game.home_team_name_en || game.home_team_label || game.home_team || "",
-    awayTeam:
-      game.away_team_name_en || game.away_team_label || game.away_team || "",
+    homeTeam: game.home_team_name_en || game.home_team_label || game.home_team || "",
+    awayTeam: game.away_team_name_en || game.away_team_label || game.away_team || "",
     homeScore: readGameScore(game, "home"),
     awayScore: readGameScore(game, "away"),
     status: mapWorldcup26Status(game),
@@ -466,12 +763,6 @@ function toNullableNumber(value) {
   return Number.isFinite(num) ? num : null;
 }
 
-function readField(fields, key) {
-  const field = fields[key];
-  if (!field) return null;
-  return field.stringValue ?? field.integerValue ?? field.doubleValue ?? null;
-}
-
 function parseJsonSecret(value) {
   if (!value) return null;
   try {
@@ -481,57 +772,86 @@ function parseJsonSecret(value) {
   }
 }
 
+// ─── Firebase Auth (JWT / service account) ──────────────────────────────────
+
+let cachedTokenPromise = null;
+let tokenExpiryTime = 0;
+
 async function getAccessToken(serviceAccount) {
   const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const claimSet = {
-    iss: serviceAccount.client_email,
-    scope: "https://www.googleapis.com/auth/datastore",
-    aud: "https://oauth2.googleapis.com/token",
-    iat: now,
-    exp: now + 3600,
-  };
-
-  const unsignedJwt = `${base64UrlEncodeJson(header)}.${base64UrlEncodeJson(claimSet)}`;
-  const key = await importPrivateKey(serviceAccount.private_key);
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    new TextEncoder().encode(unsignedJwt),
-  );
-  const jwt = `${unsignedJwt}.${base64UrlEncodeBuffer(signature)}`;
-
-  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
-    }),
-  });
-
-  if (!tokenResponse.ok) {
-    const text = await tokenResponse.text();
-    throw new Error(`OAuth token failed ${tokenResponse.status}: ${text}`);
+  if (cachedTokenPromise && tokenExpiryTime > now + 60) {
+    return cachedTokenPromise;
   }
 
-  const tokenData = await tokenResponse.json();
-  return tokenData.access_token;
+  tokenExpiryTime = now + 3600; // Optimistic, will be adjusted on success
+  cachedTokenPromise = (async () => {
+    try {
+      const header = { alg: "RS256", typ: "JWT" };
+      const claimSet = {
+        iss: serviceAccount.client_email,
+        scope: "https://www.googleapis.com/auth/datastore",
+        aud: "https://oauth2.googleapis.com/token",
+        iat: now,
+        exp: now + 3600,
+      };
+
+      const unsignedJwt = `${base64UrlEncodeJson(header)}.${base64UrlEncodeJson(claimSet)}`;
+      const key = await importPrivateKey(serviceAccount.private_key);
+      const signature = await crypto.subtle.sign(
+        "RSASSA-PKCS1-v1_5",
+        key,
+        new TextEncoder().encode(unsignedJwt),
+      );
+      const jwt = `${unsignedJwt}.${base64UrlEncodeBuffer(signature)}`;
+
+      const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+          assertion: jwt,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const text = await tokenResponse.text();
+        throw new Error(`OAuth token failed ${tokenResponse.status}: ${text}`);
+      }
+
+      const tokenData = await tokenResponse.json();
+      tokenExpiryTime = now + (tokenData.expires_in || 3600);
+      return tokenData.access_token;
+    } catch (error) {
+      cachedTokenPromise = null;
+      tokenExpiryTime = 0;
+      throw error;
+    }
+  })();
+
+  return cachedTokenPromise;
 }
 
 async function importPrivateKey(pem) {
-  const cleaned = pem
-    .replace(/-----(BEGIN|END) PRIVATE KEY-----/g, "")
-    .replace(/\s+/g, "");
-  const der = base64ToArrayBuffer(cleaned);
-  return crypto.subtle.importKey(
-    "pkcs8",
-    der,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
+  if (!pem) {
+    throw new Error("Private key is empty or missing.");
+  }
+  try {
+    const cleaned = pem
+      .replace(/-----(BEGIN|END) PRIVATE KEY-----/g, "")
+      .replace(/\s+/g, "");
+    const der = base64ToArrayBuffer(cleaned);
+    return await crypto.subtle.importKey(
+      "pkcs8",
+      der,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+  } catch (error) {
+    throw new Error(`Failed to import private key: ${error.message}`);
+  }
 }
+
 
 function base64UrlEncodeJson(value) {
   return base64UrlEncodeString(JSON.stringify(value));
@@ -553,10 +873,4 @@ function base64ToArrayBuffer(base64) {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes.buffer;
-}
-
-function jsonResponse(data) {
-  return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json" },
-  });
 }
