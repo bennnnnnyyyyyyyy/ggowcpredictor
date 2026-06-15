@@ -634,8 +634,8 @@ async function requestSync() {
   try {
     await loadGameData();
     if (!STATE.fixtures.length) await loadFixtures();
-    if (!Object.keys(STATE.results).length) await loadResults();
-    if (!STATE.leaderboard.length) await loadLeaderboard();
+    await loadResults();
+    await loadLeaderboard();
     await loadPredictions();
     await loadAccountRequests();
 
@@ -1241,7 +1241,9 @@ function renderPredictionCard(match) {
       ? '<div class="mc-status-line"><span class="status-token">LOCK</span><span>Predictions closed</span></div>'
       : hasPred && !locked && !hasRes
         ? '<div class="mc-status-line"><span class="status-token">SAVED</span><span>Prediction saved</span></div>'
-        : "";
+        : !locked && !hasRes
+          ? '<div class="mc-status-line"><span class="status-token open-token">OPEN</span><span>Enter prediction</span></div>'
+          : "";
   const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "—";
   const actualScore = hasRes
     ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
