@@ -89,6 +89,14 @@
         >
           Request an account
         </button>
+        <button
+          type="button"
+          class="btn-secondary login-ghost-btn"
+          onclick="toggleSettings(true)"
+          style="margin-top: 8px; opacity: 0.8;"
+        >
+          Connection Settings
+        </button>
       </div>
     </div>
 
@@ -160,6 +168,9 @@
           </div>
           <button class="sync-btn" type="button" onclick="requestSync()">
             Sync
+          </button>
+          <button class="sync-btn" type="button" onclick="toggleSettings(true)" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.25);">
+            Settings
           </button>
         </div>
       </header>

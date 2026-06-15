@@ -426,3 +426,11 @@ esbuild fails with "No loader is configured for .html files: index.html" because
 ### Verification:
 - `node --check workers/live-results.js` ✓
 - `node --check scripts/app.js` ✓
+
+---
+## 2026-06-15 - Connection Settings visibility and accessibility fix (2:25 PM)
+
+### What changed:
+- **`scripts/app.js`**: Added a **System Settings** button directly inside the **Admin Panel** (`renderAdmin()` function).
+- **`index.html`**: Added a **Connection Settings** button to the login card and a **Settings** button next to the **Sync** button in the main app header. This resolves the chicken-and-egg issue where users couldn't modify connection URLs before logging in, or when logged in as non-admins.
+- **Verification**: Verified syntax parsing with `node --check scripts/app.js` successfully.

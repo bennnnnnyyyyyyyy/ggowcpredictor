@@ -1,5 +1,18 @@
 # Work Log
 
+## 2026-06-15 - System Settings accessibility fix
+
+### What changed
+
+- **`scripts/app.js`**: Added a "System Settings" button inside the `renderAdmin()` Admin Panel interface.
+- **`index.html`**: Added a "Connection Settings" button on the login screen and a "Settings" button in the main app header next to the "Sync" button. This solves the chicken-and-egg usability issue where a user could not configure the API URL before logging in, or if they were logged in as a non-admin.
+
+### Verification
+
+- Checked syntax parsing of `scripts/app.js` using `node --check` successfully.
+
+---
+
 ## 2026-06-15 - Critical Bug Fixes: Score Flip & Group Standings
 
 ### What changed
