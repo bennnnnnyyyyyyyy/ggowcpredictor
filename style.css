@@ -2392,3 +2392,148 @@ main {
 .start-playing-btn:hover {
   box-shadow: 0 6px 20px rgba(0, 209, 94, 0.4);
 }
+
+/* ── LEADERBOARD MOBILE: compact card layout ──────────────────
+   Drop this at the bottom of style.css (replaces/overrides the
+   existing @media (max-width: 768px) leaderboard block).
+   ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  /* Wrapper becomes a plain stack */
+  .leaderboard-table {
+    display: block;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .leaderboard-table thead {
+    display: none;
+  }
+
+  .leaderboard-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Each row = a horizontal pill card */
+  .leaderboard-table tr {
+    display: grid;
+    /* rank | avatar+name | pts | exact | outcome */
+    grid-template-columns: 36px 1fr 48px 36px 36px;
+    align-items: center;
+    gap: 0 10px;
+    padding: 10px 14px;
+    margin: 0;
+    border: 1px solid rgba(0, 209, 94, 0.2);
+    border-radius: 10px;
+    background: rgba(0, 209, 94, 0.05);
+  }
+
+  .leaderboard-table tr.current-user {
+    background: rgba(0, 179, 89, 0.13);
+    border-color: rgba(0, 209, 94, 0.45);
+  }
+
+  /* All cells: no flex label trick — just show the value */
+  .leaderboard-table td {
+    display: block;
+    padding: 0;
+    border: none;
+    text-align: center;
+  }
+
+  /* Suppress the ::before data-label text */
+  .leaderboard-table td::before {
+    display: none;
+  }
+
+  /* Rank cell */
+  .leaderboard-table td[data-label="Rank"] {
+    justify-self: center;
+  }
+
+  .rank-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+
+  /* Player cell — left-aligned, takes all remaining space */
+  .leaderboard-table td[data-label="Player"] {
+    text-align: left;
+    min-width: 0;
+  }
+
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .player-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .player-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Stat cells — small labels above the number */
+  .leaderboard-table td[data-label="Points"],
+  .leaderboard-table td[data-label="Exact"],
+  .leaderboard-table td[data-label="Outcome"] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+  }
+
+  .leaderboard-table td[data-label="Points"]::before,
+  .leaderboard-table td[data-label="Exact"]::before,
+  .leaderboard-table td[data-label="Outcome"]::before {
+    display: block;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1;
+  }
+
+  .leaderboard-table td[data-label="Points"]::before {
+    content: "PTS";
+  }
+  .leaderboard-table td[data-label="Exact"]::before {
+    content: "EXA";
+  }
+  .leaderboard-table td[data-label="Outcome"]::before {
+    content: "OUT";
+  }
+
+  .leaderboard-table td[data-label="Points"] strong {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--wc-blue);
+    line-height: 1;
+  }
+
+  .leaderboard-table td[data-label="Exact"],
+  .leaderboard-table td[data-label="Outcome"] {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--light);
+  }
+}
