@@ -1590,6 +1590,7 @@ function renderAdmin() {
   container.innerHTML = `
     <div class="admin-grid">
       <button class="btn-primary sync-btn" type="button" onclick="requestSync()">Refresh Data</button>
+      <button class="btn-primary sync-btn" type="button" onclick="toggleSettings(true)" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.25); color: var(--light);">System Settings</button>
       <div class="admin-card">
         <strong>${STATE.fixtures.length}</strong>
         <span>fixtures loaded</span>
