@@ -599,6 +599,11 @@ function ensureAdminNav() {
   const nav = document.getElementById("main-nav");
   if (!nav) return;
 
+  const settingsBtn = document.getElementById("settings-nav-btn");
+  if (settingsBtn) {
+    settingsBtn.style.display = SESSION.isAdmin ? "inline-block" : "none";
+  }
+
   const existing = document.getElementById("admin-nav-btn");
   if (SESSION.isAdmin) {
     if (existing) return;
