@@ -14,3 +14,10 @@ user-passwords.csv
 merged-emails/
 .wrangler/
 wrangler-*.log
+
+# Debug & Temp
+*.log
+*.har
+scripts/_check_*.js
+.agents/
+.gemini/

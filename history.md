@@ -449,3 +449,12 @@ esbuild fails with "No loader is configured for .html files: index.html" because
 - **`docs/ARCHITECTURE.md`**: Rewrote system architecture documentation to map out the complete and finalized Cloudflare Worker + Supabase (primary) + Firestore (backup) flow. Added system diagrams and revised browser data loading priority tables.
 - **`docs/migration_plan.md`**: Marked all steps (specifically Step 2.5 data recovery and leaderboard verification) as **100% completed**.
 - **Verification**: Remote query verification of Supabase database shows perfect table counts matching the production Firestore records (0 gap across all collections). Verified Supabase local CLI availability.
+
+---
+## 2026-06-15 - Repository Cleanup & Gitignore Optimization (2:35 PM)
+
+### What changed:
+- **`.gitignore`**: Added rules to ignore local logs (`*.log`), trace dumps (`*.har`), local test scripts (`scripts/_check_*.js`), and agent directories (`.agents/`, `.gemini/`).
+- **Junk Clean**: Permanently deleted obsolete high-volume files (`docs/127.0.0.1.har` 10MB, `emojiissuesocntext.md`, `fixemojis.md`, and `docs/s.html`).
+- **Directory Audit**: Conducted a full directory audit classifying files into Crucial, Legacy, and Junk. Saved the analysis in `directory_audit_report.md`.
+- **Verification**: Confirmed all files are deleted successfully and that gitignore filters out diagnostic files.
