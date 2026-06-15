@@ -608,7 +608,8 @@ async function fetchPrimaryOrBackupMatches(env) {
   }
 
   if (!livescoreApiKey || !livescoreApiSecret) {
-    throw new Error("No working live API configured.");
+    console.warn("Livescore API missing — skipping fallback.");
+    return [];
   }
   return fetchLivescoreMatches(livescoreApiKey, livescoreApiSecret);
 }
