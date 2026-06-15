@@ -34,7 +34,11 @@ function supabaseUrl(env, table, query) {
 }
 
 async function supabaseSelect(env, table, query) {
-  const url = supabaseUrl(env, table, `select=${encodeURIComponent(query || "*")}`);
+  const url = supabaseUrl(
+    env,
+    table,
+    `select=${encodeURIComponent(query || "*")}`,
+  );
   const response = await fetch(url, {
     headers: supabaseHeaders(env),
   });
@@ -56,7 +60,9 @@ const SUPABASE_CONFLICT_KEYS = {
 async function supabaseUpsert(env, table, rows) {
   if (!rows.length) return;
   const conflictKey = SUPABASE_CONFLICT_KEYS[table] || "";
-  const query = conflictKey ? `on_conflict=${encodeURIComponent(conflictKey)}` : "";
+  const query = conflictKey
+    ? `on_conflict=${encodeURIComponent(conflictKey)}`
+    : "";
   const response = await fetch(supabaseUrl(env, table, query), {
     method: "POST",
     headers: supabaseHeaders(env, {
@@ -67,7 +73,9 @@ async function supabaseUpsert(env, table, rows) {
   });
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Supabase upsert ${table} HTTP ${response.status}: ${text}`);
+    throw new Error(
+      `Supabase upsert ${table} HTTP ${response.status}: ${text}`,
+    );
   }
 }
 
@@ -83,7 +91,9 @@ async function firestoreCollection(env, collectionId) {
   let pageToken = "";
 
   while (true) {
-    const tokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
+    const tokenParam = pageToken
+      ? `&pageToken=${encodeURIComponent(pageToken)}`
+      : "";
     const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collectionId}?pageSize=500${tokenParam}`;
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
@@ -100,7 +110,11 @@ async function firestoreCollection(env, collectionId) {
 }
 
 function firestoreDocToRow(doc) {
-  const row = { id: String(doc.name || "").split("/").pop() };
+  const row = {
+    id: String(doc.name || "")
+      .split("/")
+      .pop(),
+  };
   const fields = doc.fields || {};
   for (const key of Object.keys(fields)) {
     row[key] = readFirestoreField(fields[key]);
@@ -281,7 +295,11 @@ function buildLeaderboard(resultRows, predictionRows, userRows) {
     })
     .map((player, index) => ({ ...player, rank: index + 1 }));
 
-  return { leaderboard: ranked, results, scoredMatches: Object.keys(results).length };
+  return {
+    leaderboard: ranked,
+    results,
+    scoredMatches: Object.keys(results).length,
+  };
 }
 
 // ─── Live Score Fetching & Syncing ──────────────────────────────────────────
@@ -318,7 +336,10 @@ async function syncLiveResults(env) {
     const apiAway = toNullableNumber(readScore(item, "away"));
 
     matchedUpdates.push({
-      matchId: String(matched.matchId || matched.id || "").replace(/^match_/, ""),
+      matchId: String(matched.matchId || matched.id || "").replace(
+        /^match_/,
+        "",
+      ),
       score1: flipped ? apiAway : apiHome,
       score2: flipped ? apiHome : apiAway,
       status: mapStatus(item.status),
@@ -348,7 +369,14 @@ async function syncLiveResults(env) {
 
   // Recalculate leaderboard after score sync
   const leaderboardData = await recalculateLeaderboard(env);
-
+  console.log(
+    JSON.stringify({
+      apiMatches: apiMatches.length,
+      fixtures: fixtureRows.length,
+      matchedUpdates: matchedUpdates.length,
+      sample: matchedUpdates.slice(0, 5),
+    }),
+  );
   return {
     success: true,
     matched: matchedUpdates.length,
@@ -385,12 +413,14 @@ async function recalculateLeaderboard(env) {
 // ─── Main GET /sync endpoint ────────────────────────────────────────────────
 
 async function handleSyncGet(env) {
-  const [fixtureRows, resultRows, userRows, predictionRows] = await Promise.all([
-    loadCollection(env, "fixtures"),
-    loadCollection(env, "results"),
-    loadCollection(env, "users"),
-    loadCollection(env, "predictions"),
-  ]);
+  const [fixtureRows, resultRows, userRows, predictionRows] = await Promise.all(
+    [
+      loadCollection(env, "fixtures"),
+      loadCollection(env, "results"),
+      loadCollection(env, "users"),
+      loadCollection(env, "predictions"),
+    ],
+  );
 
   const fixtures = fixtureRows.map((f) => ({
     matchId: String(f.matchId || f.id || "").replace(/^match_/, ""),
@@ -425,7 +455,11 @@ async function handleSyncGet(env) {
     }))
     .filter((u) => u.username);
 
-  const { leaderboard } = buildLeaderboard(resultRows, predictionRows, userRows);
+  const { leaderboard } = buildLeaderboard(
+    resultRows,
+    predictionRows,
+    userRows,
+  );
 
   return {
     fixtures,
@@ -606,8 +640,10 @@ async function fetchLivescoreMatches(apiKey, apiSecret) {
       `${LIVESCORE_LIVE_URL}&key=${encodeURIComponent(apiKey)}&secret=${encodeURIComponent(apiSecret)}`,
     ),
   ]);
-  if (!fixturesResponse.ok) throw new Error(`Livescore fixtures HTTP ${fixturesResponse.status}`);
-  if (!liveResponse.ok) throw new Error(`Livescore live HTTP ${liveResponse.status}`);
+  if (!fixturesResponse.ok)
+    throw new Error(`Livescore fixtures HTTP ${fixturesResponse.status}`);
+  if (!liveResponse.ok)
+    throw new Error(`Livescore live HTTP ${liveResponse.status}`);
 
   const fixturesData = await fixturesResponse.json();
   const liveData = await liveResponse.json();
@@ -635,9 +671,14 @@ function cleanTeamName(name) {
     .replace(/\band\b/g, "")
     .replace(/&/g, "")
     .replace(/[^a-z0-9]/g, "");
-  if (clean === "korearepublic" || clean === "repofkorea" || clean === "koreasouth")
+  if (
+    clean === "korearepublic" ||
+    clean === "repofkorea" ||
+    clean === "koreasouth"
+  )
     return "southkorea";
-  if (clean === "unitedstates" || clean === "unitedstatesofamerica") return "usa";
+  if (clean === "unitedstates" || clean === "unitedstatesofamerica")
+    return "usa";
   if (clean === "czechia") return "czechrepublic";
   if (clean === "cotedivoire" || clean === "ivorycoast") return "ivorycoast";
   if (clean === "curaao" || clean === "curacao") return "curacao";
@@ -655,9 +696,11 @@ function cleanTeamName(name) {
 function mapStatus(zStatus) {
   if (!zStatus) return "NS";
   const s = String(zStatus).toLowerCase();
-  if (["completed", "finished", "ft", "full-time", "fulltime"].includes(s)) return "FT";
+  if (["completed", "finished", "ft", "full-time", "fulltime"].includes(s))
+    return "FT";
   if (["halftime", "ht", "half-time"].includes(s)) return "HT";
-  if (["live", "in_play", "inplay", "1h", "first half"].includes(s)) return "1H";
+  if (["live", "in_play", "inplay", "1h", "first half"].includes(s))
+    return "1H";
   if (["second half", "2h"].includes(s)) return "2H";
   if (["aet", "extra time", "extra-time"].includes(s)) return "AET";
   if (["pen", "penalties", "pens"].includes(s)) return "PEN";
@@ -667,17 +710,46 @@ function mapStatus(zStatus) {
 function readScore(item, side) {
   const keys =
     side === "home"
-      ? ["homeScore", "score1", "team1Score", "home_goal", "homeGoals", "goalsHome"]
-      : ["awayScore", "score2", "team2Score", "away_goal", "awayGoals", "goalsAway"];
+      ? [
+          "homeScore",
+          "score1",
+          "team1Score",
+          "home_goal",
+          "homeGoals",
+          "goalsHome",
+        ]
+      : [
+          "awayScore",
+          "score2",
+          "team2Score",
+          "away_goal",
+          "awayGoals",
+          "goalsAway",
+        ];
   for (const key of keys) {
-    if (item[key] !== undefined && item[key] !== null && item[key] !== "") return item[key];
+    if (item[key] !== undefined && item[key] !== null && item[key] !== "")
+      return item[key];
   }
   const nested = item.score || item.result || item.scores;
   if (nested && typeof nested === "object") {
     const paths =
       side === "home"
-        ? [["home"], ["local"], ["team1"], ["fulltime", "home"], ["ft", "home"], ["final", "home"]]
-        : [["away"], ["visitor"], ["team2"], ["fulltime", "away"], ["ft", "away"], ["final", "away"]];
+        ? [
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
+        : [
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
     for (const path of paths) {
       let value = nested;
       let found = true;
@@ -689,7 +761,8 @@ function readScore(item, side) {
           break;
         }
       }
-      if (found && value !== undefined && value !== null && value !== "") return value;
+      if (found && value !== undefined && value !== null && value !== "")
+        return value;
     }
   }
   return null;
@@ -698,15 +771,32 @@ function readScore(item, side) {
 function extractLivescoreArray(payload) {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];
-  return payload.data || payload.matches || payload.fixtures || payload.results || payload.items || [];
+  return (
+    payload.data ||
+    payload.matches ||
+    payload.fixtures ||
+    payload.results ||
+    payload.items ||
+    []
+  );
 }
 
 function buildLivescoreKey(item) {
   const home = cleanTeamName(
-    item.home_name || item.home || item.team1 || item.localteam_name || item.localteam || "",
+    item.home_name ||
+      item.home ||
+      item.team1 ||
+      item.localteam_name ||
+      item.localteam ||
+      "",
   );
   const away = cleanTeamName(
-    item.away_name || item.away || item.team2 || item.visitorteam_name || item.visitorteam || "",
+    item.away_name ||
+      item.away ||
+      item.team2 ||
+      item.visitorteam_name ||
+      item.visitorteam ||
+      "",
   );
   if (!home || !away) return "";
   return `${home}__${away}`;
@@ -717,9 +807,23 @@ function mergeLivescoreFixtureAndLive(fixtureItem, liveItem) {
     ...fixtureItem,
     ...liveItem,
     homeTeam:
-      fixtureItem.homeTeam || fixtureItem.team1 || liveItem.homeTeam || liveItem.home || liveItem.home_name || liveItem.localteam_name || liveItem.localteam || "",
+      fixtureItem.homeTeam ||
+      fixtureItem.team1 ||
+      liveItem.homeTeam ||
+      liveItem.home ||
+      liveItem.home_name ||
+      liveItem.localteam_name ||
+      liveItem.localteam ||
+      "",
     awayTeam:
-      fixtureItem.awayTeam || fixtureItem.team2 || liveItem.awayTeam || liveItem.away || liveItem.away_name || liveItem.visitorteam_name || liveItem.visitorteam || "",
+      fixtureItem.awayTeam ||
+      fixtureItem.team2 ||
+      liveItem.awayTeam ||
+      liveItem.away ||
+      liveItem.away_name ||
+      liveItem.visitorteam_name ||
+      liveItem.visitorteam ||
+      "",
     status: liveItem.status || fixtureItem.status,
   };
 }
@@ -733,8 +837,10 @@ function normalizeWorldcup26Games(payload) {
   return games.map((game) => ({
     source: "worldcup26",
     matchId: String(game.id || game.matchId || ""),
-    homeTeam: game.home_team_name_en || game.home_team_label || game.home_team || "",
-    awayTeam: game.away_team_name_en || game.away_team_label || game.away_team || "",
+    homeTeam:
+      game.home_team_name_en || game.home_team_label || game.home_team || "",
+    awayTeam:
+      game.away_team_name_en || game.away_team_label || game.away_team || "",
     homeScore: readGameScore(game, "home"),
     awayScore: readGameScore(game, "away"),
     status: mapWorldcup26Status(game),
@@ -851,7 +957,6 @@ async function importPrivateKey(pem) {
     throw new Error(`Failed to import private key: ${error.message}`);
   }
 }
-
 
 function base64UrlEncodeJson(value) {
   return base64UrlEncodeString(JSON.stringify(value));

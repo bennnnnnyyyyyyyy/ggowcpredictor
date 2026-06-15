@@ -30,15 +30,10 @@
     "rules": [
         {
             "type": "Text",
-            "globs": ["**/*.html"],
+            "globs": [
+                "**/*.html"
+            ],
             "fallthrough": false
-        }
-    ], // <-- Added the missing comma here!
-    // Uncomment if you need a KV Namespace for storing data (like match predictions)
-    "kv_namespaces": [
-        {
-            "binding": "PREDICTIONS_KV",
-            "id": "your_kv_namespace_id_here"
         }
     ]
 }
