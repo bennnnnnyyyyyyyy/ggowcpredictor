@@ -458,3 +458,13 @@ esbuild fails with "No loader is configured for .html files: index.html" because
 - **Junk Clean**: Permanently deleted obsolete high-volume files (`docs/127.0.0.1.har` 10MB, `emojiissuesocntext.md`, `fixemojis.md`, and `docs/s.html`).
 - **Directory Audit**: Conducted a full directory audit classifying files into Crucial, Legacy, and Junk. Saved the analysis in `directory_audit_report.md`.
 - **Verification**: Confirmed all files are deleted successfully and that gitignore filters out diagnostic files.
+
+---
+## 2026-06-15 - Repository Organization & Image Assets Re-routing (2:37 PM)
+
+### What changed:
+- **Folder Structure**: Created `assets/images/` directory and moved all `.png` files (`GGO-Black.png`, `GGO-GREY-300x207.png`, `GGO-GREY.png`, `fifa-world-cup-2026-logo-white.png`) into it to make the project look like a standard web application.
+- **Relocated Markdown Files**: Moved all root-level `.md` files (`BACKEND_SETUP.md`, `CLOUDFLARE_WORKER_SETUP.md`, `FIREBASE_SETUP.md`, `INTEGRATION_CHECKLIST.md`, and `history.md`) into the `docs/` folder. Copied `AGENTS.md` to `docs/` to keep it organized while maintaining the root one for system-level rules.
+- **Root Redirect**: Replaced root `README.md` with a clean index file pointing to the new `docs/` paths.
+- **HTML Path Updates**: Updated [index.html](file:///C:/Users/abdel/OneDrive/Desktop/ggofiles/ggowcpredictor/index.html) and [error.html](file:///C:/Users/abdel/OneDrive/Desktop/ggofiles/ggowcpredictor/error.html) image sources to reference the new `assets/images/` folder paths.
+- **Verification**: Verified syntax parsing and assets paths successfully.

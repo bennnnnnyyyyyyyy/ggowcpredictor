@@ -1,5 +1,20 @@
 # Work Log
 
+## 2026-06-15 - Repository Reorganization & Asset Routing Fixes
+
+### What changed
+
+- **Directory Structure**: Created the `assets/images/` folder and moved all project `.png` assets there.
+- **HTML Asset Paths**: Updated all image source attributes in `index.html` and `error.html` to point to the new `assets/images/` path.
+- **Relocated Documentation**: Moved all root-level `.md` files (`BACKEND_SETUP.md`, `CLOUDFLARE_WORKER_SETUP.md`, `FIREBASE_SETUP.md`, `INTEGRATION_CHECKLIST.md`, and `history.md`) into the `docs/` folder. Copied `AGENTS.md` to `docs/AGENTS.md` to maintain the root-level IDE rules file while organizing documentation.
+- **Root README**: Replaced the root-level `README.md` with a clean index file pointing directly to the new `docs/` directory files.
+
+### Verification
+
+- Spot-checked image references and confirmed they load correctly from `assets/images/`.
+
+---
+
 ## 2026-06-15 - Repository Cleanup & Gitignore Optimization
 
 ### What changed
