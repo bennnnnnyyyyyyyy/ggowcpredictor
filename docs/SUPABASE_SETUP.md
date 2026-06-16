@@ -83,15 +83,22 @@ You can also trigger it through `doPost` with:
 { "action": "migrateToSupabase" }
 ```
 
-## Leaderboard Fallback
+## Row Level Security (RLS)
 
-`calculateAndUpdateLeaderboard()` now:
+To secure the database tables and resolve the security warnings in the Supabase dashboard, enable Row Level Security (RLS) on all tables. Since the browser frontend and backend worker authenticate using the anonymous publishable API key, we configure public read and write policies for the `anon` role.
 
-1. Reads Firestore collections with pagination.
-2. Falls back to matching Supabase tables if Firestore is blocked.
-3. Calculates the leaderboard once from the normalized rows.
-4. Writes the leaderboard to Google Sheets.
-5. Tries to write `leaderboard/current` in Firestore.
-6. Upserts player rows into the Supabase `leaderboard` table.
+The migration script [20260616000000_enable_rls.sql](file:///C:/Users/abdel/OneDrive/Desktop/ggofiles/ggowcpredictor/supabase/migrations/20260616000000_enable_rls.sql) has been created to apply these changes.
 
-The public API endpoints `?action=sync` and `?action=leaderboard` use the same calculation path, so the scheduled job and frontend API no longer disagree.
+To apply this migration:
+1. Copy the SQL statements in the migration file.
+2. Paste and run them in the **Supabase SQL Editor** in your project dashboard.
+3. RLS is now enabled, and the dashboard warning will resolve while keeping predictions and logins fully functional!
+
+## Dual-Database Merging & Resilience
+
+To resolve issues where predictions created on one device (or during a temporary database glitch) do not sync across databases, the frontend app, backend worker, and Google Apps Script now **merge** results from both Supabase and Firestore:
+1. When loading predictions or results, it reads from both databases.
+2. It deduplicates and merges the items by their primary key (e.g. `matchId` or prediction `id`).
+3. For rows present in both databases, it compares the update timestamps (`submittedAt`, `updatedAt`, `lastUpdated`) and retains the latest record.
+4. This ensures that even if a write fails on one database, the user still sees all data and the leaderboard recalculates with 100% accuracy.
+

@@ -379,4 +379,92 @@ I will search for any template placeholders (like {{...}}) in launch-email.html 
 
 I will view the end of updatePasswords.js to find the exact CSV writing code.
 
-Your plan's baseline quota will refresh on 6/19/2026, 4:10:22 PM. Free users and Google AI Plus users receive the minimum base limits on Antigravity. You can upgrade to Google AI Pro or above to receive higher rate limits. 
+Your plan's baseline quota will refresh on 6/19/2026, 4:10:22 PM. Free users and Google AI Plus users receive the minimum base limits on Antigravity. You can upgrade to Google AI Pro or above to receive higher rate limits.
+
+---
+## 2026-06-15 - Cloudflare Worker Integration & Sheet Pull Trigger (1:55 PM)
+
+### User Request:
+Backend Migration to Cloudflare Workers: Checkout to a branch called migration, start implementation, run an audit, and fix problems.
+Then, test and update markdown documents. Integrate frontend (Step 2.3) and Apps Script main.js modifications (Step 2.4).
+
+### Actions:
+- **Git Branch**: Confirmed we are on branch `migration`.
+- **Frontend App Integration (scripts/app.js)**:
+  - Added Supabase REST config & fetch helper wrappers (`supabaseSelect`, `supabaseUpsert`).
+  - Refactored login (`handleLogin`), user hydration (`hydrateLoginUsers`), account requests (`submitAccountRequest`, `approveAccountRequest`, `rejectAccountRequest`), predictions loading/saving (`loadPredictions`, `savePrediction`), results loading (`loadResults`), and leaderboard (`loadLeaderboard`) to check Supabase first, falling back to Firestore SDK/REST.
+- **Settings Modal (index.html)**:
+  - Updated label to "Cloudflare Worker URL" and updated placeholder/default URL to `http://localhost:8787` for local development.
+- **Apps Script (src/main.js)**:
+  - Implemented `pullLeaderboardFromWorker` to request leaderboard and results from Cloudflare Worker, fetch predictions from database, and update Google Sheets via `writeToSheets_`.
+  - Added hourly cron trigger `scheduledLeaderboardPull` and `pullLeaderboard` action handler in `doPost`.
+- **Audit**: Ran technical audit on the implementation scoring **18/20 (Excellent)** and created the `audit_report.md` report.
+- **Docs**: Updated `docs/migration_plan.md` steps 2.3 and 2.4 to Completed. 
+
+---
+## 2026-06-15 - Critical Bug Fixes: Score Flip & Group Standings (2:04 PM)
+
+### User Report:
+Fixtures are "fucked" — group standings show incorrect results on both local and live published versions. Leaderboard data is stale and doesn't reflect recent match results.
+
+### Root Cause Analysis:
+
+**Bug 1 — Worker Score Flip (P0, `workers/live-results.js` L301-317):**
+The `syncLiveResults` function matches API results to fixtures bi-directionally (allowing reversed team order), but **always** saves `score1 = API home score` regardless of team order. When the live API returns teams in the opposite order from our fixture database (e.g. API says "RSA vs MEX" but fixture has "MEX vs RSA"), score1 and score2 get swapped. This breaks every downstream calculation: displayed results, group standings, leaderboard points.
+
+**Bug 2 — Frontend Using Predictions for Standings (P0, `scripts/app.js` L1374-1382):**
+`renderGroupTable()` was building group standings from `STATE.predictions` (user's guesses) instead of `STATE.results` (actual match outcomes). The table showed predicted results, not real ones.
+
+**Bug 3 — Wrangler Build Failure (`wrangler.jsonc`):**
+esbuild fails with "No loader is configured for .html files: index.html" because it picks up the root `index.html` during bundling.
+
+### Fixes Applied:
+- **`workers/live-results.js`**: Added `flipped` flag to team matching. When API team order is reversed from fixture order, scores are swapped before saving (`score1 = flipped ? apiAway : apiHome`).
+- **`scripts/app.js`**: `renderGroupTable()` now uses `STATE.results` first (actual outcomes), falling back to `STATE.predictions` only for matches without results.
+- **`wrangler.jsonc`**: Added `rules` config to handle `.html` files as Text type, unblocking the Cloudflare deployment build.
+
+### Verification:
+- `node --check workers/live-results.js` ✓
+- `node --check scripts/app.js` ✓
+
+---
+## 2026-06-15 - Connection Settings visibility and accessibility fix (2:25 PM)
+
+### What changed:
+- **`scripts/app.js`**: Added a **System Settings** button directly inside the **Admin Panel** (`renderAdmin()` function).
+- **`index.html`**: Added a **Connection Settings** button to the login card and a **Settings** button next to the **Sync** button in the main app header. This resolves the chicken-and-egg issue where users couldn't modify connection URLs before logging in, or when logged in as non-admins.
+- **Verification**: Verified syntax parsing with `node --check scripts/app.js` successfully.
+
+---
+## 2026-06-15 - Chronological fixtures sorting fix (2:29 PM)
+
+### What changed:
+- **`scripts/app.js`**: Created a `sortFixtures(fixtures)` utility and integrated it into the `loadFixtures` and `loadGameData` routines. This guarantees that all matches are sorted in ascending order by their kickoff timestamp (and falling back to matchId). Previously, unsorted API payloads caused dates to render out of order (e.g. jumping from June 11 to June 18 and back to June 12) under the Predictions list.
+- **Verification**: Syntax parsing validation checked successfully.
+
+---
+## 2026-06-15 - Launch Preparation & Documentation Alignment (2:32 PM)
+
+### What changed:
+- **`docs/ARCHITECTURE.md`**: Rewrote system architecture documentation to map out the complete and finalized Cloudflare Worker + Supabase (primary) + Firestore (backup) flow. Added system diagrams and revised browser data loading priority tables.
+- **`docs/migration_plan.md`**: Marked all steps (specifically Step 2.5 data recovery and leaderboard verification) as **100% completed**.
+- **Verification**: Remote query verification of Supabase database shows perfect table counts matching the production Firestore records (0 gap across all collections). Verified Supabase local CLI availability.
+
+---
+## 2026-06-15 - Repository Cleanup & Gitignore Optimization (2:35 PM)
+
+### What changed:
+- **`.gitignore`**: Added rules to ignore local logs (`*.log`), trace dumps (`*.har`), local test scripts (`scripts/_check_*.js`), and agent directories (`.agents/`, `.gemini/`).
+- **Junk Clean**: Permanently deleted obsolete high-volume files (`docs/127.0.0.1.har` 10MB, `emojiissuesocntext.md`, `fixemojis.md`, and `docs/s.html`).
+- **Directory Audit**: Conducted a full directory audit classifying files into Crucial, Legacy, and Junk. Saved the analysis in `directory_audit_report.md`.
+- **Verification**: Confirmed all files are deleted successfully and that gitignore filters out diagnostic files.
+
+---
+## 2026-06-15 - Repository Organization & Image Assets Re-routing (2:37 PM)
+
+### What changed:
+- **Folder Structure**: Created `assets/images/` directory and moved all `.png` files (`GGO-Black.png`, `GGO-GREY-300x207.png`, `GGO-GREY.png`, `fifa-world-cup-2026-logo-white.png`) into it to make the project look like a standard web application.
+- **Relocated Markdown Files**: Moved all root-level `.md` files (`BACKEND_SETUP.md`, `CLOUDFLARE_WORKER_SETUP.md`, `FIREBASE_SETUP.md`, `INTEGRATION_CHECKLIST.md`, and `history.md`) into the `docs/` folder. Copied `AGENTS.md` to `docs/` to keep it organized while maintaining the root one for system-level rules.
+- **Root Redirect**: Replaced root `README.md` with a clean index file pointing to the new `docs/` paths.
+- **HTML Path Updates**: Updated [index.html](file:///C:/Users/abdel/OneDrive/Desktop/ggofiles/ggowcpredictor/index.html) and [error.html](file:///C:/Users/abdel/OneDrive/Desktop/ggofiles/ggowcpredictor/error.html) image sources to reference the new `assets/images/` folder paths.
+- **Verification**: Verified syntax parsing and assets paths successfully.

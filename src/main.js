@@ -64,6 +64,9 @@ function doPost(e) {
       case "migrateToSupabase":
         response = migrateFirestoreToSupabase();
         break;
+      case "pullLeaderboard":
+        response = pullLeaderboardFromWorker();
+        break;
       default:
         response = { error: "Unknown action" };
     }
@@ -96,6 +99,7 @@ function getFixtures() {
   }));
   return { fixtures, timestamp: new Date().toISOString(), status: "ok" };
 }
+
 /**
  * Sync all data (fixtures, results, leaderboard)
  */
@@ -150,6 +154,7 @@ function syncAllData() {
     timestamp: new Date().toISOString(),
   };
 }
+
 /**
  * Calculate and return leaderboard
  */
@@ -173,4 +178,69 @@ function scheduledLiveScoresUpdate() {
   } catch (error) {
     Logger.log("Error in scheduledLiveScoresUpdate: " + error.toString());
   }
+}
+
+/**
+ * Pulls leaderboard and results from Cloudflare Worker and writes them visually to Sheets.
+ */
+function pullLeaderboardFromWorker() {
+  const workerUrl = getWorkerUrl_();
+  if (!workerUrl) {
+    throw new Error("Worker URL is not configured in script properties. Please set 'WORKER_URL' in Project Settings -> Script Properties.");
+  }
+
+  const url = workerUrl.replace(/\/$/, "") + "/sync";
+  Logger.log("Fetching data from Cloudflare Worker: " + url);
+  const response = UrlFetchApp.fetch(url, {
+    method: "get",
+    muteHttpExceptions: true,
+    headers: {
+      Accept: "application/json"
+    }
+  });
+
+  if (response.getResponseCode() !== 200) {
+    throw new Error("Worker sync failed with code: " + response.getResponseCode() + ", response: " + response.getContentText());
+  }
+
+  const data = JSON.parse(response.getContentText());
+  Logger.log("Successfully fetched data from worker.");
+
+  // Load predictions to write to the "Scores" sheet
+  let predictions = [];
+  try {
+    predictions = loadCollectionRows_("predictions", { optional: true });
+  } catch (error) {
+    Logger.log("Warning: Could not fetch predictions from database for spreadsheet update: " + error.toString());
+  }
+
+  // Write to Sheets!
+  writeToSheets_(data.leaderboard, data.results, predictions);
+  
+  return {
+    success: true,
+    players: data.leaderboard.length,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Scheduled trigger: Runs hourly to pull leaderboard data from Cloudflare Worker
+ */
+function scheduledLeaderboardPull() {
+  try {
+    Logger.log("Starting scheduled leaderboard pull from worker...");
+    const result = pullLeaderboardFromWorker();
+    Logger.log("Leaderboard pull completed: " + JSON.stringify(result));
+  } catch (error) {
+    Logger.log("Error in scheduledLeaderboardPull: " + error.toString());
+  }
+}
+
+/**
+ * Helper to fetch Worker URL from Script Properties
+ */
+function getWorkerUrl_() {
+  const props = PropertiesService.getScriptProperties();
+  return props.getProperty("WORKER_URL") || "http://localhost:8787";
 }

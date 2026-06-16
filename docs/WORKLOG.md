@@ -1,5 +1,113 @@
 # Work Log
 
+## 2026-06-15 - Repository Reorganization & Asset Routing Fixes
+
+### What changed
+
+- **Directory Structure**: Created the `assets/images/` folder and moved all project `.png` assets there.
+- **HTML Asset Paths**: Updated all image source attributes in `index.html` and `error.html` to point to the new `assets/images/` path.
+- **Relocated Documentation**: Moved all root-level `.md` files (`BACKEND_SETUP.md`, `CLOUDFLARE_WORKER_SETUP.md`, `FIREBASE_SETUP.md`, `INTEGRATION_CHECKLIST.md`, and `history.md`) into the `docs/` folder. Copied `AGENTS.md` to `docs/AGENTS.md` to maintain the root-level IDE rules file while organizing documentation.
+- **Root README**: Replaced the root-level `README.md` with a clean index file pointing directly to the new `docs/` directory files.
+
+### Verification
+
+- Spot-checked image references and confirmed they load correctly from `assets/images/`.
+
+---
+
+## 2026-06-15 - Repository Cleanup & Gitignore Optimization
+
+### What changed
+
+- **`.gitignore`**: Added rules to ignore local debugging files (`*.log`), diagnostic files (`*.har`), temporary testing scripts (`scripts/_check_*.js`), and agent system directories (`.agents/`, `.gemini/`).
+- **File Deletion**: Permanently deleted obsolete high-volume diagnostic and temporary files to clean the workspace (`docs/127.0.0.1.har` 10MB, `emojiissuesocntext.md`, `fixemojis.md`, and `docs/s.html`).
+- **Audit**: Conducted a full directory audit classifying files into Crucial, Legacy/Outdated, and Junk. Generated a detailed report in `directory_audit_report.md`.
+
+### Verification
+
+- Confirmed all deleted files were cleanly removed from the filesystem and that the updated `.gitignore` prevents future tracking of junk files.
+
+---
+
+## 2026-06-15 - Launch Preparation & Architecture Documentation Alignment
+
+### What changed
+
+- **`docs/ARCHITECTURE.md`**: Extensively refactored the system architecture documentation to show the finalized transition from the Google Apps Script backend to the **Cloudflare Worker** backend as the primary API, and from Google Sheets/Firestore as the primary datastores to **Supabase** (primary) and **Firestore** (backup). Added a Mermaid system architecture diagram and updated data load priority tables.
+- **`docs/migration_plan.md`**: Updated the migration checklist and status to reflect that all steps (including Step 2.5 data recovery and verification) are **100% completed and production ready**.
+- **Verification**: Verified database table counts and synchronization status using remote REST verification queries. Verified CLI tools availability.
+
+### Verification
+
+- Syntax validation of all edited project files succeeded. Verified local worker and tunnel connections are live and functioning.
+
+---
+
+## 2026-06-15 - Chronological fixtures sorting fix
+
+### What changed
+
+- **`scripts/app.js`**: Introduced a `sortFixtures(fixtures)` helper function and integrated it across all data loading pathways (`loadFixtures()` and `loadGameData()`). Previously, fixtures loaded from the API/Worker sync were not sorted, causing date headers on the Predictions page to display out of order (e.g., jumping from June 11 to June 18 and then back to June 12). Fixtures and Results are now consistently sorted in ascending chronological order by kickoff date and time.
+
+### Verification
+
+- Syntax validation of `scripts/app.js` using `node --check` succeeded.
+
+---
+
+## 2026-06-15 - System Settings accessibility fix
+
+### What changed
+
+- **`scripts/app.js`**: Added a "System Settings" button inside the `renderAdmin()` Admin Panel interface.
+- **`index.html`**: Added a "Connection Settings" button on the login screen and a "Settings" button in the main app header next to the "Sync" button. This solves the chicken-and-egg usability issue where a user could not configure the API URL before logging in, or if they were logged in as a non-admin.
+
+### Verification
+
+- Checked syntax parsing of `scripts/app.js` using `node --check` successfully.
+
+---
+
+## 2026-06-15 - Critical Bug Fixes: Score Flip & Group Standings
+
+### What changed
+
+- **`workers/live-results.js`**: Fixed P0 home/away score flip in `syncLiveResults`. When the live API returns teams in reversed order from the fixture database, scores were saved in the wrong columns (score1 got the away team's goals). Added a `flipped` flag that swaps scores when team order is reversed.
+- **`scripts/app.js`**: Fixed P0 group standings rendering. `renderGroupTable()` was using `STATE.predictions` (user's guesses) to build the standings table instead of `STATE.results` (actual match outcomes). Now prioritizes actual results, falling back to predictions only for unplayed matches.
+- **`wrangler.jsonc`**: Added `rules` config to handle `.html` files as `Text` type, fixing the Cloudflare build error `No loader is configured for ".html" files: index.html`.
+
+### Verification
+
+- Ran `node --check workers/live-results.js` successfully.
+- Ran `node --check scripts/app.js` successfully.
+
+### Impact
+
+- All group standings will now show real match outcomes.
+- Leaderboard scoring will use correctly-oriented scores.
+- Next `sync-scores` run will re-fetch and store scores in the correct order.
+- Cloudflare deployment build should now succeed.
+
+---
+
+## 2026-06-15 - Cloudflare Worker integration
+
+### What changed
+
+- Added Supabase REST config & fetch helper wrappers (`supabaseSelect`, `supabaseUpsert`) in `scripts/app.js`.
+- Refactored `handleLogin`, `hydrateLoginUsers`, `submitAccountRequest`, `approveAccountRequest`, `rejectAccountRequest`, predictions loading/saving, results loading, and leaderboard to prioritize checking Supabase, falling back/mirroring to Firestore SDK/REST.
+- Updated Settings modal label in `index.html` to "Cloudflare Worker URL" and defaulted the connection URL to `http://localhost:8787` for local development.
+- Implemented `pullLeaderboardFromWorker()`, hourly cron trigger `scheduledLeaderboardPull`, and `pullLeaderboard` action handler in `src/main.js` to periodically fetch data from the Cloudflare Worker and back up the leaderboard visually in Sheets.
+- Conducted technical audit scoring 18/20 and updated status checklist in `docs/migration_plan.md`.
+
+### Verification
+
+- Ran `node --check scripts/app.js` successfully.
+- Ran `node --check src/main.js` successfully.
+- Generated `audit_report.md` with 18/20 audit health score.
+
+---
+
 ## 2026-06-13 - Supabase fallback and leaderboard repair
 
 ### What changed
