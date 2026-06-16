@@ -14,7 +14,10 @@ const FINAL_STATUSES = ["FT", "AET", "PEN", "COMPLETED", "FINAL"];
 // ─── Supabase REST helpers ──────────────────────────────────────────────────
 
 function supabaseHeaders(env, extra) {
-  const key = env.SUPABASE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key =
+    env.SUPABASE_SERVICE_KEY ||
+    env.SUPABASE_KEY ||
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   return Object.assign(
     {
       apikey: key,
