@@ -204,60 +204,20 @@ function toFirestoreValue(value) {
 }
 
 async function loadCollection(env, table) {
-  let supabaseRows = [];
-  let firestoreRows = [];
-  let sbSuccess = false;
-  let fsSuccess = false;
-
   try {
-    supabaseRows = await supabaseSelect(env, table);
-    sbSuccess = true;
+    const rows = await supabaseSelect(env, table);
+    if (rows && rows.length) return rows;
   } catch (error) {
     console.warn(`Supabase ${table} unavailable: ${error.message}`);
   }
 
   try {
-    firestoreRows = await firestoreCollection(env, table);
-    fsSuccess = true;
+    return await firestoreCollection(env, table);
   } catch (error) {
     console.warn(`Firestore ${table} also unavailable: ${error.message}`);
   }
 
-  if (!sbSuccess && !fsSuccess) {
-    return [];
-  }
-
-  if (sbSuccess && !fsSuccess) return supabaseRows;
-  if (!sbSuccess && fsSuccess) return firestoreRows;
-
-  // Both succeeded, merge them to avoid sync gaps
-  const keyField = table === "fixtures" || table === "results" ? "matchId" :
-                   table === "predictions" ? "id" : "username";
-
-  const mergedMap = new Map();
-
-  for (const row of firestoreRows) {
-    const key = String(row[keyField] || row.id || row._docId || "").replace(/^match_/, "");
-    if (key) mergedMap.set(key, row);
-  }
-
-  for (const row of supabaseRows) {
-    const key = String(row[keyField] || row.id || row._docId || "").replace(/^match_/, "");
-    if (key) {
-      const existing = mergedMap.get(key);
-      if (existing) {
-        const existingTime = new Date(existing.submittedAt || existing.updatedAt || existing.lastUpdated || 0).getTime();
-        const newTime = new Date(row.submittedAt || row.updatedAt || row.lastUpdated || 0).getTime();
-        if (newTime >= existingTime) {
-          mergedMap.set(key, row);
-        }
-      } else {
-        mergedMap.set(key, row);
-      }
-    }
-  }
-
-  return Array.from(mergedMap.values());
+  return [];
 }
 
 // ─── Leaderboard Calculation Engine ─────────────────────────────────────────
