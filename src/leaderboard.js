@@ -96,25 +96,66 @@ function firestoreDocToRow_(doc) {
 
 function loadCollectionRows_(collection, options) {
   options = options || {};
-  const primary = String(options.primary || "supabase").toLowerCase();
-  const loadOrder =
-    primary === "firestore"
-      ? [loadFirestoreRows_, loadSupabaseRows_]
-      : [loadSupabaseRows_, loadFirestoreRows_];
+  
+  var supabaseRows = [];
+  var firestoreRows = [];
+  var sbSuccess = false;
+  var fsSuccess = false;
 
-  for (let i = 0; i < loadOrder.length; i += 1) {
-    try {
-      return loadOrder[i](collection, options);
-    } catch (error) {
-      const source = i === 0 ? primary : primary === "firestore" ? "supabase" : "firestore";
-      Logger.log(
-        `[FALLBACK] ${source} ${collection} unavailable (${error.message}).`,
-      );
-    }
+  try {
+    supabaseRows = loadSupabaseRows_(collection);
+    sbSuccess = true;
+  } catch (error) {
+    Logger.log("Supabase " + collection + " load failed: " + error.message);
   }
 
-  if (options.optional) return [];
-  throw new Error(`Could not load collection ${collection} from Supabase or Firestore.`);
+  try {
+    firestoreRows = loadFirestoreRows_(collection, options);
+    fsSuccess = true;
+  } catch (error) {
+    Logger.log("Firestore " + collection + " load failed: " + error.message);
+  }
+
+  if (!sbSuccess && !fsSuccess) {
+    if (options.optional) return [];
+    throw new Error("Could not load collection " + collection + " from Supabase or Firestore.");
+  }
+
+  if (sbSuccess && !fsSuccess) return supabaseRows;
+  if (!sbSuccess && fsSuccess) return firestoreRows;
+
+  // Merge rows by key field
+  var keyField = collection === "fixtures" || collection === "results" ? "matchId" : 
+                 collection === "predictions" ? "id" : "username";
+
+  var mergedMap = {};
+
+  firestoreRows.forEach(function (row) {
+    var key = String(row[keyField] || row.id || "").replace(/^match_/, "");
+    if (key) mergedMap[key] = row;
+  });
+
+  supabaseRows.forEach(function (row) {
+    var key = String(row[keyField] || row.id || "").replace(/^match_/, "");
+    if (key) {
+      var existing = mergedMap[key];
+      if (existing) {
+        var existingTime = new Date(existing.submittedAt || existing.updatedAt || existing.lastUpdated || 0).getTime();
+        var newTime = new Date(row.submittedAt || row.updatedAt || row.lastUpdated || 0).getTime();
+        if (newTime >= existingTime) {
+          mergedMap[key] = row;
+        }
+      } else {
+        mergedMap[key] = row;
+      }
+    }
+  });
+
+  var mergedList = [];
+  Object.keys(mergedMap).forEach(function (key) {
+    mergedList.push(mergedMap[key]);
+  });
+  return mergedList;
 }
 
 function loadFirestoreRows_(collection, options) {

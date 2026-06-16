@@ -769,48 +769,67 @@ async function loadResults() {
     return;
   }
 
-  let loaded = false;
+  let supabaseResults = [];
+  let firestoreResults = [];
 
   // 1. Try Supabase
   try {
     const data = await supabaseSelect("results");
     if (data && data.length) {
-      data.forEach((r) => {
-        const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
-        STATE.results[matchId] = normalizeResult({
-          ...r,
-          matchId,
-        });
-      });
-      loaded = true;
+      supabaseResults = data;
     }
   } catch (error) {
     console.warn("Could not load Supabase results.", error.message);
   }
 
   // 2. Try Firestore
-  if (!loaded && db) {
+  if (db) {
     try {
       const snap = await db.collection("results").get();
-      snap.docs.forEach((doc) => {
+      firestoreResults = snap.docs.map(doc => {
         const result = doc.data();
         const matchId = String(result.matchId || doc.id.replace(/^match_/, ""));
-        STATE.results[matchId] = normalizeResult({
+        return {
           id: doc.id,
           ...result,
           matchId,
-        });
+        };
       });
-      loaded = true;
     } catch (error) {
       console.warn("Could not load Firestore results.", error.message);
     }
   }
 
+  // Merge results from both databases
+  const merged = {};
+  
+  firestoreResults.forEach((r) => {
+    const norm = normalizeResult(r);
+    merged[norm.matchId] = norm;
+  });
+
+  supabaseResults.forEach((r) => {
+    const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
+    const norm = normalizeResult({
+      ...r,
+      matchId,
+    });
+    const existing = merged[norm.matchId];
+    if (existing) {
+      const existingTime = new Date(existing.lastUpdated || 0).getTime();
+      const newTime = new Date(r.lastUpdated || r.updatedAt || 0).getTime();
+      if (newTime >= existingTime) {
+        merged[norm.matchId] = norm;
+      }
+    } else {
+      merged[norm.matchId] = norm;
+    }
+  });
+
   const localResults = readLocalObject(
     `ggo_wc_results_${SESSION.username || "demo"}`,
   );
-  STATE.results = { ...localResults, ...STATE.results };
+  STATE.results = { ...localResults, ...merged };
 
   // Inject mock results for local development/testing if no database or API is connected
   if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
@@ -823,44 +842,88 @@ async function loadResults() {
 }
 
 async function loadPredictions() {
-  STATE.predictions = readLocalObject(
+  const local = readLocalObject(
     `ggo_wc_predictions_${SESSION.username || "demo"}`,
-  );
+  ) || {};
 
-  if (!SESSION.username) return;
+  if (!SESSION.username) {
+    STATE.predictions = local;
+    return;
+  }
 
-  let loaded = false;
+  let supabasePredictions = [];
+  let firestorePredictions = [];
 
   // 1. Try Supabase
   try {
     const data = await supabaseSelect("predictions", "*", `username=eq.${encodeURIComponent(SESSION.username)}`);
     if (data && data.length) {
-      data.forEach((prediction) => {
-        STATE.predictions[String(prediction.matchId)] =
-          normalizePrediction(prediction);
-      });
-      loaded = true;
+      supabasePredictions = data;
     }
   } catch (error) {
     console.warn("Could not load Supabase predictions.", error.message);
   }
 
   // 2. Try Firestore
-  if (!loaded && db) {
+  if (db) {
     try {
       const snap = await db
         .collection("predictions")
         .where("username", "==", SESSION.username)
         .get();
       snap.docs.forEach((doc) => {
-        const prediction = doc.data();
-        STATE.predictions[String(prediction.matchId)] =
-          normalizePrediction(prediction);
+        firestorePredictions.push(doc.data());
       });
     } catch (error) {
       console.warn("Could not load Firestore predictions.", error.message);
     }
   }
+
+  // Merge local, Firestore, and Supabase predictions
+  const merged = {};
+  
+  // Start with local storage predictions
+  Object.keys(local).forEach((matchId) => {
+    merged[matchId] = local[matchId];
+  });
+
+  // Merge Firestore predictions
+  firestorePredictions.forEach((prediction) => {
+    const matchId = String(prediction.matchId);
+    const existing = merged[matchId];
+    if (existing) {
+      const existingTime = new Date(existing.submittedAt || 0).getTime();
+      const newTime = new Date(prediction.submittedAt || 0).getTime();
+      if (newTime >= existingTime) {
+        merged[matchId] = normalizePrediction(prediction);
+      }
+    } else {
+      merged[matchId] = normalizePrediction(prediction);
+    }
+  });
+
+  // Merge Supabase predictions
+  supabasePredictions.forEach((prediction) => {
+    const matchId = String(prediction.matchId);
+    const existing = merged[matchId];
+    if (existing) {
+      const existingTime = new Date(existing.submittedAt || 0).getTime();
+      const newTime = new Date(prediction.submittedAt || 0).getTime();
+      if (newTime >= existingTime) {
+        merged[matchId] = normalizePrediction(prediction);
+      }
+    } else {
+      merged[matchId] = normalizePrediction(prediction);
+    }
+  });
+
+  STATE.predictions = merged;
+  
+  // Write merged predictions back to local storage
+  writeLocalObject(
+    `ggo_wc_predictions_${SESSION.username}`,
+    STATE.predictions,
+  );
 }
 
 async function loadLeaderboard() {
@@ -872,12 +935,14 @@ async function loadLeaderboard() {
     return;
   }
 
+  let supabaseLeaderboard = [];
+  let firestoreLeaderboard = [];
+
   // 1. Try Supabase
   try {
     const data = await supabaseSelect("leaderboard", "*", "order=rank.asc");
     if (data && data.length) {
-      STATE.leaderboard = data;
-      return;
+      supabaseLeaderboard = data;
     }
   } catch (error) {
     console.warn("Could not load Supabase leaderboard.", error.message);
@@ -888,15 +953,38 @@ async function loadLeaderboard() {
     try {
       const current = await db.collection("leaderboard").doc("current").get();
       if (current.exists && Array.isArray(current.data().players)) {
-        STATE.leaderboard = current.data().players;
-        return;
+        firestoreLeaderboard = current.data().players;
       }
     } catch (error) {
       console.warn("Could not load Firestore leaderboard.", error.message);
     }
   }
 
-  STATE.leaderboard = buildLocalLeaderboard();
+  // Merge and sort
+  const mergedMap = {};
+  firestoreLeaderboard.forEach((p) => {
+    mergedMap[p.username] = p;
+  });
+
+  supabaseLeaderboard.forEach((p) => {
+    const existing = mergedMap[p.username];
+    if (existing) {
+      const existingTime = new Date(existing.updatedAt || 0).getTime();
+      const newTime = new Date(p.updatedAt || 0).getTime();
+      if (newTime >= existingTime) {
+        mergedMap[p.username] = p;
+      }
+    } else {
+      mergedMap[p.username] = p;
+    }
+  });
+
+  const list = Object.values(mergedMap);
+  if (list.length) {
+    STATE.leaderboard = list.sort((a, b) => a.rank - b.rank);
+  } else {
+    STATE.leaderboard = buildLocalLeaderboard();
+  }
 }
 
 function normalizeFixture(fixture) {
