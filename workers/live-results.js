@@ -348,17 +348,20 @@ async function syncLiveResults(env) {
     });
   }
 
-  if (matchedUpdates.length) {
-    // Write to Supabase (primary)
+  // NEW — only write games that have actually started:
+  const liveOrFinished = matchedUpdates.filter(
+    (u) => u.status !== "NS" && u.score1 !== null && u.score2 !== null,
+  );
+
+  if (liveOrFinished.length) {
     try {
-      await supabaseUpsert(env, "results", matchedUpdates);
+      await supabaseUpsert(env, "results", liveOrFinished);
     } catch (error) {
       console.warn("Supabase results write failed:", error.message);
     }
 
-    // Write to Firestore (backup)
     try {
-      const firestoreUpdates = matchedUpdates.map((u) => ({
+      const firestoreUpdates = liveOrFinished.map((u) => ({
         ...u,
         _docId: `match_${u.matchId}`,
       }));

@@ -22,7 +22,7 @@ function supabaseHeaders(extra = {}) {
       apikey: supabaseConfig.key,
       Authorization: `Bearer ${supabaseConfig.key}`,
     },
-    extra
+    extra,
   );
 }
 
@@ -49,7 +49,9 @@ async function supabaseSelect(table, selectQuery = "*", extraQuery = "") {
 
 async function supabaseUpsert(table, rows, conflictKey) {
   if (!rows || (Array.isArray(rows) && !rows.length)) return;
-  const query = conflictKey ? `on_conflict=${encodeURIComponent(conflictKey)}` : "";
+  const query = conflictKey
+    ? `on_conflict=${encodeURIComponent(conflictKey)}`
+    : "";
   const response = await fetch(getSupabaseUrl(table, query), {
     method: "POST",
     headers: supabaseHeaders({
@@ -60,7 +62,9 @@ async function supabaseUpsert(table, rows, conflictKey) {
   });
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Supabase upsert ${table} HTTP ${response.status}: ${text}`);
+    throw new Error(
+      `Supabase upsert ${table} HTTP ${response.status}: ${text}`,
+    );
   }
 }
 
@@ -286,7 +290,11 @@ async function handleLogin(event) {
 
     // 1. Supabase
     try {
-      const data = await supabaseSelect("users", "username,displayName,secretCode,isAdmin", `username=eq.${encodeURIComponent(username)}`);
+      const data = await supabaseSelect(
+        "users",
+        "username,displayName,secretCode,isAdmin",
+        `username=eq.${encodeURIComponent(username)}`,
+      );
       if (data && data.length) {
         userData = {
           displayName: data[0].displayName || username,
@@ -453,7 +461,11 @@ async function submitAccountRequest(event) {
     // Check if user exists in Supabase or Firestore
     let userExists = false;
     try {
-      const users = await supabaseSelect("users", "username", `username=eq.${encodeURIComponent(username)}`);
+      const users = await supabaseSelect(
+        "users",
+        "username",
+        `username=eq.${encodeURIComponent(username)}`,
+      );
       if (users && users.length) userExists = true;
     } catch (e) {
       if (db) {
@@ -471,14 +483,21 @@ async function submitAccountRequest(event) {
     let requestExists = false;
     let existingRequest = null;
     try {
-      const requests = await supabaseSelect("accountRequests", "status", `username=eq.${encodeURIComponent(username)}`);
+      const requests = await supabaseSelect(
+        "accountRequests",
+        "status",
+        `username=eq.${encodeURIComponent(username)}`,
+      );
       if (requests && requests.length) {
         requestExists = true;
         existingRequest = requests[0];
       }
     } catch (e) {
       if (db) {
-        const reqSnap = await db.collection("accountRequests").doc(username).get();
+        const reqSnap = await db
+          .collection("accountRequests")
+          .doc(username)
+          .get();
         if (reqSnap.exists) {
           requestExists = true;
           existingRequest = reqSnap.data();
@@ -486,7 +505,11 @@ async function submitAccountRequest(event) {
       }
     }
 
-    if (requestExists && existingRequest && existingRequest.status === "pending") {
+    if (
+      requestExists &&
+      existingRequest &&
+      existingRequest.status === "pending"
+    ) {
       showLoginError("That request is already pending approval.");
       return;
     }
@@ -670,7 +693,11 @@ async function loadAccountRequests() {
 
   // 1. Try Supabase
   try {
-    const data = await supabaseSelect("accountRequests", "*", "order=createdAt.desc");
+    const data = await supabaseSelect(
+      "accountRequests",
+      "*",
+      "order=createdAt.desc",
+    );
     if (data && data.length) {
       STATE.accountRequests = data;
       return;
@@ -786,7 +813,7 @@ async function loadResults() {
   if (db) {
     try {
       const snap = await db.collection("results").get();
-      firestoreResults = snap.docs.map(doc => {
+      firestoreResults = snap.docs.map((doc) => {
         const result = doc.data();
         const matchId = String(result.matchId || doc.id.replace(/^match_/, ""));
         return {
@@ -802,30 +829,29 @@ async function loadResults() {
 
   // Merge results from both databases
   const merged = {};
-  
-  firestoreResults.forEach((r) => {
-    const norm = normalizeResult(r);
-    merged[norm.matchId] = norm;
+  // ADD after line 831 (after the localResults merge):
+  // Strip NS placeholder rows — only keep results with actual scores
+  Object.keys(merged).forEach((mid) => {
+    const r = merged[mid];
+    if (!hasResult(r)) delete merged[mid];
   });
 
+  // NEW:
+  // Supabase is canonical — load it first, Firestore only fills gaps
   supabaseResults.forEach((r) => {
     const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
-    const norm = normalizeResult({
-      ...r,
-      matchId,
-    });
-    const existing = merged[norm.matchId];
-    if (existing) {
-      const existingTime = new Date(existing.lastUpdated || 0).getTime();
-      const newTime = new Date(r.lastUpdated || r.updatedAt || 0).getTime();
-      if (newTime >= existingTime) {
-        merged[norm.matchId] = norm;
-      }
-    } else {
+    const norm = normalizeResult({ ...r, matchId });
+    if (norm.matchId) merged[norm.matchId] = norm;
+  });
+
+  firestoreResults.forEach((r) => {
+    const norm = normalizeResult(r);
+    if (!norm.matchId) return;
+    if (!merged[norm.matchId]) {
+      // Only use Firebase if Supabase has no entry for this matchId
       merged[norm.matchId] = norm;
     }
   });
-
   const localResults = readLocalObject(
     `ggo_wc_results_${SESSION.username || "demo"}`,
   );
@@ -842,9 +868,8 @@ async function loadResults() {
 }
 
 async function loadPredictions() {
-  const local = readLocalObject(
-    `ggo_wc_predictions_${SESSION.username || "demo"}`,
-  ) || {};
+  const local =
+    readLocalObject(`ggo_wc_predictions_${SESSION.username || "demo"}`) || {};
 
   if (!SESSION.username) {
     STATE.predictions = local;
@@ -856,7 +881,11 @@ async function loadPredictions() {
 
   // 1. Try Supabase
   try {
-    const data = await supabaseSelect("predictions", "*", `username=eq.${encodeURIComponent(SESSION.username)}`);
+    const data = await supabaseSelect(
+      "predictions",
+      "*",
+      `username=eq.${encodeURIComponent(SESSION.username)}`,
+    );
     if (data && data.length) {
       supabasePredictions = data;
     }
@@ -881,7 +910,7 @@ async function loadPredictions() {
 
   // Merge local, Firestore, and Supabase predictions
   const merged = {};
-  
+
   // Start with local storage predictions
   Object.keys(local).forEach((matchId) => {
     merged[matchId] = local[matchId];
@@ -918,12 +947,9 @@ async function loadPredictions() {
   });
 
   STATE.predictions = merged;
-  
+
   // Write merged predictions back to local storage
-  writeLocalObject(
-    `ggo_wc_predictions_${SESSION.username}`,
-    STATE.predictions,
-  );
+  writeLocalObject(`ggo_wc_predictions_${SESSION.username}`, STATE.predictions);
 }
 
 async function loadLeaderboard() {
@@ -961,27 +987,16 @@ async function loadLeaderboard() {
   }
 
   // Merge and sort
-  const mergedMap = {};
-  firestoreLeaderboard.forEach((p) => {
-    mergedMap[p.username] = p;
-  });
-
-  supabaseLeaderboard.forEach((p) => {
-    const existing = mergedMap[p.username];
-    if (existing) {
-      const existingTime = new Date(existing.updatedAt || 0).getTime();
-      const newTime = new Date(p.updatedAt || 0).getTime();
-      if (newTime >= existingTime) {
-        mergedMap[p.username] = p;
-      }
-    } else {
-      mergedMap[p.username] = p;
-    }
-  });
-
-  const list = Object.values(mergedMap);
-  if (list.length) {
-    STATE.leaderboard = list.sort((a, b) => a.rank - b.rank);
+  // NEW:
+  // Supabase leaderboard is canonical — Firebase only fills gaps
+  if (supabaseLeaderboard.length) {
+    STATE.leaderboard = supabaseLeaderboard.sort(
+      (a, b) => (a.rank || 99) - (b.rank || 99),
+    );
+  } else if (firestoreLeaderboard.length) {
+    STATE.leaderboard = firestoreLeaderboard.sort(
+      (a, b) => (a.rank || 99) - (b.rank || 99),
+    );
   } else {
     STATE.leaderboard = buildLocalLeaderboard();
   }
@@ -1772,7 +1787,11 @@ async function approveAccountRequest(username) {
 
     // Load from Supabase first
     try {
-      const reqs = await supabaseSelect("accountRequests", "*", `username=eq.${encodeURIComponent(username)}`);
+      const reqs = await supabaseSelect(
+        "accountRequests",
+        "*",
+        `username=eq.${encodeURIComponent(username)}`,
+      );
       if (reqs && reqs.length) {
         requestData = reqs[0];
       }
@@ -1804,7 +1823,7 @@ async function approveAccountRequest(username) {
         displayName: requestData.displayName || username,
         secretCode,
         isAdmin: false,
-        joinedAt: new Date().toISOString()
+        joinedAt: new Date().toISOString(),
       };
       const reqUpdateRow = {
         username,
