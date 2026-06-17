@@ -274,7 +274,17 @@ async function loadProfile(username) {
   // 3. Firestore fallback
   return fetchProfileFromFirestore(username);
 }
-
+async function loadRivalry(username) {
+  try {
+    const workerUrl = (localStorage.getItem("ggo_wc_url") || "http://localhost:8787").replace(/\/$/, "");
+    const res = await fetch(`${workerUrl}/rivalry?username=${encodeURIComponent(username)}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  } catch (e) {
+    console.warn("Rivalry fetch failed:", e.message);
+    return null;
+  }
+}
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function esc(v) {
@@ -596,4 +606,13 @@ function renderError(message) {
       `Could not load profile for "${username}". Check your connection or try again later.`,
     );
   }
+
+  // Try to load rivalry data and update the UI if available
+  const [data, rivalry] = await Promise.all([
+    loadProfile(username),
+    loadRivalry(username),
+  ]);
+
+  renderProfile(data, rivalry);
 })();
+

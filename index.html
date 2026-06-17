@@ -25,6 +25,16 @@
   </head>
   <link rel="stylesheet" href="style.css" />
 
+  <!-- Match Detail Drawer -->
+  <div
+    id="match-drawer-overlay"
+    class="match-drawer-overlay"
+    onclick="closeMatchDrawer()"
+  ></div>
+  <aside id="match-drawer" class="match-drawer" role="dialog" aria-modal="true">
+    <div id="match-drawer-inner"></div>
+  </aside>
+
   <body>
     <!-- Firebase SDK (CDN) -->
     <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
@@ -36,7 +46,11 @@
       <div class="login-card">
         <div class="login-logo">
           <span class="trophy">
-            <img class="resized-logo" src="assets/images/GGO-GREY.png" alt="GGO Logo" />
+            <img
+              class="resized-logo"
+              src="assets/images/GGO-GREY.png"
+              alt="GGO Logo"
+            />
           </span>
           <h2>GGO <span>WC</span> 2026</h2>
           <p>Prediction Game</p>
@@ -161,7 +175,17 @@
           <button class="sync-btn" type="button" onclick="requestSync()">
             Sync
           </button>
-          <button id="settings-nav-btn" class="sync-btn" type="button" onclick="toggleSettings(true)" style="display: none; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.25);">
+          <button
+            id="settings-nav-btn"
+            class="sync-btn"
+            type="button"
+            onclick="toggleSettings(true)"
+            style="
+              display: none;
+              background: rgba(255, 255, 255, 0.08);
+              border-color: rgba(255, 255, 255, 0.25);
+            "
+          >
             Settings
           </button>
         </div>

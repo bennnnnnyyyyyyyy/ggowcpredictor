@@ -340,8 +340,8 @@ async function syncLiveResults(env) {
       score2: flipped ? apiHome : apiAway,
       status: mapStatus(item.status),
       lastUpdated: new Date().toISOString(),
-      homeScorers: flipped ? apiAway_scorers : apiHome_scorers,
-      awayScorers: flipped ? apiHome_scorers : apiAway_scorers,
+      homeScorers: flipped ? item.awayScorers : item.homeScorers,
+      awayScorers: flipped ? item.homeScorers : item.awayScorers,
     });
   }
 
@@ -423,6 +423,110 @@ async function recalculateLeaderboard(env) {
   return data;
 }
 
+async function handleRivalryGet(env, username) {
+  const [allPredictions, allResults, allUsers] = await Promise.all([
+    loadCollection(env, "predictions"),
+    loadCollection(env, "results"),
+    loadCollection(env, "users"),
+  ]);
+
+  // Only score finished matches
+  const FINAL_STS = ["FT", "AET", "PEN", "COMPLETED", "FINAL"];
+  const finishedMatchIds = new Set(
+    allResults
+      .filter((r) => FINAL_STS.includes(String(r.status || "").toUpperCase()))
+      .map((r) => String(r.matchId || r.id || "").replace(/^match_/, "")),
+  );
+
+  // Index this user's predictions on finished matches
+  const myPreds = {};
+  allPredictions
+    .filter(
+      (p) => String(p.username || "").toLowerCase() === username.toLowerCase(),
+    )
+    .forEach((p) => {
+      const mid = String(p.matchId || "").replace(/^match_/, "");
+      if (finishedMatchIds.has(mid)) {
+        myPreds[mid] = {
+          pred1: toNullableNumber(p.pred1),
+          pred2: toNullableNumber(p.pred2),
+        };
+      }
+    });
+
+  if (!Object.keys(myPreds).length) {
+    return { rival: null, reason: "not_enough_data" };
+  }
+
+  // For each other user, compute divergence score on shared finished matches
+  // Also track agreement score (opposite of divergence)
+  const userScores = {};
+
+  allPredictions
+    .filter((p) => {
+      const u = String(p.username || "").toLowerCase();
+      return u !== username.toLowerCase() && u !== "";
+    })
+    .forEach((p) => {
+      const mid = String(p.matchId || "").replace(/^match_/, "");
+      const mine = myPreds[mid];
+      if (!mine || mine.pred1 === null || mine.pred2 === null) return;
+
+      const theirP1 = toNullableNumber(p.pred1);
+      const theirP2 = toNullableNumber(p.pred2);
+      if (theirP1 === null || theirP2 === null) return;
+
+      const u = String(p.username || "").toLowerCase();
+      if (!userScores[u])
+        userScores[u] = { username: u, divergence: 0, shared: 0, agreement: 0 };
+
+      const diff =
+        Math.abs(mine.pred1 - theirP1) + Math.abs(mine.pred2 - theirP2);
+      userScores[u].divergence += diff;
+      userScores[u].shared += 1;
+      // 0 diff = perfect agreement
+      if (diff === 0) userScores[u].agreement += 1;
+    });
+
+  const candidates = Object.values(userScores).filter((u) => u.shared >= 3);
+  if (!candidates.length) return { rival: null, reason: "not_enough_data" };
+
+  // Rival = highest avg divergence per shared match
+  candidates.sort((a, b) => b.divergence / b.shared - a.divergence / a.shared);
+  const rivalEntry = candidates[0];
+
+  // Twin = highest agreement rate
+  candidates.sort((a, b) => b.agreement / b.shared - a.agreement / a.shared);
+  const twinEntry = candidates[0];
+
+  // Resolve display names
+  const nameMap = {};
+  allUsers.forEach((u) => {
+    nameMap[String(u.username || "").toLowerCase()] =
+      u.displayName || u.username;
+  });
+
+  return {
+    rival: {
+      username: rivalEntry.username,
+      displayName: nameMap[rivalEntry.username] || rivalEntry.username,
+      divergenceScore:
+        Math.round((rivalEntry.divergence / rivalEntry.shared) * 10) / 10,
+      sharedMatches: rivalEntry.shared,
+    },
+    twin:
+      twinEntry.agreement / twinEntry.shared > 0.2
+        ? {
+            username: twinEntry.username,
+            displayName: nameMap[twinEntry.username] || twinEntry.username,
+            agreementPct: Math.round(
+              (twinEntry.agreement / twinEntry.shared) * 100,
+            ),
+            sharedMatches: twinEntry.shared,
+          }
+        : null,
+  };
+}
 async function handleProfileGet(env, username) {
   // Load user, their predictions, all fixtures, all results, leaderboard in parallel
   const [allUsers, allPredictions, allFixtures, allResults, allLeaderboard] =
@@ -673,6 +777,14 @@ export default {
           timestamp: new Date().toISOString(),
         });
       }
+      // /rivalry — find the user whose predictions diverge most from this user's
+      if (path === "/rivalry" || action === "rivalry") {
+        const username = url.searchParams.get("username") || "";
+        if (!username) return corsJson({ error: "username required" }, 400);
+        const data = await handleRivalryGet(env, username);
+        return corsJson(data);
+      }
+
       // /profile — single-user profile data
       if (path === "/profile" || action === "profile") {
         const username = url.searchParams.get("username") || "";

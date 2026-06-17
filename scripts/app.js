@@ -209,6 +209,9 @@ window.addEventListener("DOMContentLoaded", async () => {
       renderGroupStandings();
     }
   }, 30000);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMatchDrawer();
+  });
 });
 
 function initFirebase() {
@@ -1579,6 +1582,177 @@ function renderLeaderboard() {
     .join("");
 }
 
+function openMatchDrawer(matchId) {
+  const fixture = STATE.fixtures.find((f) => f.matchId === String(matchId));
+  const result = STATE.results[String(matchId)];
+  const pred = STATE.predictions[String(matchId)];
+
+  if (!fixture) return;
+
+  const overlay = document.getElementById("match-drawer-overlay");
+  const drawer = document.getElementById("match-drawer");
+  const inner = document.getElementById("match-drawer-inner");
+  if (!overlay || !drawer || !inner) return;
+
+  // ── Scoreline ──
+  const team1Code = getTeamCode(fixture.team1);
+  const team2Code = getTeamCode(fixture.team2);
+  const hasRes = result && hasResult(result);
+  const isLive = result && isLiveStatus(result.status);
+  const isFinal = result && isFinalStatus(result.status);
+
+  const scoreText = hasRes ? `${result.score1} – ${result.score2}` : "– vs –";
+
+  const statusLabel = isLive
+    ? result.status
+    : isFinal
+      ? result.status
+      : "Upcoming";
+
+  const statusCls = isLive ? "live" : isFinal ? "ft" : "ns";
+
+  // ── Scorers ──
+  const homeScorers = result?.homeScorers || [];
+  const awayScorers = result?.awayScorers || [];
+
+  // Parse "Name 45'" into { name, minute } — handle OG, assists etc.
+  function parseScorer(s) {
+    const m = String(s).match(/^(.+?)\s+(\d+['+\d]*)('?)$/);
+    if (m) return { name: m[1].trim(), minute: m[2] + (m[3] || "'") };
+    return { name: s, minute: "" };
+  }
+
+  // Build merged timeline sorted by minute
+  const allEvents = [
+    ...homeScorers.map((s) => ({ ...parseScorer(s), side: "home" })),
+    ...awayScorers.map((s) => ({ ...parseScorer(s), side: "away" })),
+  ].sort((a, b) => parseInt(a.minute) - parseInt(b.minute));
+
+  function scorerTimelineHtml() {
+    if (!hasRes) return `<p class="no-scorers">Match not played yet.</p>`;
+    if (!allEvents.length)
+      return `<p class="no-scorers">No scorer data available.</p>`;
+
+    return allEvents
+      .map((ev) => {
+        const isHome = ev.side === "home";
+        return `
+        <div class="scorer-row">
+          <div class="scorer-name ${isHome ? "" : "empty"}">${isHome ? escapeHtml(ev.name) : ""}</div>
+          <div class="scorer-minute">
+            <span class="scorer-ball">⚽</span>
+            <span class="scorer-minute-pill">${escapeHtml(ev.minute)}</span>
+          </div>
+          <div class="scorer-name away-name ${!isHome ? "" : "empty"}">${!isHome ? escapeHtml(ev.name) : ""}</div>
+        </div>
+      `;
+      })
+      .join("");
+  }
+
+  // ── Prediction block ──
+  const hasPred = hasPrediction(pred);
+  const points =
+    hasRes && hasPred
+      ? calculateMatchPoints(
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+        )
+      : null;
+
+  const ptsCls =
+    points === null
+      ? ""
+      : points >= 15
+        ? "pts-exact"
+        : points >= 8
+          ? "pts-good"
+          : points > 0
+            ? "pts-partial"
+            : "pts-zero";
+
+  const predScoreHtml = hasPred
+    ? `<div class="drawer-pred-score">${pred.pred1} – ${pred.pred2}</div>`
+    : `<div class="drawer-pred-score no-pred">No prediction</div>`;
+
+  const predPtsHtml =
+    points !== null
+      ? `<div class="drawer-pred-pts ${ptsCls}">${points}<sub>pts</sub></div>`
+      : "";
+
+  // ── Venue ──
+  const venue = getVenueDetails(fixture);
+  const kickoffStr = formatKickoff(fixture);
+
+  // ── Render ──
+  inner.innerHTML = `
+    <div class="drawer-header">
+      <div class="drawer-header-meta">
+        <div class="drawer-round">${escapeHtml(fixture.round || fixture.group || "Match")}</div>
+        <div class="drawer-date">${escapeHtml(kickoffStr)}</div>
+      </div>
+      <button class="drawer-close" onclick="closeMatchDrawer()" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M3 3l10 10M13 3L3 13"/>
+        </svg>
+      </button>
+    </div>
+ 
+    <div class="drawer-scoreline">
+      <div class="drawer-team">
+        <div class="drawer-team-badge">${escapeHtml(team1Code)}</div>
+        <div class="drawer-team-name">${escapeHtml(fixture.team1)}</div>
+      </div>
+      <div class="drawer-score-block">
+        <div class="drawer-score ${isLive ? "live-score" : ""}">${escapeHtml(scoreText)}</div>
+        <div class="drawer-status-chip ${statusCls}">
+          ${isLive ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>' : ""}
+          ${escapeHtml(statusLabel)}
+        </div>
+      </div>
+      <div class="drawer-team">
+        <div class="drawer-team-badge">${escapeHtml(team2Code)}</div>
+        <div class="drawer-team-name">${escapeHtml(fixture.team2)}</div>
+      </div>
+    </div>
+ 
+    <div class="drawer-body">
+ 
+      <div class="drawer-section-label">Goalscorers</div>
+      <div class="scorer-timeline">
+        ${scorerTimelineHtml()}
+      </div>
+ 
+      <div class="drawer-section-label">Your Prediction</div>
+      <div class="drawer-prediction">
+        <div>
+          <div class="drawer-pred-label">Predicted score</div>
+          ${predScoreHtml}
+        </div>
+        ${predPtsHtml}
+      </div>
+ 
+      <div class="drawer-section-label">Venue</div>
+      <div class="drawer-venue">
+        <div class="drawer-venue-name">${escapeHtml(venue.stadium)}</div>
+        <div class="drawer-venue-city">${escapeHtml(venue.city)}</div>
+      </div>
+ 
+    </div>
+  `;
+
+  overlay.classList.add("open");
+  drawer.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeMatchDrawer() {
+  document.getElementById("match-drawer-overlay")?.classList.remove("open");
+  document.getElementById("match-drawer")?.classList.remove("open");
+  document.body.style.overflow = "";
+}
 function renderResults() {
   const container = document.getElementById("results-list");
   if (!container) return;
@@ -1620,13 +1794,13 @@ function renderResults() {
           : null;
 
       return `
-        <article class="result-card">
+        <article class="result-card" onclick="openMatchDrawer('${fixture.matchId}')">
           <div class="match-date">${formatKickoff(fixture)}</div>
           <div class="match-teams">
             <div class="team"><div class="team-name"><span class="team-code">${escapeHtml(getTeamCode(fixture.team1))}</span>${escapeHtml(fixture.team1)}</div></div>
             <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}</div>
             <div class="team"><div class="team-name"><span class="team-code">${escapeHtml(getTeamCode(fixture.team2))}</span>${escapeHtml(fixture.team2)}</div></div>
-          </div>
+          </div>    
           <div class="result-status">${escapeHtml(normalizeResultStatus(result.status))}</div>
           <div class="match-footer">
             <span>Your pick: ${hasPrediction(pred) ? `${pred.pred1}-${pred.pred2}` : "none"}</span>
