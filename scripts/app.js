@@ -86,7 +86,10 @@ const SESSION = {
   isAdmin: localStorage.getItem("ggo_wc_admin") === "true",
 };
 const CONFIG = {
-  appsScriptUrl: localStorage.getItem("ggo_wc_url") || "http://localhost:8787",
+  appsScriptUrl:
+    localStorage.getItem("ggo_wc_url") ||
+    "https://ggowcpredictor.ben-arthur-wiz.workers.dev",
+
   apiKey: localStorage.getItem("ggo_wc_key") || "",
 };
 
@@ -2122,18 +2125,26 @@ async function loadResultsFromApi() {
     : {};
 }
 async function loadLeaderboardFromApi() {
-  if (!CONFIG.appsScriptUrl) return [];
   try {
     const response = await fetch(
-      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=leaderboard`,
+      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}/leaderboard`,
       {
         cache: "no-store",
       },
     );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
     const data = await response.json();
-    return Array.isArray(data.leaderboard) ? data.leaderboard : [];
+
+    return Array.isArray(data.leaderboard)
+      ? data.leaderboard
+      : [];
+
   } catch (error) {
+    console.error("Leaderboard API failed:", error);
     return [];
   }
 }
