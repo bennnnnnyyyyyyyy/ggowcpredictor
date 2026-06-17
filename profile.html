@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Player Profile — GGO WC 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3-32x32.png"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* ════════════════════════════════════════
+         PROFILE PAGE — scoped additions only
+         All base tokens come from style.css
+      ════════════════════════════════════════ */
+
+      /* ── Back nav ── */
+      .profile-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        margin-bottom: 28px;
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-family: var(--font-ggo-body);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: color 0.2s;
+        letter-spacing: 0.3px;
+      }
+      .profile-back:hover {
+        color: var(--wc-blue);
+      }
+      .profile-back svg {
+        flex-shrink: 0;
+        transition: transform 0.2s;
+      }
+      .profile-back:hover svg {
+        transform: translateX(-3px);
+      }
+
+      /* ── Hero card ── */
+      .profile-hero {
+        position: relative;
+        background:
+          linear-gradient(145deg, rgba(12,17,24,0.98) 0%, rgba(6,36,24,0.85) 100%),
+          repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 9px);
+        border: 2px solid rgba(0,209,94,0.32);
+        border-radius: 12px;
+        padding: 32px 28px 28px;
+        margin-bottom: 24px;
+        overflow: hidden;
+        box-shadow: 0 18px 34px rgba(0,0,0,0.26);
+      }
+      .profile-hero::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--wc-blue), var(--wc-red));
+      }
+
+      .profile-hero-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+      }
+
+      /* Avatar */
+      .profile-avatar-wrap {
+        flex-shrink: 0;
+        position: relative;
+      }
+      .profile-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--wc-blue), var(--wc-red));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-ggo-display);
+        font-size: 32px;
+        font-weight: 900;
+        color: #06120c;
+        border: 3px solid rgba(0,209,94,0.5);
+        box-shadow: 0 0 0 4px rgba(0,209,94,0.12);
+        letter-spacing: 1px;
+      }
+      .profile-rank-chip {
+        position: absolute;
+        bottom: -4px;
+        right: -4px;
+        min-width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-ggo-display);
+        font-size: 13px;
+        font-weight: 900;
+        border: 2px solid var(--dark);
+        padding: 0 5px;
+        background: var(--wc-red);
+        color: #fff;
+      }
+      .profile-rank-chip.gold   { background: #ffd700; color: #333; }
+      .profile-rank-chip.silver { background: #c0c0c0; color: #333; }
+      .profile-rank-chip.bronze { background: #cd7f32; color: #fff; }
+
+      /* Text block */
+      .profile-hero-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .profile-display-name {
+        font-family: var(--font-ggo-display);
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        line-height: 1;
+        margin-bottom: 6px;
+      }
+      .profile-username {
+        font-size: 13px;
+        color: var(--muted);
+        letter-spacing: 0.3px;
+        margin-bottom: 14px;
+      }
+      .profile-username span {
+        color: var(--wc-blue);
+        font-weight: 600;
+      }
+
+      /* Mini badge row */
+      .profile-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .profile-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(0,209,94,0.3);
+        background: rgba(0,209,94,0.08);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--wc-blue);
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+      }
+      .profile-badge.admin-badge {
+        border-color: rgba(245,158,11,0.4);
+        background: rgba(245,158,11,0.1);
+        color: var(--warning);
+      }
+
+      /* ── Stats row ── */
+      .profile-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 32px;
+      }
+      .stat-card {
+        background:
+          linear-gradient(145deg, rgba(12,17,24,0.98) 0%, rgba(6,36,24,0.78) 100%),
+          repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 9px);
+        border: 1px solid rgba(0,209,94,0.22);
+        border-radius: 10px;
+        padding: 18px 16px 14px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .stat-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 2px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .stat-card:hover::after { opacity: 1; }
+      .stat-card.stat-pts::after  { background: #ffd700; }
+      .stat-card.stat-exact::after { background: var(--success); }
+      .stat-card.stat-outcome::after { background: var(--warning); }
+      .stat-card.stat-made::after { background: var(--wc-blue); }
+
+      .stat-value {
+        font-family: var(--font-ggo-display);
+        font-size: 38px;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 4px;
+        letter-spacing: 0.5px;
+      }
+      .stat-card.stat-pts  .stat-value { color: #ffd700; }
+      .stat-card.stat-exact .stat-value { color: var(--success); }
+      .stat-card.stat-outcome .stat-value { color: var(--warning); }
+      .stat-card.stat-made .stat-value { color: var(--wc-blue); }
+
+      .stat-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--muted);
+      }
+
+      /* ── Section heading ── */
+      .profile-section-title {
+        font-family: var(--font-ggo-display);
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .profile-section-title .title-accent { color: var(--wc-red); }
+      .profile-section-count {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 999px;
+        padding: 2px 10px;
+        letter-spacing: 0;
+      }
+
+      /* ── Prediction history filter ── */
+      .profile-filter-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+
+      /* ── Prediction history list ── */
+      .pred-history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .pred-card {
+        background:
+          linear-gradient(145deg, rgba(12,17,24,0.98) 0%, rgba(6,36,24,0.78) 100%),
+          repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 9px);
+        border: 1px solid rgba(0,209,94,0.22);
+        border-radius: 10px;
+        padding: 0;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 4px 1fr;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .pred-card:hover {
+        border-color: rgba(0,209,94,0.45);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      }
+
+      /* Left accent stripe by result */
+      .pred-stripe { grid-row: 1; }
+      .pred-stripe.stripe-exact   { background: #ffd700; }
+      .pred-stripe.stripe-good    { background: var(--success); }
+      .pred-stripe.stripe-partial { background: var(--warning); }
+      .pred-stripe.stripe-zero    { background: var(--danger); }
+      .pred-stripe.stripe-pending { background: var(--muted); }
+
+      .pred-body {
+        padding: 14px 16px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px 20px;
+      }
+
+      /* Teams + scores area */
+      .pred-matchup {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex-wrap: wrap;
+      }
+      .pred-team {
+        font-family: var(--font-ggo-display);
+        font-size: 15px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: var(--light);
+        white-space: nowrap;
+      }
+      .pred-vs {
+        font-family: var(--font-ggo-display);
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 1px;
+      }
+
+      /* Score pair */
+      .pred-scores {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-end;
+        flex-shrink: 0;
+      }
+      .pred-score-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+      .pred-score-label {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--muted);
+        min-width: 36px;
+        text-align: right;
+      }
+      .pred-score-value {
+        font-family: var(--font-ggo-display);
+        font-size: 17px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        min-width: 42px;
+        text-align: center;
+      }
+      .pred-score-value.actual { color: var(--light); }
+      .pred-score-value.pick   { color: rgba(255,255,255,0.58); }
+      .pred-score-value.no-pick {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 400;
+        font-family: var(--font-ggo-body);
+      }
+
+      /* Points chip */
+      .pred-pts {
+        display: flex;
+        align-items: baseline;
+        gap: 3px;
+        font-family: var(--font-ggo-display);
+        font-size: 22px;
+        font-weight: 900;
+        padding: 4px 12px;
+        border-radius: 8px;
+        white-space: nowrap;
+        align-self: center;
+        flex-shrink: 0;
+      }
+      .pred-pts sub {
+        font-size: 10px;
+        font-weight: 600;
+        opacity: 0.75;
+        letter-spacing: 0.4px;
+      }
+      .pred-pts.pts-exact   { background: rgba(255,215,0,0.13);  color: #ffd700; border: 1px solid rgba(255,215,0,0.28); }
+      .pred-pts.pts-good    { background: rgba(16,185,129,0.13); color: var(--success); border: 1px solid rgba(16,185,129,0.28); }
+      .pred-pts.pts-partial { background: rgba(245,158,11,0.13); color: var(--warning); border: 1px solid rgba(245,158,11,0.28); }
+      .pred-pts.pts-zero    { background: rgba(239,68,68,0.1);   color: var(--danger);  border: 1px solid rgba(239,68,68,0.22); }
+      .pred-pts.pts-pending {
+        background: rgba(255,255,255,0.04);
+        color: var(--muted);
+        border: 1px dashed rgba(255,255,255,0.14);
+        font-size: 13px;
+        font-family: var(--font-ggo-body);
+        font-weight: 400;
+        letter-spacing: 0;
+      }
+
+      /* Meta row (group, round, date, status) */
+      .pred-meta {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255,255,255,0.05);
+      }
+      .pred-meta-tag {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .pred-meta-tag .accent { color: var(--wc-blue); }
+      .pred-status-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: 1px solid;
+      }
+      .pred-status-tag.live    { color: var(--warning); border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.08); }
+      .pred-status-tag.finished { color: var(--muted);  border-color: rgba(160,160,160,0.25); background: rgba(160,160,160,0.05); }
+      .pred-status-tag.upcoming { color: var(--success); border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.07); }
+
+      /* ── Trophies / Achievements placeholder ── */
+      .trophies-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 32px;
+      }
+      .trophy-card {
+        border: 1px dashed rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 16px 12px;
+        text-align: center;
+        opacity: 0.4;
+      }
+      .trophy-card .trophy-icon {
+        font-size: 28px;
+        margin-bottom: 6px;
+        display: block;
+      }
+      .trophy-card .trophy-name {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+
+      /* ── Skeleton loader ── */
+      .skel {
+        background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.05) 75%);
+        background-size: 200% 100%;
+        animation: skel-shimmer 1.4s infinite;
+        border-radius: 6px;
+      }
+      @keyframes skel-shimmer {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      .skel-hero  { height: 140px; border-radius: 12px; margin-bottom: 24px; }
+      .skel-stats { height: 92px;  border-radius: 10px; }
+      .skel-card  { height: 72px;  border-radius: 10px; }
+
+      /* ── Error state ── */
+      .profile-error {
+        text-align: center;
+        padding: 60px 20px;
+      }
+      .profile-error .error-code {
+        font-family: var(--font-ggo-display);
+        font-size: 64px;
+        font-weight: 900;
+        color: var(--danger);
+        opacity: 0.4;
+        line-height: 1;
+        margin-bottom: 12px;
+      }
+      .profile-error p { color: var(--muted); font-size: 14px; }
+
+      /* ── Progress bar (accuracy) ── */
+      .accuracy-bar-wrap {
+        margin: 4px 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .accuracy-bar-track {
+        flex: 1;
+        height: 5px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .accuracy-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--wc-blue), var(--wc-red));
+        border-radius: 999px;
+        transition: width 0.6s ease;
+      }
+      .accuracy-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--wc-blue);
+        min-width: 36px;
+        text-align: right;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 640px) {
+        .profile-stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .profile-hero-inner {
+          gap: 16px;
+        }
+        .profile-avatar {
+          width: 64px;
+          height: 64px;
+          font-size: 26px;
+        }
+        .profile-display-name {
+          font-size: 24px;
+        }
+        .pred-body {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        .pred-pts {
+          align-self: flex-start;
+        }
+        .pred-scores {
+          align-items: flex-start;
+        }
+      }
+      @media (max-width: 400px) {
+        .profile-stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .stat-value { font-size: 28px; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- Firebase SDK (same version as app) -->
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
+
+    <!-- ════════════════════════════════════════
+         HEADER  (mirrors app header, no nav)
+    ════════════════════════════════════════ -->
+    <header>
+      <div class="header-top">
+        <div class="logo">
+          <img
+            src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png"
+            alt="GGO"
+            class="header-logo"
+          />
+          <div class="logo-divider"></div>
+          <img
+            src="assets/images/fifa-world-cup-2026-logo-white.png"
+            alt="FIFA World Cup 2026"
+            class="header-logo wc-logo"
+          />
+          <div class="logo-text">
+            <h1>GGO <span>WC</span> 2026</h1>
+            <p>Player Profile</p>
+          </div>
+        </div>
+
+        <!-- Return to app link -->
+        <a href="index.html" class="profile-back" style="margin-bottom:0; text-decoration:none;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3L5 8l5 5"/>
+          </svg>
+          Back to Predictor
+        </a>
+      </div>
+    </header>
+
+    <!-- ════════════════════════════════════════
+         MAIN CONTENT
+    ════════════════════════════════════════ -->
+    <main id="profile-main" style="max-width:860px">
+
+      <!-- Skeleton shown while loading -->
+      <div id="profile-loading">
+        <a href="index.html" class="profile-back">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3L5 8l5 5"/>
+          </svg>
+          Back to Predictor
+        </a>
+        <div class="skel skel-hero"></div>
+        <div class="profile-stats-grid">
+          <div class="skel skel-stats"></div>
+          <div class="skel skel-stats"></div>
+          <div class="skel skel-stats"></div>
+          <div class="skel skel-stats"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="skel skel-card"></div>
+          <div class="skel skel-card"></div>
+          <div class="skel skel-card"></div>
+          <div class="skel skel-card"></div>
+          <div class="skel skel-card"></div>
+        </div>
+      </div>
+
+      <!-- Rendered after data loads -->
+      <div id="profile-content" style="display:none"></div>
+
+    </main>
+
+    <!-- Toast (reuse app toast style) -->
+    <div id="toast" class="toast"></div>
+
+    <script src="scripts/profile.js"></script>
+  </body>
+</html>

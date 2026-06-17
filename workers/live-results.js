@@ -340,6 +340,8 @@ async function syncLiveResults(env) {
       score2: flipped ? apiHome : apiAway,
       status: mapStatus(item.status),
       lastUpdated: new Date().toISOString(),
+      homeScorers: flipped ? apiAway_scorers : apiHome_scorers,
+      awayScorers: flipped ? apiHome_scorers : apiAway_scorers,
     });
   }
 
@@ -347,7 +349,10 @@ async function syncLiveResults(env) {
     try {
       await supabaseUpsert(env, "fixtures", fixtureApiUpdates);
     } catch (error) {
-      console.warn("Supabase fixtures apiFixtureId write failed:", error.message);
+      console.warn(
+        "Supabase fixtures apiFixtureId write failed:",
+        error.message,
+      );
     }
   }
 
@@ -418,6 +423,129 @@ async function recalculateLeaderboard(env) {
   return data;
 }
 
+async function handleProfileGet(env, username) {
+  // Load user, their predictions, all fixtures, all results, leaderboard in parallel
+  const [allUsers, allPredictions, allFixtures, allResults, allLeaderboard] =
+    await Promise.all([
+      loadCollection(env, "users"),
+      loadCollection(env, "predictions"),
+      loadCollection(env, "fixtures"),
+      loadCollection(env, "results"),
+      loadCollection(env, "leaderboard"),
+    ]);
+
+  const user = allUsers.find(
+    (u) =>
+      String(u.username || u.id || "")
+        .trim()
+        .toLowerCase() === username.toLowerCase(),
+  );
+  if (!user) {
+    return { success: false, error: "User not found" };
+  }
+
+  const lbEntry =
+    allLeaderboard.find(
+      (e) => String(e.username || "").toLowerCase() === username.toLowerCase(),
+    ) || {};
+
+  // Index fixtures and results by matchId
+  const fixtureMap = {};
+  for (const f of allFixtures) {
+    const id = String(f.matchId || f.id || "").replace(/^match_/, "");
+    if (id) fixtureMap[id] = f;
+  }
+  const resultMap = {};
+  for (const r of allResults) {
+    const id = String(r.matchId || r.id || "").replace(/^match_/, "");
+    if (id) resultMap[id] = r;
+  }
+
+  // Filter to this user's predictions
+  const userPredictions = allPredictions.filter(
+    (p) => String(p.username || "").toLowerCase() === username.toLowerCase(),
+  );
+
+  // Build enriched prediction list
+  let totalPoints = 0,
+    exactScores = 0,
+    correctOutcomes = 0;
+
+  const FINAL_STS = ["FT", "AET", "PEN", "COMPLETED", "FINAL"];
+  const LIVE_STS = ["1H", "HT", "2H", "ET", "P", "LIVE"];
+
+  const predictions = userPredictions
+    .filter((p) => p.matchId != null)
+    .map((p) => {
+      const matchId = String(p.matchId).replace(/^match_/, "");
+      const fixture = fixtureMap[matchId] || {};
+      const result = resultMap[matchId];
+
+      const pred1 = toNullableNumber(p.pred1);
+      const pred2 = toNullableNumber(p.pred2);
+      const hasPred = pred1 !== null && pred2 !== null;
+
+      let actualHome = null,
+        actualAway = null,
+        points = null,
+        statusType = "upcoming";
+
+      if (result) {
+        actualHome = toNullableNumber(
+          result.score1 ?? result.homeScore ?? result.team1Score,
+        );
+        actualAway = toNullableNumber(
+          result.score2 ?? result.awayScore ?? result.team2Score,
+        );
+        const st = String(result.status || "NS").toUpperCase();
+        if (FINAL_STS.includes(st)) statusType = "finished";
+        else if (LIVE_STS.includes(st)) statusType = "live";
+      }
+
+      if (hasPred && actualHome !== null && actualAway !== null) {
+        points = scoreMatch(pred1, pred2, actualHome, actualAway);
+        totalPoints += points;
+        if (points === 15) exactScores++;
+        if (points > 0) correctOutcomes++;
+      }
+
+      return {
+        matchId,
+        home: fixture.team1 || "TBD",
+        away: fixture.team2 || "TBD",
+        group: fixture.group || "",
+        round: fixture.round || "",
+        date: fixture.date || "",
+        time: fixture.time || "",
+        predictedHome: hasPred ? pred1 : null,
+        predictedAway: hasPred ? pred2 : null,
+        actualHome,
+        actualAway,
+        points,
+        status: String(result?.status || "NS").toUpperCase(),
+        statusType,
+      };
+    })
+    .sort((a, b) => {
+      const order = { finished: 0, live: 1, upcoming: 2 };
+      const od = (order[a.statusType] ?? 3) - (order[b.statusType] ?? 3);
+      return od !== 0 ? od : Number(a.matchId) - Number(b.matchId);
+    });
+
+  return {
+    user: {
+      username: user.username || username,
+      displayName: user.displayName || username,
+      isAdmin: Boolean(user.isAdmin),
+      totalPoints: lbEntry.totalPoints ?? totalPoints,
+      exactScores: lbEntry.exactScores ?? exactScores,
+      correctOutcomes: lbEntry.correctOutcomes ?? correctOutcomes,
+      predicted: userPredictions.length,
+      rank: lbEntry.rank ?? null,
+    },
+    predictions,
+  };
+}
 // ─── Main GET /sync endpoint ────────────────────────────────────────────────
 
 async function handleSyncGet(env) {
@@ -452,6 +580,8 @@ async function handleSyncGet(env) {
       score1: toNullableNumber(r.score1),
       score2: toNullableNumber(r.score2),
       status: String(r.status || "NS").toUpperCase(),
+      homeScorers: r.homeScorers || [],
+      awayScorers: r.awayScorers || [],
     };
   }
 
@@ -543,7 +673,18 @@ export default {
           timestamp: new Date().toISOString(),
         });
       }
-
+      // /profile — single-user profile data
+      if (path === "/profile" || action === "profile") {
+        const username = url.searchParams.get("username") || "";
+        if (!username) {
+          return corsJson(
+            { success: false, error: "username param required" },
+            400,
+          );
+        }
+        const profileData = await handleProfileGet(env, username);
+        return corsJson(profileData);
+      }
       // Root — API info
       return corsJson({
         ok: true,
@@ -906,6 +1047,8 @@ function normalizeWorldcup26Games(payload) {
     timeElapsed: game.time_elapsed || "",
     finished: game.finished,
     localDate: game.local_date || "",
+    homeScorers: parseScorers(game.home_scorers),
+    awayScorers: parseScorers(game.away_scorers),
   }));
 }
 
@@ -920,6 +1063,16 @@ function mapWorldcup26Status(game) {
   const elapsed = String(game.time_elapsed || "").toLowerCase();
   if (elapsed && elapsed !== "notstarted") return "LIVE";
   return "NS";
+}
+function parseScorers(raw) {
+  if (!raw || raw === "null") return [];
+  const cleaned = String(raw)
+    .replace(/^\{/, "")
+    .replace(/\}$/, "")
+    .split(/",\s*"/)
+    .map((s) => s.replace(/^"+|"+$/g, "").trim())
+    .filter(Boolean);
+  return cleaned;
 }
 
 function toNullableNumber(value) {

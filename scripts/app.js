@@ -1568,8 +1568,7 @@ function renderLeaderboard() {
           <td data-label="Player">
             <div class="player-info">
               <span class="player-avatar">${getInitials(name)}</span>
-              <span class="player-name">${escapeHtml(name)}</span>
-            </div>
+<a class="player-name player-name-link" href="profile.html?user=${encodeURIComponent(player.username || "")}">${escapeHtml(name)}</a>            </div>
           </td>
           <td data-label="Points" style="text-align:center"><strong>${player.totalPoints || 0}</strong></td>
           <td data-label="Exact" style="text-align:center">${player.exactScores || player.exactCount || 0}</td>
@@ -2139,10 +2138,7 @@ async function loadLeaderboardFromApi() {
 
     const data = await response.json();
 
-    return Array.isArray(data.leaderboard)
-      ? data.leaderboard
-      : [];
-
+    return Array.isArray(data.leaderboard) ? data.leaderboard : [];
   } catch (error) {
     console.error("Leaderboard API failed:", error);
     return [];
