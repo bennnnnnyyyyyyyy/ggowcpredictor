@@ -311,36 +311,31 @@ async function syncLiveResults(env) {
     fetchPrimaryOrBackupMatches(env),
   ]);
 
+  const fixtureLookups = buildFixtureLookups(fixtureRows);
   const matchedUpdates = [];
+  const fixtureApiUpdates = [];
+
   for (const item of apiMatches) {
-    const homeTeam = cleanTeamName(item.homeTeam || item.team1 || "");
-    const awayTeam = cleanTeamName(item.awayTeam || item.team2 || "");
-    if (!homeTeam || !awayTeam) continue;
+    const resolved = resolveFixtureMatch(item, fixtureLookups);
+    if (!resolved) continue;
 
-    let flipped = false;
-    const matched = fixtureRows.find((f) => {
-      const dbHome = cleanTeamName(f.team1);
-      const dbAway = cleanTeamName(f.team2);
-      if (dbHome === homeTeam && dbAway === awayTeam) {
-        flipped = false;
-        return true;
-      }
-      if (dbHome === awayTeam && dbAway === homeTeam) {
-        flipped = true;
-        return true;
-      }
-      return false;
-    });
-    if (!matched) continue;
-
+    const { fixture, flipped } = resolved;
+    const internalMatchId = normalizeMatchId(fixture.matchId || fixture.id);
     const apiHome = toNullableNumber(readScore(item, "home"));
     const apiAway = toNullableNumber(readScore(item, "away"));
+    const apiGameId = toNullableNumber(item.apiGameId);
+
+    if (apiGameId !== null && !fixture.apiFixtureId) {
+      fixtureApiUpdates.push({
+        matchId: internalMatchId,
+        apiFixtureId: apiGameId,
+      });
+      fixtureLookups.byApiId.set(String(apiGameId), fixture);
+      fixture.apiFixtureId = apiGameId;
+    }
 
     matchedUpdates.push({
-      matchId: String(matched.matchId || matched.id || "").replace(
-        /^match_/,
-        "",
-      ),
+      matchId: internalMatchId,
       score1: flipped ? apiAway : apiHome,
       score2: flipped ? apiHome : apiAway,
       status: mapStatus(item.status),
@@ -348,7 +343,14 @@ async function syncLiveResults(env) {
     });
   }
 
-  // NEW — only write games that have actually started:
+  if (fixtureApiUpdates.length) {
+    try {
+      await supabaseUpsert(env, "fixtures", fixtureApiUpdates);
+    } catch (error) {
+      console.warn("Supabase fixtures apiFixtureId write failed:", error.message);
+    }
+  }
+
   const liveOrFinished = matchedUpdates.filter(
     (u) => u.status !== "NS" && u.score1 !== null && u.score2 !== null,
   );
@@ -371,20 +373,22 @@ async function syncLiveResults(env) {
     }
   }
 
-  // Recalculate leaderboard after score sync
   const leaderboardData = await recalculateLeaderboard(env);
   console.log(
     JSON.stringify({
       apiMatches: apiMatches.length,
       fixtures: fixtureRows.length,
-      matchedUpdates: matchedUpdates.length,
-      sample: matchedUpdates.slice(0, 5),
+      matched: matchedUpdates.length,
+      written: liveOrFinished.length,
+      apiFixtureIdsUpdated: fixtureApiUpdates.length,
+      sample: liveOrFinished.slice(0, 5),
     }),
   );
   return {
     success: true,
     matched: matchedUpdates.length,
-    updated: matchedUpdates.length,
+    updated: liveOrFinished.length,
+    apiFixtureIdsUpdated: fixtureApiUpdates.length,
     leaderboard: leaderboardData.leaderboard,
   };
 }
@@ -670,6 +674,10 @@ async function fetchLivescoreMatches(apiKey, apiSecret) {
 
 // ─── Normalizers & Utilities ────────────────────────────────────────────────
 
+function normalizeMatchId(value) {
+  return String(value || "").replace(/^match_/, "");
+}
+
 function cleanTeamName(name) {
   let clean = String(name || "")
     .toLowerCase()
@@ -691,11 +699,57 @@ function cleanTeamName(name) {
     clean === "drcongo" ||
     clean === "congodr" ||
     clean === "democraticrepublicofcongo" ||
+    clean === "democraticrepublicofthecongo" ||
     clean === "congodemocraticrepublic"
   )
     return "drcongo";
   if (clean === "capeverde" || clean === "caboverde") return "capeverde";
   return clean;
+}
+
+function buildFixtureLookups(fixtureRows) {
+  const byApiId = new Map();
+  const byTeams = new Map();
+
+  for (const fixture of fixtureRows) {
+    const matchId = normalizeMatchId(fixture.matchId || fixture.id);
+    if (!matchId) continue;
+
+    if (fixture.apiFixtureId !== null && fixture.apiFixtureId !== undefined) {
+      byApiId.set(String(fixture.apiFixtureId), fixture);
+    }
+
+    const home = cleanTeamName(fixture.team1);
+    const away = cleanTeamName(fixture.team2);
+    if (home && away) {
+      byTeams.set(`${home}__${away}`, { fixture, flipped: false });
+      byTeams.set(`${away}__${home}`, { fixture, flipped: true });
+    }
+  }
+
+  return { byApiId, byTeams };
+}
+
+function resolveFixtureMatch(item, lookups) {
+  const apiGameId = item.apiGameId ?? item.matchId ?? null;
+  const homeTeam = cleanTeamName(item.homeTeam || item.team1 || "");
+  const awayTeam = cleanTeamName(item.awayTeam || item.team2 || "");
+  if (!homeTeam || !awayTeam) return null;
+
+  if (apiGameId !== null && apiGameId !== undefined && apiGameId !== "") {
+    const byId = lookups.byApiId.get(String(apiGameId));
+    if (byId) {
+      const dbHome = cleanTeamName(byId.team1);
+      const dbAway = cleanTeamName(byId.team2);
+      const flipped = dbHome === awayTeam && dbAway === homeTeam;
+      return { fixture: byId, flipped };
+    }
+  }
+
+  const teamMatch = lookups.byTeams.get(`${homeTeam}__${awayTeam}`);
+  if (teamMatch) return teamMatch;
+
+  return null;
 }
 
 function mapStatus(zStatus) {
@@ -841,7 +895,7 @@ function normalizeWorldcup26Games(payload) {
       : [];
   return games.map((game) => ({
     source: "worldcup26",
-    matchId: String(game.id || game.matchId || ""),
+    apiGameId: String(game.id || game.matchId || ""),
     homeTeam:
       game.home_team_name_en || game.home_team_label || game.home_team || "",
     awayTeam:

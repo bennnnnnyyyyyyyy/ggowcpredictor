@@ -1,5 +1,52 @@
 # Work Log
 
+## 2026-06-17 - Leaderboard matchId mapping repair
+
+### Root cause
+
+- Ben Arthur showed **35 pts / 14 scored** instead of **~74 pts** because **9 predictions had no matching `results` row**, not because the scoring formula was wrong.
+- Supabase audit confirmed: `predictions = 23`, `matched_results = 14` for `ben_arthur`.
+- Four finished matches (**49, 50, 55, 56**) were matched from `worldcup26.ir` but never persisted in `results` (DB had 16 rows; sync simulation would write 20).
+- Adding those four rows alone restores Ben to **74 points** (including a **15-pt exact** on Austria 3–1 Jordan).
+- `fixtures.apiFixtureId` was **null for all rows**, so API `game.id` could not be used as a stable bridge.
+- `/sync-scores` reported `"updated": 69` while only **live/finished rows with scores** are written — a misleading count.
+- Team alias gap: `"Democratic Republic of the Congo"` did not normalize to `drcongo`, breaking future sync for Portugal vs DR Congo (match 61).
+
+### What changed
+
+- **`workers/live-results.js`**: Resolve API games → `fixtures.matchId` via `apiFixtureId` first, team names second; backfill `apiFixtureId` during sync; fix DR Congo alias; return `updated` = rows actually written.
+- **`scripts/repair-matchids.js`**: One-shot repair — backfill `apiFixtureId`, upsert missing results with internal `matchId`, delete orphan API-id results.
+- **`scripts/liveResultsCron.js`**, **`src/fixtures.js`**: Same DR Congo alias fix.
+- **`supabase/migrations/20260617000000_matchid_mapping_notes.sql`**: Documents the mapping contract.
+
+### Deploy / repair
+
+```bash
+# 1. Apply Supabase migration (notes only)
+supabase db push
+
+# 2. Backfill fixtures + missing results
+SUPABASE_URL=... SUPABASE_SERVICE_KEY=... node scripts/repair-matchids.js
+
+# 3. Deploy worker
+npx wrangler deploy
+
+# 4. Recalculate leaderboard
+curl -H "Authorization: Bearer $SEED_TOKEN" https://ggowcpredictor.ben-arthur-wiz.workers.dev/sync-scores
+```
+
+### Verification query
+
+```sql
+select count(*) as predictions, count(r."matchId") as matched_results
+from predictions p
+left join results r on p."matchId" = r."matchId"
+where p.username = 'ben_arthur';
+-- Expect matched_results ≈ number of finished matches Ben predicted
+```
+
+---
+
 ## 2026-06-15 - Repository Reorganization & Asset Routing Fixes
 
 ### What changed

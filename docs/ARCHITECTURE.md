@@ -1,5 +1,5 @@
 # GGO WC 2026 Predictor — Architecture
-> Last updated: 2026-06-15
+> Last updated: 2026-06-17
 
 ---
 
@@ -59,7 +59,9 @@ Each data type has a resilient fallback hierarchy:
 *   `team1`: string
 *   `team2`: string
 *   `ground`: string
-*   `apiFixtureId`: int (nullable)
+*   `apiFixtureId`: int (nullable) — maps `worldcup26.ir` `game.id` to this row; required for reliable score sync
+
+**Score sync mapping:** live API `game.id` → `fixtures.apiFixtureId` → `fixtures.matchId` → `results.matchId`. Predictions always use `fixtures.matchId`. See `scripts/repair-matchids.js` if rows drift.
 
 ### `predictions`
 *   `id`: string (primary key, formatted as `${username}_${matchId}`)

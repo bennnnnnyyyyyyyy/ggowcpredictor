@@ -47,7 +47,7 @@ function cleanTeamName(name) {
   if (clean === "czechia") return "czechrepublic";
   if (clean === "cotedivoire" || clean === "ivorycoast") return "ivorycoast";
   if (clean === "curaao" || clean === "curacao") return "curacao";
-  if (clean === "drcongo" || clean === "congodr" || clean === "democraticrepublicofcongo" || clean === "congodemocraticrepublic") return "drcongo";
+  if (clean === "drcongo" || clean === "congodr" || clean === "democraticrepublicofcongo" || clean === "democraticrepublicofthecongo" || clean === "congodemocraticrepublic") return "drcongo";
   if (clean === "capeverde" || clean === "caboverde") return "capeverde";
 
   return clean;

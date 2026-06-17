@@ -5178,3 +5178,380 @@ You are out of free messages until 2:20 PM
 x
 
 Claude is AI and can make mistakes. Please double-check responses.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Claim offer
+
+
+Untitled-1.md
+File
+
+
+ggowcpredictor db .xlsx
+Spreadsheet
+
+I agree. The evidence points much more strongly to a matchId mapping problem than a scoring problem.
+
+The key clue is:
+
+"matched": 69,
+"updated": 69
+Your sync found and updated 69 predictions, but:
+
+"ben_arthur": {
+  "predicted": 23,
+  "scored": 14,
+  "totalPoints": 35
+}
+Only 14 of your 23 predictions were matched to completed results.
+
+Earlier, when we looked at the database export, the results table contained IDs like:
+
+1,2,7,8,13,14,19,20,25,26...
+That pattern is suspicious because it suggests the imported results are using a different fixture numbering scheme than the predictions.
+
+What I would check immediately
+In Supabase SQL Editor:
+
+select
+  p.matchid,
+  f.home_team,
+  f.away_team,
+  r.matchid as result_matchid
+from predictions p
+left join results r
+  on p.matchid = r.matchid
+left join fixtures f
+  on p.matchid = f.matchid
+where p.username = 'ben_arthur'
+order by p.matchid;
+Look for rows where:
+
+result_matchid = null
+Those are predictions that never found a result.
+
+Even better
+Run:
+
+select
+  count(*) as predictions,
+  count(r.matchid) as matched_results
+from predictions p
+left join results r
+  on p.matchid = r.matchid
+where p.username = 'ben_arthur';
+If you get:
+
+predictions = 23
+matched_results = 14
+then we have confirmed the bug.
+
+Most likely cause
+Your fixtures probably use:
+
+1
+2
+3
+4
+5
+...
+104
+but the WorldCup26 API may be returning:
+
+{
+  "id": 1001
+}
+or
+
+{
+  "game_id": 67
+}
+or some other identifier.
+
+Then your sync code does:
+
+result.matchId = apiGame.id;
+instead of finding the corresponding fixture and using your internal match ID.
+
+The result:
+
+Prediction matchId = 49
+Result matchId = 5049
+No join.
+No points.
+No leaderboard update.
+
+The query I want most
+Run:
+
+select matchid
+from results
+order by matchid;
+and
+
+select matchid
+from fixtures
+order by matchid;
+Paste the first 30 rows of each.
+
+If the numbering differs, we will know exactly where the sync is breaking.
+
+
+Failed to run sql query: ERROR:  42703: column p.matchid does not exist
+LINE 8:   on p.matchid = r.matchid
+             ^
+HINT:  Perhaps you meant to reference the column "p.matchId".
+Note: A limit of 100 was applied to your query. If this was the cause of a syntax error, try selecting "No limit" instead and re-run the query.
+
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.users (
+  username text NOT NULL,
+  displayName text,
+  secretCode text,
+  isAdmin boolean DEFAULT false,
+  totalPoints integer DEFAULT 0,
+  joinedAt timestamp with time zone,
+  CONSTRAINT users_pkey PRIMARY KEY (username)
+);
+CREATE TABLE public.fixtures (
+  matchId text NOT NULL,
+  round text,
+  group text,
+  stage text,
+  date text,
+  time text,
+  kickoffUTC timestamp with time zone,
+  team1 text,
+  team2 text,
+  ground text,
+  apiFixtureId integer,
+  CONSTRAINT fixtures_pkey PRIMARY KEY (matchId)
+);
+CREATE TABLE public.predictions (
+  id text NOT NULL,
+  username text,
+  matchId text,
+  pred1 integer,
+  pred2 integer,
+  submittedAt timestamp with time zone,
+  pointsAwarded integer,
+  scoredAt timestamp with time zone,
+  CONSTRAINT predictions_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.results (
+  matchId text NOT NULL,
+  score1 integer,
+  score2 integer,
+  status text,
+  lastUpdated timestamp with time zone,
+  CONSTRAINT results_pkey PRIMARY KEY (matchId)
+);
+CREATE TABLE public.leaderboard (
+  username text NOT NULL,
+  rank integer,
+  displayName text,
+  totalPoints integer DEFAULT 0,
+  exactScores integer DEFAULT 0,
+  correctOutcomes integer DEFAULT 0,
+  predicted integer DEFAULT 0,
+  scored integer DEFAULT 0,
+  updatedAt timestamp with time zone,
+  CONSTRAINT leaderboard_pkey PRIMARY KEY (username)
+);
+CREATE TABLE public.accountRequests (
+  username text NOT NULL,
+  displayName text,
+  note text,
+  status text DEFAULT 'pending'::text,
+  secretCode text,
+  createdAt timestamp with time zone DEFAULT now(),
+  approvedAt timestamp with time zone,
+  rejectedAt timestamp with time zone,
+  CONSTRAINT accountRequests_pkey PRIMARY KEY (username)
+); 
+
+
+
+
+Good. The schema tells us something important:
+
+predictions.matchId TEXT
+results.matchId TEXT
+fixtures.matchId TEXT
+So the query should be:
+
+select
+  p.matchId,
+  f.team1,
+  f.team2,
+  r.matchId as resultMatchId
+from predictions p
+left join results r
+  on p.matchId = r.matchId
+left join fixtures f
+  on p.matchId = f.matchId
+where p.username = 'ben_arthur'
+order by p.matchId;
+But before that, let's test the theory directly.
+
+Run:
+
+select
+  count(*) as predictions,
+  count(r.matchId) as matched_results
+from predictions p
+left join results r
+  on p.matchId = r.matchId
+where p.username = 'ben_arthur';
+If that returns:
+
+predictions = 23
+matched_results = 14
+then we've proven the leaderboard is only finding 14 matching results.
+
+Then run:
+
+select matchId
+from results
+order by matchId;
+and:
+
+select matchId
+from fixtures
+order by matchId;
+What I'm looking for is whether the IDs look like:
+
+results:
+1
+2
+7
+8
+13
+14
+...
+while fixtures look like:
+
+1
+2
+3
+4
+5
+6
+...
+104
+If that's the case, your sync job is only importing some fixtures into results, which would perfectly explain:
+
+Ben Arthur:
+23 predictions
+14 scored
+35 points
+instead of the expected ~74.
+
+The matched: 69, updated: 69 output tells me the leaderboard calculation itself is working. The bug is almost certainly upstream: the results table does not contain all completed matches, or contains the wrong matchId values.
+
+
+sults
+
+Explain
+
+Chart
+
+Export
+
+
+Source
+
+Primary database
+
+Role
+postgres
+
+Run
+Ctrl ↵
+Failed to run sql query: ERROR:  42703: column p.matchid does not exist
+LINE 6:   on p.matchId = r.matchId
+             ^
+HINT:  Perhaps you meant to reference the column "p.matchId".
+Note: A limit of 100 was applied to your query. If this was the cause of a syntax error, try selecting "No limit" instead and re-run the query.
+
+The problem is PostgreSQL is treating your column names as case-sensitive because they were created with capitals:
+
+matchId
+not
+
+matchid
+When a column contains capitals, you must wrap it in double quotes.
+
+Try this exactly:
+
+select
+  count(*) as predictions,
+  count(r."matchId") as matched_results
+from predictions p
+left join results r
+  on p."matchId" = r."matchId"
+where p.username = 'ben_arthur';
+Then run:
+
+select
+  p."matchId",
+  p.pred1,
+  p.pred2,
+  r.score1,
+  r.score2
+from predictions p
+left join results r
+  on p."matchId" = r."matchId"
+where p.username = 'ben_arthur'
+order by p."matchId";
+And most importantly:
+
+select * from results
+order by "matchId";
+What I'm trying to verify is whether your results table contains only a subset of matches.
+
+The biggest clue remains:
+
+"predicted": 23,
+"scored": 14
+for Ben.
+
+That means the leaderboard engine found results for only 14 of Ben's predictions.
+
+If 20 matches have finished and Ben predicted 18+ of them, then either:
+
+Results are missing from the results table, or
+
+The matchId stored in results doesn't match the matchId stored in predictions.
+
+Paste the output of the first query (predictions vs matched_results) and we'll know immediately which one it is.
+
+
+You’ve reached the Free limit for chats with attachments
+Upgrade now or wait until 7:11 PM to keep using files, or chat now without files.
+
+New chat
+
+Claim free offer
+| predictions | matched_results |
+
+| ----------- | --------------- |
+
+| 23          | 14              |
+

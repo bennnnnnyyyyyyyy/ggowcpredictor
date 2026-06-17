@@ -447,6 +447,7 @@ function seedInitialResultsFromWorldcup26() {
         clean === "drcongo" ||
         clean === "congodr" ||
         clean === "democraticrepublicofcongo" ||
+        clean === "democraticrepublicofthecongo" ||
         clean === "congodemocraticrepublic"
       )
         return "drcongo";

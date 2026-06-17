@@ -136,23 +136,47 @@ The current schedule is:
 
 ## How The Sync Works
 
-1. Worker fetches Firestore fixtures.
-2. Worker fetches live match data from `worldcup26.ir`.
-3. If that fails, the worker falls back to Zafronix.
-4. If that also fails, the worker falls back to `live-score-api.com`.
-5. Worker matches live entries to fixture teams.
-6. Worker writes `results/match_{matchId}` in Firestore.
-7. The browser app reads Firestore and renders the Results tab and prediction cards.
+1. Worker loads Supabase `fixtures` (Firestore fallback).
+2. Worker fetches live match data from `worldcup26.ir` (Zafronix / Livescore as fallbacks).
+3. For each API game, the worker resolves the internal fixture:
+   - **Primary:** `worldcup26.ir game.id` → `fixtures.apiFixtureId` → `fixtures.matchId`
+   - **Fallback:** normalized team names (`team1` / `team2`)
+4. Scores are saved to `results.matchId` using the **internal** sequential id (`"1"`…`"104"`), never the API game id.
+5. During sync, missing `apiFixtureId` values are backfilled on matched fixtures.
+6. Only started/finished games with both scores are upserted into `results`.
+7. Leaderboard is recalculated from `predictions` joined to `results` on `matchId`.
+
+### MatchId mapping contract
+
+```
+worldcup26.ir game.id  →  fixtures.apiFixtureId  →  fixtures.matchId  →  results.matchId  →  predictions.matchId
+```
+
+If this chain breaks, users keep `predicted` counts but `scored` stays low.
+
+### Repair after a mapping gap
+
+```bash
+# Dry run
+SUPABASE_URL=... SUPABASE_SERVICE_KEY=... node scripts/repair-matchids.js --dry-run
+
+# Apply backfill + missing results
+SUPABASE_URL=... SUPABASE_SERVICE_KEY=... node scripts/repair-matchids.js
+
+# Recalculate standings
+curl -H "Authorization: Bearer YOUR_SEED_TOKEN" https://YOUR-WORKER_URL/sync-scores
+```
 
 ## Why Results Might Still Not Show
 
-If the Results tab is blank, check these in order:
+If the Results tab is blank or leaderboard `scored` is too low, check these in order:
 
-1. `results` collection is empty.
-2. `results` docs exist but `matchId` does not match the fixture IDs.
-3. The worker secrets are missing in Cloudflare.
-4. The worker is deployed but the cron trigger is off.
-5. The live API is returning data in a shape the mapper does not recognize.
+1. `results` collection/table is empty or missing finished matches.
+2. `results.matchId` does not match `fixtures.matchId` / `predictions.matchId` (run `scripts/repair-matchids.js`).
+3. `fixtures.apiFixtureId` is null and team-name matching failed (e.g. DR Congo alias).
+4. The worker secrets are missing in Cloudflare.
+5. The worker is deployed but the cron trigger is off.
+6. `/sync-scores` `updated` count is low because games are still `NS` or scores are null in the API.
 
 ## Quick Verification In Firebase Console
 
