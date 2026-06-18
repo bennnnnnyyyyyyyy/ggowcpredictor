@@ -254,7 +254,6 @@ function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []
     if (username) displayNames[username] = user.displayName || username;
   }
 
-  // Build fixture map so we can look up kickoffUTC per match
   const fixtureMap = {};
   for (const f of fixtureRows) {
     const id = String(f.matchId || f.id || "").replace(/^match_/, "");
@@ -305,26 +304,40 @@ function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []
     if (points > 0) userMap[username].correctOutcomes++;
   }
 
-  const ranked = Object.values(userMap)
-    .sort((a, b) => {
-      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-      if (b.exactScores !== a.exactScores) return b.exactScores - a.exactScores;
-      if (b.correctOutcomes !== a.correctOutcomes)
-        return b.correctOutcomes - a.correctOutcomes;
-      return a.username.localeCompare(b.username);
-    })
-    .map((player, index) => ({
-      ...player,
-      rank: index + 1,
-      resolvedPredictions: player.scored,
-    }));
+  // Sort by points (desc), then exactScores, then correctOutcomes (desc)
+  const sorted = Object.values(userMap).sort((a, b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    if (b.exactScores !== a.exactScores) return b.exactScores - a.exactScores;
+    if (b.correctOutcomes !== a.correctOutcomes) return b.correctOutcomes - a.correctOutcomes;
+    return a.username.localeCompare(b.username);
+  });
 
-  // 👇 ADD THIS RETURN
+  // ── Competition ranking: ties based solely on totalPoints ──
+  const ranked = [];
+  let rank = 1;
+  let i = 0;
+  while (i < sorted.length) {
+    let j = i;
+    // Group all players with the same totalPoints
+    while (j < sorted.length && sorted[j].totalPoints === sorted[i].totalPoints) {
+      j++;
+    }
+    const currentRank = rank;
+    for (let k = i; k < j; k++) {
+      ranked.push({
+        ...sorted[k],
+        rank: currentRank,
+        resolvedPredictions: sorted[k].scored,
+      });
+    }
+    rank += (j - i); // skip number of tied players
+    i = j;
+  }
+
   return {
     leaderboard: ranked,
     scoredMatches: Object.keys(results).length,
   };
-
 }
 
 // ─── Live Score Fetching & Syncing ──────────────────────────────────────────
