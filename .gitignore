@@ -10,6 +10,7 @@ node_modules/
 ggowcpredictor-firebase-adminsdk-fbsvc-76aa1b4e46.json
 user-passwords.csv
 
+
 # Output
 merged-emails/
 .wrangler/
