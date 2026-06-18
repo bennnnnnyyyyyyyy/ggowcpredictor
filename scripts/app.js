@@ -1797,9 +1797,9 @@ function renderResults() {
         <article class="result-card" onclick="openMatchDrawer('${fixture.matchId}')">
           <div class="match-date">${formatKickoff(fixture)}</div>
           <div class="match-teams">
-            <div class="team"><div class="team-name"><span class="team-code">${escapeHtml(getTeamCode(fixture.team1))}</span>${escapeHtml(fixture.team1)}</div></div>
+            <div class="team"><div class="team-name">${getFlagImg(fixture.team1)}${escapeHtml(fixture.team1)}</div></div>
             <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}</div>
-            <div class="team"><div class="team-name"><span class="team-code">${escapeHtml(getTeamCode(fixture.team2))}</span>${escapeHtml(fixture.team2)}</div></div>
+            <div class="team"><div class="team-name">${getFlagImg(fixture.team2)}${escapeHtml(fixture.team2)}</div></div>
           </div>    
           <div class="result-status">${escapeHtml(normalizeResultStatus(result.status))}</div>
           <div class="match-footer">
@@ -2198,7 +2198,63 @@ function parseKickoff(date, time, kickoffUTC) {
 
   return null;
 }
+const TEAM_FLAG_CODES = {
+  mexico: "mx",
+  "south africa": "za",
+  "south korea": "kr",
+  "czech republic": "cz",
+  canada: "ca",
+  "bosnia & herzegovina": "ba",
+  usa: "us",
+  paraguay: "py",
+  qatar: "qa",
+  switzerland: "ch",
+  brazil: "br",
+  morocco: "ma",
+  haiti: "ht",
+  scotland: "gb-sct",
+  australia: "au",
+  turkey: "tr",
+  germany: "de",
+  curaçao: "cw",
+  netherlands: "nl",
+  japan: "jp",
+  "ivory coast": "ci",
+  ecuador: "ec",
+  sweden: "se",
+  tunisia: "tn",
+  belgium: "be",
+  egypt: "eg",
+  iran: "ir",
+  "new zealand": "nz",
+  spain: "es",
+  "cape verde": "cv",
+  "saudi arabia": "sa",
+  uruguay: "uy",
+  france: "fr",
+  senegal: "sn",
+  iraq: "iq",
+  norway: "no",
+  argentina: "ar",
+  algeria: "dz",
+  austria: "at",
+  jordan: "jo",
+  portugal: "pt",
+  "dr congo": "cd",
+  uzbekistan: "uz",
+  colombia: "co",
+  england: "gb-eng",
+  croatia: "hr",
+  ghana: "gh",
+  panama: "pa",
+};
 
+function getFlagImg(teamName) {
+  const code = TEAM_FLAG_CODES[String(teamName).toLowerCase().trim()];
+  if (!code)
+    return `<span class="team-code">${escapeHtml(getTeamCode(teamName))}</span>`;
+  return `<img class="inline-flag-img" src="https://flagcdn.com/w40/${code}.png" alt="${escapeHtml(teamName)}" width="40" height="27">`;
+}
 async function loadTeamMeta() {
   try {
     if (db) {
