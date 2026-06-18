@@ -225,6 +225,11 @@ async function loadCollection(env, table) {
 
 // ─── Leaderboard Calculation Engine ─────────────────────────────────────────
 
+// Scoring rule changed on Jun 18 2026 (Atlanta kickoff = 19:00 Cairo / 16:00 UTC).
+// Matches before this cutoff use the old rule (3 pts for close-wrong-result).
+// Matches on or after use the new rule (wrong result = 0, no consolation).
+const SCORING_CUTOFF = new Date("2026-06-18T16:00:00Z");
+
 function scoreMatch(p1, p2, a1, a2, matchDate) {
   if (p1 === a1 && p2 === a2) return 15;
   const predOutcome = Math.sign(p1 - p2);
@@ -233,15 +238,27 @@ function scoreMatch(p1, p2, a1, a2, matchDate) {
     const diffGap = Math.abs(p1 - p2 - (a1 - a2));
     return diffGap <= 1 ? 8 : 5;
   }
-  const totalGap = Math.abs(p1 - a1) + Math.abs(p2 - a2);
-  return totalGap <= 2 ? 3 : 0;
+  // Old rule: award 3 pts for close-but-wrong-result on pre-cutoff matches only
+  const isPreCutoff = matchDate && new Date(matchDate) < SCORING_CUTOFF;
+  if (isPreCutoff) {
+    const totalGap = Math.abs(p1 - a1) + Math.abs(p2 - a2);
+    return totalGap <= 2 ? 3 : 0;
+  }
+  return 0;
 }
 
-function buildLeaderboard(resultRows, predictionRows, userRows) {
+function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []) {
   const displayNames = {};
   for (const user of userRows) {
     const username = String(user.username || user.id || "").trim();
     if (username) displayNames[username] = user.displayName || username;
+  }
+
+  // Build fixture map so we can look up kickoffUTC per match
+  const fixtureMap = {};
+  for (const f of fixtureRows) {
+    const id = String(f.matchId || f.id || "").replace(/^match_/, "");
+    if (id) fixtureMap[id] = f;
   }
 
   const results = {};
@@ -279,7 +296,9 @@ function buildLeaderboard(resultRows, predictionRows, userRows) {
     const result = results[matchId];
     if (!result) continue;
 
-    const points = scoreMatch(pred1, pred2, result.score1, result.score2);
+    const fixture = fixtureMap[matchId] || {};
+    const matchDate = fixture.kickoffUTC || fixture.date || null;
+    const points = scoreMatch(pred1, pred2, result.score1, result.score2, matchDate);
     userMap[username].totalPoints += points;
     userMap[username].scored++;
     if (points === 15) userMap[username].exactScores++;
@@ -399,13 +418,14 @@ async function syncLiveResults(env) {
 }
 
 async function recalculateLeaderboard(env) {
-  const [resultRows, predictionRows, userRows] = await Promise.all([
+  const [resultRows, predictionRows, userRows, fixtureRows] = await Promise.all([
     loadCollection(env, "results"),
     loadCollection(env, "predictions"),
     loadCollection(env, "users"),
+    loadCollection(env, "fixtures"),
   ]);
 
-  const data = buildLeaderboard(resultRows, predictionRows, userRows);
+  const data = buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows);
 
   // Persist leaderboard to Supabase
   if (data.leaderboard.length) {
@@ -600,7 +620,8 @@ async function handleProfileGet(env, username) {
       }
 
       if (hasPred && actualHome !== null && actualAway !== null) {
-        points = scoreMatch(pred1, pred2, actualHome, actualAway);
+        const matchDate = fixture.kickoffUTC || fixture.date || null;
+        points = scoreMatch(pred1, pred2, actualHome, actualAway, matchDate);
       }
 
       return {

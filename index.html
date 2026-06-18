@@ -36,6 +36,31 @@
   </aside>
 
   <body>
+    <!-- Scoring rule change notice (auto-hides after Jun 19 00:00 Cairo) -->
+    <div id="scoringNotice" class="scoring-notice" style="display: none">
+      <span class="scoring-notice-icon">⚡</span>
+      <span
+        ><strong>Scoring Update (Jun 18):</strong> The "Close Score, Wrong
+        Result" 3-point category has been removed for all matches from today
+        onward, it resulted in awarding scores for a 1-0 when the result was
+        0-1. Matches played before today keep their original scores.</span
+      >
+      <button
+        class="scoring-notice-close"
+        onclick="this.parentElement.style.display = 'none'"
+        aria-label="Dismiss"
+      >
+        ✕
+      </button>
+    </div>
+    <script>
+      (() => {
+        const expiry = new Date("2026-06-18T21:00:00Z"); // Jun 19 00:00 Cairo
+        const notice = document.getElementById("scoringNotice");
+        if (notice && new Date() < expiry) notice.style.display = "flex";
+      })();
+    </script>
+
     <!-- Firebase SDK (CDN) -->
     <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
@@ -480,15 +505,17 @@
                 not close.
               </p>
             </div>
-            <div class="score-rule-card pts-close-guess">
-              <span class="pts-val">3 pts</span>
-              <strong>Close Score, Wrong Result</strong>
-              <p>
-                Your scores were close to the final score, but the winner or
-                draw was wrong.
-              </p>
+            <div class="score-rule-card pts-zero">
+              <span class="pts-val">0 pts</span>
+              <strong>Wrong Result</strong>
+              <p>You picked the wrong winner or draw. No points awarded.</p>
             </div>
           </div>
+          <p class="scoring-cutoff-note">
+            📅 <strong>Note:</strong> Matches played before Jun 18, 2026
+            (Atlanta kickoff) may still show 3 pts for a close wrong-result
+            prediction — those scores are preserved under the original rules.
+          </p>
 
           <button
             class="btn-primary start-playing-btn"

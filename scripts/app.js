@@ -2460,9 +2460,11 @@ function hasResult(result) {
 /**
  * Client-side scoring - mirrors canonical scoreMatch on the backend.
  * Points: exact=15, correct result plus close goal difference=8,
- * correct result=5, close score with wrong result=3, otherwise 0.
+ * correct result=5, wrong result=0 (from Jun 18 onward) or 3 (pre-cutoff).
  */
-function calculateMatchPoints(pred1, pred2, actual1, actual2) {
+const CLIENT_SCORING_CUTOFF = new Date("2026-06-18T16:00:00Z");
+
+function calculateMatchPoints(pred1, pred2, actual1, actual2, matchDate) {
   if (pred1 === actual1 && pred2 === actual2) return 15;
 
   const predOutcome = Math.sign(pred1 - pred2);
@@ -2473,9 +2475,13 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
     return diffGap <= 1 ? 8 : 5;
   }
 
-  // Wrong outcome - partial credit if total goal gap <= 2
-  const totalGap = Math.abs(pred1 - actual1) + Math.abs(pred2 - actual2);
-  return totalGap <= 2 ? 3 : 0;
+  // Old rule: 3 pts for close wrong-result, pre-cutoff matches only
+  const isPreCutoff = matchDate && new Date(matchDate) < CLIENT_SCORING_CUTOFF;
+  if (isPreCutoff) {
+    const totalGap = Math.abs(pred1 - actual1) + Math.abs(pred2 - actual2);
+    return totalGap <= 2 ? 3 : 0;
+  }
+  return 0;
 }
 
 function buildLocalLeaderboard() {
@@ -2492,11 +2498,16 @@ function buildLocalLeaderboard() {
     const result = STATE.results[String(prediction.matchId)];
     if (!hasResult(result)) return;
 
+    const fixture = STATE.fixtures?.find(
+      (f) => String(f.matchId) === String(prediction.matchId),
+    );
+    const matchDate = fixture?.kickoffUTC || fixture?.date || null;
     const points = calculateMatchPoints(
       prediction.pred1,
       prediction.pred2,
       result.score1,
       result.score2,
+      matchDate,
     );
     totalPoints += points;
     if (points === 15) exactScores += 1;

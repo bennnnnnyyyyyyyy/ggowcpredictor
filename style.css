@@ -2781,6 +2781,86 @@ main {
   color: #00b359;
 }
 
+/* New: 0-pts card (wrong result, post-cutoff rule) */
+.score-rule-card.pts-zero {
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.score-rule-card.pts-zero .pts-val {
+  color: var(--danger);
+}
+.score-rule-card.pts-zero strong {
+  color: var(--danger);
+}
+
+/* Cutoff note under the scoring grid */
+.scoring-cutoff-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: -10px;
+  margin-bottom: 20px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 3px solid rgba(0, 209, 94, 0.3);
+}
+.scoring-cutoff-note strong {
+  color: var(--light);
+}
+
+/* Scoring rule change banner */
+.scoring-notice {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
+  color: #000;
+  font-family: var(--font-ggo-body);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+.scoring-notice-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.scoring-notice span:nth-child(2) {
+  flex: 1;
+}
+.scoring-notice-close {
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.15);
+  border: none;
+  color: #000;
+  font-size: 16px;
+  font-weight: 700;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.scoring-notice-close:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+@media (max-width: 600px) {
+  .scoring-notice {
+    font-size: 12px;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+}
+
 .start-playing-btn {
   display: block;
   margin: 15px auto 0 auto;

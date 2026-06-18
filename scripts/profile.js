@@ -54,14 +54,21 @@ function initFirebase() {
   }
 }
 
-// ─── Scoring (mirrors app.js calculateMatchPoints) ──────────────────────────
+// ─── Scoring (mirrors scoreMatch on the backend) ────────────────────────────
+// Cutoff = Jun 18 2026 Atlanta kickoff (19:00 Cairo / 16:00 UTC).
+// Pre-cutoff matches keep the old 3-point consolation tier.
+// Post-cutoff wrong-result predictions score 0.
+const SCORING_CUTOFF = new Date("2026-06-18T16:00:00Z");
 
-function calcPoints(p1, p2, a1, a2) {
+function calcPoints(p1, p2, a1, a2, matchDate) {
   if (p1 === a1 && p2 === a2) return 15;
   const po = Math.sign(p1 - p2);
   const ao = Math.sign(a1 - a2);
   if (po === ao) return Math.abs(p1 - p2 - (a1 - a2)) <= 1 ? 8 : 5;
-  return Math.abs(p1 - a1) + Math.abs(p2 - a2) <= 2 ? 3 : 0;
+  // Old rule preserved for pre-cutoff matches only
+  const isPreCutoff = matchDate && new Date(matchDate) < SCORING_CUTOFF;
+  if (isPreCutoff) return Math.abs(p1 - a1) + Math.abs(p2 - a2) <= 2 ? 3 : 0;
+  return 0;
 }
 
 function isLiveStatus(s = "") {
@@ -207,7 +214,8 @@ function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
       }
 
       if (hasPred && actualHome !== null && actualAway !== null) {
-        points = calcPoints(pred1, pred2, actualHome, actualAway);
+        const matchDate = fixture.kickoffUTC || fixture.date || null;
+        points = calcPoints(pred1, pred2, actualHome, actualAway, matchDate);
         totalPoints += points;
         if (points === 15) exactScores++;
         if (points > 0) correctOutcomes++;
