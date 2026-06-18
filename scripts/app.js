@@ -1539,6 +1539,10 @@ function renderGroupTable(groupName, fixtures) {
   `;
 }
 
+// ================================================================
+// 1. renderLeaderboard() – replace the entire function in app.js
+//    Makes rows clickable + adds "Predicted" & "Correct %" columns
+// ================================================================
 function renderLeaderboard() {
   const tbody = document.getElementById("leaderboard-body");
   if (!tbody) return;
@@ -1548,27 +1552,48 @@ function renderLeaderboard() {
     : buildLocalLeaderboard();
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="table-empty">No predictions yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="table-empty">No predictions yet.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = rows
     .map((player, index) => {
       const rank = player.rank || index + 1;
-      const name =
-        player.displayName || player.playerName || player.username || "Player";
+      const name = player.displayName || player.playerName || player.username || "Player";
+      const username = player.username || "";
+
+      // ---- new data ----
+      const predicted = player.predicted || player.totalPredictions || player.predictions || 0;
+      const correctOutcomes = player.correctOutcomes || player.outcomeCount || 0;
+      const completed = player.completedPredictions || player.resolvedPredictions || 0;
+
+      // percentage based on completed predictions (if available), else total predictions
+      const denominator = completed > 0 ? completed : predicted;
+      const percent = denominator > 0 ? (correctOutcomes / denominator) * 100 : 0;
+      const percentDisplay = denominator > 0
+        ? `<span class="${percent >= 50 ? 'percent-high' : 'percent-low'}">${percent.toFixed(1)}%</span>`
+        : "—";        // ------------------
+
+      // entire row is clickable → opens profile.html?user=username
+      const onclickAttr = username
+        ? `onclick="window.location.href='profile.html?user=${encodeURIComponent(username)}'"`
+        : "";
+
       return `
-        <tr class="${player.username === SESSION.username ? "current-user" : ""}">
+        <tr class="${player.username === SESSION.username ? "current-user" : ""}" 
+            style="cursor:pointer" ${onclickAttr}>
           <td data-label="Rank"><span class="rank-badge ${rankClass(rank)}">${rank}</span></td>
           <td data-label="Player">
             <div class="player-info">
               <span class="player-avatar">${getInitials(name)}</span>
-              <a class="player-name player-name-link" href="profile.html?user=${encodeURIComponent(player.username || "")}">${escapeHtml(name)}</a>            
+              <span class="player-name">${escapeHtml(name)}</span>
             </div>
           </td>
           <td data-label="Points" style="text-align:center"><strong>${player.totalPoints || 0}</strong></td>
           <td data-label="Exact" style="text-align:center">${player.exactScores || player.exactCount || 0}</td>
-          <td data-label="Outcome" style="text-align:center">${player.correctOutcomes || player.outcomeCount || 0}</td>
+          <td data-label="Outcome" style="text-align:center">${correctOutcomes}</td>
+          <td data-label="Predicted" style="text-align:center">${predicted}</td>
+          <td data-label="Correct %" style="text-align:center">${percentDisplay}</td>
         </tr>
       `;
     })
@@ -2477,6 +2502,10 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2, matchDate) {
   return 0;
 }
 
+// ================================================================
+// 2. buildLocalLocalLeaderboard() – update to track completedPredictions
+//    (used as fallback when no server leaderboard exists)
+// ================================================================
 function buildLocalLeaderboard() {
   if (!SESSION.username) return [];
 
@@ -2484,12 +2513,16 @@ function buildLocalLeaderboard() {
   let exactScores = 0;
   let correctOutcomes = 0;
   let predicted = 0;
+  let completedPredictions = 0;   // NEW
 
   Object.values(STATE.predictions).forEach((prediction) => {
     if (!hasPrediction(prediction)) return;
     predicted += 1;
+
     const result = STATE.results[String(prediction.matchId)];
     if (!hasResult(result)) return;
+
+    completedPredictions += 1;    // NEW: only count predictions that have a result
 
     const fixture = STATE.fixtures?.find(
       (f) => String(f.matchId) === String(prediction.matchId),
@@ -2516,6 +2549,7 @@ function buildLocalLeaderboard() {
       exactScores,
       correctOutcomes,
       predicted,
+      completedPredictions,   // NEW
     },
   ];
 }

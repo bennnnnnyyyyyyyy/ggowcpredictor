@@ -1,8 +1,10 @@
 /* GGO WC 2026 Predictor - Main Stylesheet */
 
 :root {
-  --wc-blue: #00d15e; /* GGO Green */
-  --wc-red: #00b359; /* GGO Green Dim */
+  --wc-blue: #00d15e;
+  /* GGO Green */
+  --wc-red: #00b359;
+  /* GGO Green Dim */
   --dark: #06080f;
   --light: #f5f5f5;
   --muted: #a0a0a0;
@@ -54,26 +56,20 @@ select {
   min-height: 100vh;
   background:
     linear-gradient(180deg, rgba(6, 8, 15, 0.96) 0%, rgba(6, 8, 15, 0.98) 100%),
-    repeating-linear-gradient(
-      135deg,
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.03) 0 1px,
-      transparent 1px 11px
-    );
+      transparent 1px 11px);
   padding: 20px;
 }
 
 .login-card {
   background:
-    linear-gradient(
-      145deg,
+    linear-gradient(145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(6, 36, 24, 0.78) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px
-    );
+      transparent 1px 9px);
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   padding: 34px;
@@ -233,11 +229,9 @@ select {
 ════════════════════════════════════════ */
 
 header {
-  background: linear-gradient(
-    180deg,
-    rgba(6, 8, 15, 0.95) 0%,
-    rgba(6, 8, 15, 0.85) 100%
-  );
+  background: linear-gradient(180deg,
+      rgba(6, 8, 15, 0.95) 0%,
+      rgba(6, 8, 15, 0.85) 100%);
   border-bottom: 2px solid var(--wc-blue);
   padding: 12px 30px;
   display: flex;
@@ -384,6 +378,7 @@ header {
   font-weight: 700;
   line-height: 1;
 }
+
 /* ────────────────────────────────────────
    FILTER BUTTONS
 ────────────────────────────────────────── */
@@ -422,6 +417,7 @@ header {
   border-color: var(--wc-blue);
   box-shadow: 0 4px 12px rgba(0, 209, 94, 0.25);
 }
+
 .admin-btn {
   margin-left: 10px;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
@@ -486,10 +482,12 @@ header {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 0.6;
   }
+
   50% {
     opacity: 1;
   }
@@ -585,16 +583,12 @@ main {
 
 .match-card {
   background:
-    linear-gradient(
-      145deg,
+    linear-gradient(145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(6, 36, 24, 0.78) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px
-    );
+      transparent 1px 9px);
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   overflow: hidden;
@@ -973,16 +967,19 @@ main {
   color: #ffd700;
   border: 1px solid rgba(255, 215, 0, 0.3);
 }
+
 .pts-good {
   background: rgba(16, 185, 129, 0.15);
   color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
+
 .pts-partial {
   background: rgba(245, 158, 11, 0.15);
   color: var(--warning);
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
+
 .pts-zero {
   background: rgba(239, 68, 68, 0.12);
   color: var(--danger);
@@ -1133,20 +1130,11 @@ main {
    LEADERBOARD
 ────────────────────────────────────────── */
 
-#view-leaderboard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-#view-leaderboard .section-title {
-  width: 100%;
-  max-width: 820px;
-}
-
+/* ── Leaderboard – desktop ── */
 .leaderboard-table {
   width: 100%;
-  max-width: 820px;
+  max-width: 920px;
+  /* wider to fit 7 columns */
   margin: 0 auto;
   border-collapse: collapse;
   background: rgba(0, 209, 94, 0.04);
@@ -1154,11 +1142,12 @@ main {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+  font-size: 14px;
 }
 
 .leaderboard-table th {
-  background: linear-gradient(90deg, var(--wc-blue) 0%, #00b359 100%);
-  padding: 14px 18px;
+  background: linear-gradient(90deg, var(--wc-blue), #00b359);
+  padding: 12px 10px;
   text-align: center;
   font-weight: 700;
   letter-spacing: 0.6px;
@@ -1169,10 +1158,11 @@ main {
 
 .leaderboard-table th:nth-child(2) {
   text-align: left;
+  /* Player column left-aligned */
 }
 
 .leaderboard-table td {
-  padding: 14px 18px;
+  padding: 12px 10px;
   border-bottom: 1px solid rgba(0, 209, 94, 0.08);
   text-align: center;
   vertical-align: middle;
@@ -1182,16 +1172,39 @@ main {
   text-align: left;
 }
 
-.leaderboard-table tr:last-child td {
-  border-bottom: none;
+/* Fixed widths for numeric columns (Points, Exact, Outcome, Predicted, %) */
+.leaderboard-table th:nth-child(3),
+.leaderboard-table td:nth-child(3),
+.leaderboard-table th:nth-child(4),
+.leaderboard-table td:nth-child(4),
+.leaderboard-table th:nth-child(5),
+.leaderboard-table td:nth-child(5),
+.leaderboard-table th:nth-child(6),
+.leaderboard-table td:nth-child(6),
+.leaderboard-table th:nth-child(7),
+.leaderboard-table td:nth-child(7) {
+  width: 72px;
+  min-width: 60px;
 }
 
+/* Row hover */
 .leaderboard-table tbody tr:hover {
   background: rgba(0, 209, 94, 0.1);
+  cursor: pointer;
+  /* already set inline via JS, but keep */
 }
 
 .leaderboard-table tbody tr.current-user {
   background: rgba(0, 179, 89, 0.12);
+}
+
+/* Percentage colour helpers (used in JS) */
+.leaderboard-table td[data-label="Correct %"] .percent-high {
+  color: var(--success);
+}
+
+.leaderboard-table td[data-label="Correct %"] .percent-low {
+  color: var(--danger);
 }
 
 .table-empty {
@@ -1250,6 +1263,7 @@ main {
 .player-name {
   font-weight: 600;
 }
+
 /* ════════════════════════════════════════
    MATCH DETAIL DRAWER
    Append to bottom of style.css
@@ -1264,6 +1278,7 @@ main {
   pointer-events: none;
   transition: background 0.3s ease;
 }
+
 .match-drawer-overlay.open {
   background: rgba(0, 0, 0, 0.65);
   pointer-events: all;
@@ -1277,16 +1292,12 @@ main {
   bottom: 0;
   width: min(480px, 100vw);
   background:
-    linear-gradient(
-      160deg,
+    linear-gradient(160deg,
       rgba(6, 10, 18, 0.99) 0%,
-      rgba(4, 22, 14, 0.97) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(4, 22, 14, 0.97) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.03) 0 1px,
-      transparent 1px 10px
-    );
+      transparent 1px 10px);
   border-left: 2px solid rgba(0, 209, 94, 0.28);
   box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5);
   transform: translateX(100%);
@@ -1296,6 +1307,7 @@ main {
   flex-direction: column;
   overflow: hidden;
 }
+
 .match-drawer.open {
   transform: translateX(0);
 }
@@ -1320,11 +1332,13 @@ main {
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   flex-shrink: 0;
 }
+
 .drawer-header-meta {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
+
 .drawer-round {
   font-family: var(--font-ggo-display);
   font-size: 13px;
@@ -1333,10 +1347,12 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.6px;
 }
+
 .drawer-date {
   font-size: 12px;
   color: var(--muted);
 }
+
 .drawer-close {
   width: 36px;
   height: 36px;
@@ -1350,6 +1366,7 @@ main {
   transition: all 0.2s;
   flex-shrink: 0;
 }
+
 .drawer-close:hover {
   background: rgba(239, 68, 68, 0.15);
   border-color: rgba(239, 68, 68, 0.3);
@@ -1366,6 +1383,7 @@ main {
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   flex-shrink: 0;
 }
+
 .drawer-team {
   display: flex;
   flex-direction: column;
@@ -1373,6 +1391,7 @@ main {
   gap: 8px;
   text-align: center;
 }
+
 .drawer-team-badge {
   width: 56px;
   height: 40px;
@@ -1386,6 +1405,7 @@ main {
   font-size: 19px;
   font-weight: 900;
 }
+
 .drawer-team-name {
   font-family: var(--font-ggo-display);
   font-size: 14px;
@@ -1396,12 +1416,14 @@ main {
   line-height: 1.1;
   max-width: 110px;
 }
+
 .drawer-score-block {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
 }
+
 .drawer-score {
   font-family: var(--font-ggo-display);
   font-size: 52px;
@@ -1410,10 +1432,12 @@ main {
   letter-spacing: 2px;
   line-height: 1;
 }
+
 .drawer-score.live-score {
   color: var(--warning);
   text-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
 }
+
 .drawer-status-chip {
   display: inline-flex;
   align-items: center;
@@ -1426,16 +1450,19 @@ main {
   letter-spacing: 0.5px;
   border: 1px solid;
 }
+
 .drawer-status-chip.ft {
   color: var(--muted);
   border-color: rgba(160, 160, 160, 0.3);
 }
+
 .drawer-status-chip.live {
   color: var(--warning);
   border-color: rgba(245, 158, 11, 0.4);
   background: rgba(245, 158, 11, 0.08);
   animation: blink 1.5s infinite;
 }
+
 .drawer-status-chip.ns {
   color: var(--success);
   border-color: rgba(16, 185, 129, 0.35);
@@ -1449,9 +1476,11 @@ main {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 209, 94, 0.3) transparent;
 }
+
 .drawer-body::-webkit-scrollbar {
   width: 4px;
 }
+
 .drawer-body::-webkit-scrollbar-thumb {
   background: rgba(0, 209, 94, 0.3);
   border-radius: 2px;
@@ -1476,6 +1505,7 @@ main {
   flex-direction: column;
   gap: 0;
 }
+
 .scorer-row {
   display: grid;
   grid-template-columns: 1fr 48px 1fr;
@@ -1483,6 +1513,7 @@ main {
   min-height: 34px;
   position: relative;
 }
+
 .scorer-row::after {
   content: "";
   position: absolute;
@@ -1493,6 +1524,7 @@ main {
   height: 100%;
   background: rgba(0, 209, 94, 0.12);
 }
+
 .scorer-name {
   font-size: 13px;
   font-weight: 600;
@@ -1501,13 +1533,16 @@ main {
   text-align: right;
   line-height: 1.2;
 }
+
 .scorer-name.away-name {
   text-align: left;
   padding: 7px 0 7px 10px;
 }
+
 .scorer-name.empty {
   opacity: 0;
 }
+
 .scorer-minute {
   display: flex;
   flex-direction: column;
@@ -1516,6 +1551,7 @@ main {
   z-index: 1;
   gap: 1px;
 }
+
 .scorer-minute-pill {
   background: rgba(0, 209, 94, 0.12);
   border: 1px solid rgba(0, 209, 94, 0.28);
@@ -1528,10 +1564,12 @@ main {
   white-space: nowrap;
   letter-spacing: 0.3px;
 }
+
 .scorer-ball {
   font-size: 11px;
   line-height: 1;
 }
+
 .no-scorers {
   font-size: 12px;
   color: var(--muted);
@@ -1551,6 +1589,7 @@ main {
   border-radius: 10px;
   gap: 12px;
 }
+
 .drawer-pred-label {
   font-size: 11px;
   font-weight: 700;
@@ -1559,6 +1598,7 @@ main {
   color: var(--muted);
   margin-bottom: 4px;
 }
+
 .drawer-pred-score {
   font-family: var(--font-ggo-display);
   font-size: 26px;
@@ -1566,12 +1606,14 @@ main {
   color: var(--light);
   letter-spacing: 1px;
 }
+
 .drawer-pred-score.no-pred {
   font-family: var(--font-ggo-body);
   font-size: 13px;
   font-weight: 400;
   color: var(--muted);
 }
+
 .drawer-pred-pts {
   font-family: var(--font-ggo-display);
   font-size: 28px;
@@ -1583,6 +1625,7 @@ main {
   gap: 3px;
   flex-shrink: 0;
 }
+
 .drawer-pred-pts sub {
   font-size: 11px;
   font-weight: 600;
@@ -1596,11 +1639,13 @@ main {
   gap: 4px;
   padding: 12px 0;
 }
+
 .drawer-venue-name {
   font-size: 14px;
   font-weight: 600;
   color: var(--light);
 }
+
 .drawer-venue-city {
   font-size: 12px;
   color: var(--muted);
@@ -1610,6 +1655,7 @@ main {
 .result-card {
   cursor: pointer;
 }
+
 .result-card:hover .match-teams {
   opacity: 0.85;
 }
@@ -1625,29 +1671,28 @@ main {
     border-radius: 16px 16px 0 0;
     transform: translateY(100%);
   }
+
   .match-drawer.open {
     transform: translateY(0);
   }
+
   .drawer-score {
     font-size: 42px;
   }
 }
+
 /* ────────────────────────────────────────
    RESULTS VIEW
 ────────────────────────────────────────── */
 
 .result-card {
   background:
-    linear-gradient(
-      145deg,
+    linear-gradient(145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(6, 36, 24, 0.78) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px
-    );
+      transparent 1px 9px);
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   padding: 20px;
@@ -1788,11 +1833,9 @@ main {
 
 .champion-section {
   text-align: center;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 209, 94, 0.1) 0%,
-    rgba(0, 179, 89, 0.05) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(0, 209, 94, 0.1) 0%,
+      rgba(0, 179, 89, 0.05) 100%);
   border: 2px solid var(--wc-red);
   border-radius: 8px;
   padding: 30px;
@@ -1901,11 +1944,9 @@ main {
 
 .bracket-match {
   position: relative;
-  background: linear-gradient(
-    180deg,
-    rgba(12, 18, 24, 0.98),
-    rgba(7, 33, 22, 0.92)
-  );
+  background: linear-gradient(180deg,
+      rgba(12, 18, 24, 0.98),
+      rgba(7, 33, 22, 0.92));
   border: 2px solid rgba(0, 209, 94, 0.36);
   border-radius: 6px;
   padding: 8px;
@@ -2036,11 +2077,13 @@ main {
 .empty-state.compact {
   padding: 18px 12px;
 }
+
 .player-name-link {
   color: inherit;
   text-decoration: none;
   transition: color 0.2s;
 }
+
 .player-name-link:hover {
   color: var(--wc-blue);
   text-decoration: underline;
@@ -2194,7 +2237,8 @@ main {
   }
 
   .sync-status {
-    display: none; /* hide verbose "Live - HH:MM" on smaller screens */
+    display: none;
+    /* hide verbose "Live - HH:MM" on smaller screens */
   }
 
   .sync-container {
@@ -2223,11 +2267,13 @@ main {
     flex: 1;
     min-width: 0;
   }
+
   .wc-logo {
     display: block;
     max-width: 42px;
     object-fit: contain;
   }
+
   .user-pill {
     flex-shrink: 0;
   }
@@ -2314,6 +2360,7 @@ main {
   .matches-list {
     grid-template-columns: 1fr;
   }
+
   #group-standings {
     grid-template-columns: 1fr;
   }
@@ -2555,7 +2602,8 @@ main {
   }
 
   #user-display-name {
-    display: none; /* just show avatar on tiny screens */
+    display: none;
+    /* just show avatar on tiny screens */
   }
 
   main {
@@ -2620,7 +2668,9 @@ main {
   }
 }
 
-@media (hover: none), (pointer: coarse) {
+@media (hover: none),
+(pointer: coarse) {
+
   .match-card.open:hover,
   .result-card:hover,
   .score-rule-card:hover,
@@ -2642,9 +2692,11 @@ main {
 .rules-modal-content::-webkit-scrollbar {
   width: 6px;
 }
+
 .rules-modal-content::-webkit-scrollbar-track {
   background: var(--dark);
 }
+
 .rules-modal-content::-webkit-scrollbar-thumb {
   background-color: var(--wc-blue);
   border-radius: 3px;
@@ -2744,9 +2796,11 @@ main {
 .score-rule-card.pts-exact {
   border: 1px solid rgba(255, 215, 0, 0.3);
 }
+
 .score-rule-card.pts-exact .pts-val {
   color: #ffd700;
 }
+
 .score-rule-card.pts-exact strong {
   color: #ffd700;
 }
@@ -2754,9 +2808,11 @@ main {
 .score-rule-card.pts-good {
   border: 1px solid rgba(0, 209, 94, 0.3);
 }
+
 .score-rule-card.pts-good .pts-val {
   color: #00d15e;
 }
+
 .score-rule-card.pts-good strong {
   color: #00d15e;
 }
@@ -2764,9 +2820,11 @@ main {
 .score-rule-card.pts-partial {
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
+
 .score-rule-card.pts-partial .pts-val {
   color: var(--warning);
 }
+
 .score-rule-card.pts-partial strong {
   color: var(--warning);
 }
@@ -2774,9 +2832,11 @@ main {
 .score-rule-card.pts-close-guess {
   border: 1px solid rgba(0, 179, 89, 0.3);
 }
+
 .score-rule-card.pts-close-guess .pts-val {
   color: #00b359;
 }
+
 .score-rule-card.pts-close-guess strong {
   color: #00b359;
 }
@@ -2785,9 +2845,11 @@ main {
 .score-rule-card.pts-zero {
   border: 1px solid rgba(239, 68, 68, 0.25);
 }
+
 .score-rule-card.pts-zero .pts-val {
   color: var(--danger);
 }
+
 .score-rule-card.pts-zero strong {
   color: var(--danger);
 }
@@ -2804,6 +2866,7 @@ main {
   border-radius: 8px;
   border-left: 3px solid rgba(0, 209, 94, 0.3);
 }
+
 .scoring-cutoff-note strong {
   color: var(--light);
 }
@@ -2827,13 +2890,16 @@ main {
   line-height: 1.4;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
+
 .scoring-notice-icon {
   font-size: 18px;
   flex-shrink: 0;
 }
+
 .scoring-notice span:nth-child(2) {
   flex: 1;
 }
+
 .scoring-notice-close {
   flex-shrink: 0;
   background: rgba(0, 0, 0, 0.15);
@@ -2850,9 +2916,11 @@ main {
   justify-content: center;
   transition: background 0.2s;
 }
+
 .scoring-notice-close:hover {
   background: rgba(0, 0, 0, 0.28);
 }
+
 @media (max-width: 600px) {
   .scoring-notice {
     font-size: 12px;
@@ -2878,6 +2946,7 @@ main {
    ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
+
   /* Wrapper becomes a plain stack */
   .leaderboard-table {
     display: block;
@@ -2897,14 +2966,14 @@ main {
     gap: 8px;
   }
 
-  /* Each row = a horizontal pill card */
+  /* Each row = a horizontal pill card with 7 columns */
   .leaderboard-table tr {
     display: grid;
-    /* rank | avatar+name | pts | exact | outcome */
-    grid-template-columns: 36px 1fr 48px 36px 36px;
+    /* rank | player | pts | exact | outcome | predicted | percent */
+    grid-template-columns: 32px 1fr 44px 34px 34px 34px 44px;
     align-items: center;
-    gap: 0 10px;
-    padding: 10px 14px;
+    gap: 0 6px;
+    padding: 8px 12px;
     margin: 0;
     border: 1px solid rgba(0, 209, 94, 0.2);
     border-radius: 10px;
@@ -2916,7 +2985,6 @@ main {
     border-color: rgba(0, 209, 94, 0.45);
   }
 
-  /* All cells: no flex label trick — just show the value */
   .leaderboard-table td {
     display: block;
     padding: 0;
@@ -2924,7 +2992,7 @@ main {
     text-align: center;
   }
 
-  /* Suppress the ::before data-label text */
+  /* Hide the old data-label pseudo‑content */
   .leaderboard-table td::before {
     display: none;
   }
@@ -2935,12 +3003,12 @@ main {
   }
 
   .rank-badge {
-    width: 28px;
-    height: 28px;
-    font-size: 13px;
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
   }
 
-  /* Player cell — left-aligned, takes all remaining space */
+  /* Player cell – left‑aligned */
   .leaderboard-table td[data-label="Player"] {
     text-align: left;
     min-width: 0;
@@ -2949,75 +3017,87 @@ main {
   .player-info {
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-width: 0;
+    gap: 6px;
   }
 
   .player-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
     flex-shrink: 0;
   }
 
   .player-name {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  /* Stat cells — small labels above the number */
+  /* All statistic cells: show small label above the number */
   .leaderboard-table td[data-label="Points"],
   .leaderboard-table td[data-label="Exact"],
-  .leaderboard-table td[data-label="Outcome"] {
+  .leaderboard-table td[data-label="Outcome"],
+  .leaderboard-table td[data-label="Predicted"],
+  .leaderboard-table td[data-label="Correct %"] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
     text-align: center;
-  }
-
-  .leaderboard-table td[data-label="Points"]::before,
-  .leaderboard-table td[data-label="Exact"]::before,
-  .leaderboard-table td[data-label="Outcome"]::before {
-    display: block;
-    font-size: 8px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    line-height: 1;
-  }
-
-  .leaderboard-table td[data-label="Points"]::before {
-    content: "PTS";
-  }
-  .leaderboard-table td[data-label="Exact"]::before {
-    content: "EXA";
-  }
-  .leaderboard-table td[data-label="Outcome"]::before {
-    content: "OUT";
   }
 
   .leaderboard-table td[data-label="Points"] strong {
     font-family: "Barlow Condensed", sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 800;
     color: var(--wc-blue);
     line-height: 1;
   }
 
-  .leaderboard-table td[data-label="Exact"],
-  .leaderboard-table td[data-label="Outcome"] {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--light);
+  /* Add labels via pseudo‑elements */
+  .leaderboard-table td[data-label="Points"]::before {
+    content: "PTS";
   }
-}
 
-@media (max-width: 768px) {
+  .leaderboard-table td[data-label="Exact"]::before {
+    content: "EXA";
+  }
+
+  .leaderboard-table td[data-label="Outcome"]::before {
+    content: "OUT";
+  }
+
+  .leaderboard-table td[data-label="Predicted"]::before {
+    content: "PRD";
+  }
+
+  .leaderboard-table td[data-label="Correct %"]::before {
+    content: "%";
+  }
+
+  .leaderboard-table td::before {
+    display: block !important;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1;
+  }
+
+  /* Fine‑tune column widths */
+  .leaderboard-table td[data-label="Predicted"] {
+    min-width: 28px;
+  }
+
+  .leaderboard-table td[data-label="Correct %"] {
+    min-width: 34px;
+  }
+
   /* Horizontal layout: flag+name | score | flag+name */
   .mc-body {
     grid-template-columns: 1fr auto 1fr !important;
