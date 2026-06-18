@@ -316,8 +316,15 @@ function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []
     .map((player, index) => ({
       ...player,
       rank: index + 1,
-      resolvedPredictions: player.scored,   // ← add this line
+      resolvedPredictions: player.scored,
     }));
+
+  // 👇 ADD THIS RETURN
+  return {
+    leaderboard: ranked,
+    scoredMatches: Object.keys(results).length,
+  };
+
 }
 
 // ─── Live Score Fetching & Syncing ──────────────────────────────────────────
