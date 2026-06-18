@@ -1563,7 +1563,8 @@ function renderLeaderboard() {
           <td data-label="Player">
             <div class="player-info">
               <span class="player-avatar">${getInitials(name)}</span>
-<a class="player-name player-name-link" href="profile.html?user=${encodeURIComponent(player.username || "")}">${escapeHtml(name)}</a>            </div>
+              <a class="player-name player-name-link" href="profile.html?user=${encodeURIComponent(player.username || "")}">${escapeHtml(name)}</a>            
+            </div>
           </td>
           <td data-label="Points" style="text-align:center"><strong>${player.totalPoints || 0}</strong></td>
           <td data-label="Exact" style="text-align:center">${player.exactScores || player.exactCount || 0}</td>
