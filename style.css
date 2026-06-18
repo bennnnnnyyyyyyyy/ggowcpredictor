@@ -1046,7 +1046,6 @@ main {
   color: var(--light);
 }
 
-
 .status-token,
 .team-code {
   display: inline-grid;
@@ -1740,8 +1739,8 @@ main {
 }
 
 .inline-flag-img {
-  width: 24px;
-  height: 16px;
+  width: 40px;
+  height: 27px;
   object-fit: cover;
   border-radius: 2px;
   border: 1px solid rgba(255, 255, 255, 0.2);

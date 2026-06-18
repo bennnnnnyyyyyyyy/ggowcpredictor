@@ -1393,7 +1393,7 @@ function renderPredictionCard(match) {
 
       <div class="mc-body">
         <div class="mc-team">
-          <div class="team-mark">${escapeHtml(team1Code)}</div>
+          <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
           ${
             hasRes
@@ -1413,7 +1413,7 @@ function renderPredictionCard(match) {
         </div>
 
         <div class="mc-team">
-          <div class="team-mark">${escapeHtml(team2Code)}</div>
+          <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
           ${
             hasRes
@@ -2253,7 +2253,7 @@ function getFlagImg(teamName) {
   const code = TEAM_FLAG_CODES[String(teamName).toLowerCase().trim()];
   if (!code)
     return `<span class="team-code">${escapeHtml(getTeamCode(teamName))}</span>`;
-  return `<img class="inline-flag-img" src="https://flagcdn.com/w40/${code}.png" alt="${escapeHtml(teamName)}" width="40" height="27">`;
+  return `<img class="inline-flag-img" src="https://flagcdn.com/w80/${code}.png" alt="${escapeHtml(teamName)}" width="40" height="27">`;
 }
 async function loadTeamMeta() {
   try {
