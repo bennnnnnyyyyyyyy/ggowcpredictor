@@ -225,7 +225,7 @@ async function loadCollection(env, table) {
 
 // ─── Leaderboard Calculation Engine ─────────────────────────────────────────
 
-function scoreMatch(p1, p2, a1, a2) {
+function scoreMatch(p1, p2, a1, a2, matchDate) {
   if (p1 === a1 && p2 === a2) return 15;
   const predOutcome = Math.sign(p1 - p2);
   const actualOutcome = Math.sign(a1 - a2);
