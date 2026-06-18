@@ -276,8 +276,13 @@ async function loadProfile(username) {
 }
 async function loadRivalry(username) {
   try {
-    const workerUrl = (localStorage.getItem("ggo_wc_url") || "http://localhost:8787").replace(/\/$/, "");
-    const res = await fetch(`${workerUrl}/rivalry?username=${encodeURIComponent(username)}`, { cache: "no-store" });
+    const workerUrl = (
+      localStorage.getItem("ggo_wc_url") || "http://localhost:8787"
+    ).replace(/\/$/, "");
+    const res = await fetch(
+      `${workerUrl}/rivalry?username=${encodeURIComponent(username)}`,
+      { cache: "no-store" },
+    );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   } catch (e) {
@@ -386,58 +391,92 @@ function renderProfile(data) {
       list = predictions
         .filter((p) => p.points !== null)
         .sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
+      // Scoring view: flat list by points, no date grouping
+      if (!list.length) {
+        return `<div class="empty-state"><div class="empty-icon">–</div><p>No scored predictions yet.</p></div>`;
+      }
+      return list.map((p) => renderPredCard(p, user.displayName)).join("");
     }
 
     if (!list.length) {
       return `<div class="empty-state"><div class="empty-icon">–</div><p>No predictions in this view.</p></div>`;
     }
 
-    return list
-      .map((p) => {
-        const stripe = stripeClass(p.points, p.statusType);
-        const ptsHtml = formatPts(p.points, p.statusType);
-        const groupPart = p.group
-          ? `<span class="pred-meta-tag"><span class="accent">${esc(p.group)}</span></span>`
-          : "";
-        const roundPart = p.round
-          ? `<span class="pred-meta-tag">${esc(p.round)}</span>`
-          : "";
-        const datePart = p.date
-          ? `<span class="pred-meta-tag">${esc(p.date)}</span>`
-          : "";
-        const hasPred = p.predictedHome !== null && p.predictedAway !== null;
+    // Group by date (same as main app)
+    const groups = {};
+    list.forEach((p) => {
+      const dateKey = p.date || "Unknown Date";
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(p);
+    });
 
+    return Object.entries(groups)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateKey, preds]) => {
+        const dateLabel = formatProfileDate(dateKey);
         return `
-        <article class="pred-card">
-          <div class="pred-stripe ${stripe}"></div>
-          <div class="pred-body">
-            <div class="pred-matchup">
-              <span class="pred-team">${esc(p.home)}</span>
-              <span class="pred-vs">vs</span>
-              <span class="pred-team">${esc(p.away)}</span>
-            </div>
-            ${ptsHtml}
-            <div class="pred-scores">
-              <div class="pred-score-row">
-                <span class="pred-score-label">Result</span>
-                ${scoreDisplay(p.actualHome, p.actualAway, "actual")}
-              </div>
-              <div class="pred-score-row">
-                <span class="pred-score-label">${esc(user.displayName.split(" ")[0])}'s pick</span>
-                ${hasPred ? scoreDisplay(p.predictedHome, p.predictedAway, "pick") : `<span class="pred-score-value no-pick">No pick</span>`}
-              </div>
-            </div>
-            <div class="pred-meta">
-              ${groupPart}${roundPart}${datePart}
-              ${statusTagHtml(p.statusType, p.status)}
-            </div>
-          </div>
-        </article>
+        <div class="profile-date-group">
+          <div class="profile-date-heading">${esc(dateLabel)}</div>
+          ${preds.map((p) => renderPredCard(p, user.displayName)).join("")}
+        </div>
       `;
       })
       .join("");
   }
+  function renderPredCard(p, displayName) {
+    const stripe = stripeClass(p.points, p.statusType);
+    const ptsHtml = formatPts(p.points, p.statusType);
+    const groupPart = p.group
+      ? `<span class="pred-meta-tag"><span class="accent">${esc(p.group)}</span></span>`
+      : "";
+    const roundPart = p.round
+      ? `<span class="pred-meta-tag">${esc(p.round)}</span>`
+      : "";
+    const datePart = p.date
+      ? `<span class="pred-meta-tag">${esc(p.date)}</span>`
+      : "";
+    const hasPred = p.predictedHome !== null && p.predictedAway !== null;
+    const firstName = (displayName || "").split(" ")[0];
 
+    return `
+    <article class="pred-card">
+      <div class="pred-stripe ${stripe}"></div>
+      <div class="pred-body">
+        <div class="pred-matchup">
+          <span class="pred-team">${esc(p.home)}</span>
+          <span class="pred-vs">vs</span>
+          <span class="pred-team">${esc(p.away)}</span>
+        </div>
+        ${ptsHtml}
+        <div class="pred-scores">
+          <div class="pred-score-row">
+            <span class="pred-score-label">Result</span>
+            ${scoreDisplay(p.actualHome, p.actualAway, "actual")}
+          </div>
+          <div class="pred-score-row">
+            <span class="pred-score-label">${esc(firstName)}'s pick</span>
+            ${hasPred ? scoreDisplay(p.predictedHome, p.predictedAway, "pick") : `<span class="pred-score-value no-pick">No pick</span>`}
+          </div>
+        </div>
+        <div class="pred-meta">
+          ${groupPart}${roundPart}${datePart}
+          ${statusTagHtml(p.statusType, p.status)}
+        </div>
+      </div>
+    </article>
+  `;
+  }
+  function formatProfileDate(dateStr) {
+    // dateStr = "2026-06-11"
+    const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return dateStr;
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString([], {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+  }
   const html = `
     <a href="index.html" class="profile-back">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -590,29 +629,24 @@ function renderError(message) {
     return;
   }
 
-  // Update page title
   document.title = `${username} — GGO WC 2026`;
 
   try {
-    const data = await loadProfile(username);
+    // Single parallel load
+    const [data, rivalry] = await Promise.all([
+      loadProfile(username),
+      loadRivalry(username),
+    ]);
+
     if (!data?.user) {
       renderError(`Player "${username}" was not found.`);
       return;
     }
-    renderProfile(data);
+    renderProfile(data, rivalry);
   } catch (err) {
     console.error("Profile load failed:", err);
     renderError(
       `Could not load profile for "${username}". Check your connection or try again later.`,
     );
   }
-
-  // Try to load rivalry data and update the UI if available
-  const [data, rivalry] = await Promise.all([
-    loadProfile(username),
-    loadRivalry(username),
-  ]);
-
-  renderProfile(data, rivalry);
 })();
-
