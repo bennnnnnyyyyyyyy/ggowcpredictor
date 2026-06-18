@@ -15,7 +15,7 @@ merged-emails/
 .wrangler/
 wrangler-*.log
 live.html
-contextforleaderboardissue.md
+ggowcpredictor db  (1).xlsx
 
 # Debug & Temp
 *.log
@@ -23,3 +23,5 @@ contextforleaderboardissue.md
 scripts/_check_*.js
 .agents/
 .gemini/
+codexchange scoring.md
+contextforleaderboardissue.md
