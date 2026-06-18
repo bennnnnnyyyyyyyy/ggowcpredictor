@@ -528,14 +528,13 @@ async function handleRivalryGet(env, username) {
   };
 }
 async function handleProfileGet(env, username) {
-  // Load user, their predictions, all fixtures, all results, leaderboard in parallel
-  const [allUsers, allPredictions, allFixtures, allResults, allLeaderboard] =
+  const [allUsers, allPredictions, allFixtures, allResults, leaderboardData] =
     await Promise.all([
       loadCollection(env, "users"),
       loadCollection(env, "predictions"),
       loadCollection(env, "fixtures"),
       loadCollection(env, "results"),
-      loadCollection(env, "leaderboard"),
+      recalculateLeaderboard(env),
     ]);
 
   const user = allUsers.find(
@@ -549,7 +548,7 @@ async function handleProfileGet(env, username) {
   }
 
   const lbEntry =
-    allLeaderboard.find(
+    leaderboardData.leaderboard.find(
       (e) => String(e.username || "").toLowerCase() === username.toLowerCase(),
     ) || {};
 
@@ -565,15 +564,9 @@ async function handleProfileGet(env, username) {
     if (id) resultMap[id] = r;
   }
 
-  // Filter to this user's predictions
   const userPredictions = allPredictions.filter(
     (p) => String(p.username || "").toLowerCase() === username.toLowerCase(),
   );
-
-  // Build enriched prediction list
-  let totalPoints = 0,
-    exactScores = 0,
-    correctOutcomes = 0;
 
   const FINAL_STS = ["FT", "AET", "PEN", "COMPLETED", "FINAL"];
   const LIVE_STS = ["1H", "HT", "2H", "ET", "P", "LIVE"];
@@ -608,9 +601,6 @@ async function handleProfileGet(env, username) {
 
       if (hasPred && actualHome !== null && actualAway !== null) {
         points = scoreMatch(pred1, pred2, actualHome, actualAway);
-        totalPoints += points;
-        if (points === 15) exactScores++;
-        if (points > 0) correctOutcomes++;
       }
 
       return {
@@ -641,9 +631,9 @@ async function handleProfileGet(env, username) {
       username: user.username || username,
       displayName: user.displayName || username,
       isAdmin: Boolean(user.isAdmin),
-      totalPoints: lbEntry.totalPoints ?? totalPoints,
-      exactScores: lbEntry.exactScores ?? exactScores,
-      correctOutcomes: lbEntry.correctOutcomes ?? correctOutcomes,
+      totalPoints: lbEntry.totalPoints ?? 0,
+      exactScores: lbEntry.exactScores ?? 0,
+      correctOutcomes: lbEntry.correctOutcomes ?? 0,
       predicted: userPredictions.length,
       rank: lbEntry.rank ?? null,
     },
