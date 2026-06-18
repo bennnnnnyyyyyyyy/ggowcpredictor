@@ -333,7 +333,7 @@ async function handleLogin(event) {
             };
           }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // 4. Demo users last resort
@@ -1058,21 +1058,21 @@ function readResultScore(result, side) {
   const directKeys =
     side === "home"
       ? [
-          "score1",
-          "team1Score",
-          "homeScore",
-          "home_score",
-          "homeGoals",
-          "goalsHome",
-        ]
+        "score1",
+        "team1Score",
+        "homeScore",
+        "home_score",
+        "homeGoals",
+        "goalsHome",
+      ]
       : [
-          "score2",
-          "team2Score",
-          "awayScore",
-          "away_score",
-          "awayGoals",
-          "goalsAway",
-        ];
+        "score2",
+        "team2Score",
+        "awayScore",
+        "away_score",
+        "awayGoals",
+        "goalsAway",
+      ];
 
   for (const key of directKeys) {
     if (
@@ -1089,21 +1089,21 @@ function readResultScore(result, side) {
     const paths =
       side === "home"
         ? [
-            ["home"],
-            ["local"],
-            ["team1"],
-            ["fulltime", "home"],
-            ["ft", "home"],
-            ["final", "home"],
-          ]
+          ["home"],
+          ["local"],
+          ["team1"],
+          ["fulltime", "home"],
+          ["ft", "home"],
+          ["final", "home"],
+        ]
         : [
-            ["away"],
-            ["visitor"],
-            ["team2"],
-            ["fulltime", "away"],
-            ["ft", "away"],
-            ["final", "away"],
-          ];
+          ["away"],
+          ["visitor"],
+          ["team2"],
+          ["fulltime", "away"],
+          ["ft", "away"],
+          ["final", "away"],
+        ];
 
     for (const path of paths) {
       let value = nested;
@@ -1215,58 +1215,52 @@ async function savePrediction(matchId, pred1, pred2) {
     scoredAt: null,
   };
 
+  // 1. Save to Supabase FIRST — must succeed
+  try {
+    const docId = `${SESSION.username}_${matchId}`;
+    const row = {
+      id: docId,
+      username: SESSION.username,
+      matchId: String(matchId),
+      pred1: score1,
+      pred2: score2,
+      submittedAt: new Date().toISOString(),
+      pointsAwarded: null,
+      scoredAt: null,
+    };
+    await supabaseUpsert("predictions", [row], "id");
+  } catch (error) {
+    console.error("Failed to save prediction to Supabase:", error);
+    showToast("Save failed – please try again.", "error");
+    return; // Stop here — do NOT save locally or to Firestore
+  }
+
+  // 2. Mirror to Firestore (optional, don't block on failure)
+  if (db) {
+    try {
+      await db
+        .collection("predictions")
+        .doc(`${SESSION.username}_${matchId}`)
+        .set(
+          {
+            ...prediction,
+            submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+    } catch (error) {
+      console.warn("Could not mirror prediction to Firestore.", error);
+      // Non-critical; Supabase already has the truth.
+    }
+  }
+
+  // 3. Update local state only AFTER successful Supabase write
   STATE.predictions[String(matchId)] = prediction;
   writeLocalObject(
     `ggo_wc_predictions_${SESSION.username || "demo"}`,
     STATE.predictions,
   );
   showToast(`Saved: ${fixture.team1} ${score1}-${score2} ${fixture.team2}`);
-
-  if (SESSION.username) {
-    let saved = false;
-
-    // 1. Try Supabase
-    try {
-      const docId = `${SESSION.username}_${matchId}`;
-      const row = {
-        id: docId,
-        username: SESSION.username,
-        matchId: String(matchId),
-        pred1: score1,
-        pred2: score2,
-        submittedAt: new Date().toISOString(),
-        pointsAwarded: null,
-        scoredAt: null,
-      };
-      await supabaseUpsert("predictions", [row], "id");
-      saved = true;
-    } catch (error) {
-      console.warn("Could not save prediction to Supabase.", error.message);
-    }
-
-    // 2. Try/Mirror to Firestore
-    if (db) {
-      try {
-        await db
-          .collection("predictions")
-          .doc(`${SESSION.username}_${matchId}`)
-          .set(
-            {
-              ...prediction,
-              submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true },
-          );
-        saved = true;
-      } catch (error) {
-        console.error("Could not save prediction to Firestore.", error);
-      }
-    }
-
-    if (!saved) {
-      showToast("Save failed - stored locally", "error");
-    }
-  }
 
   renderPredictions();
   renderGroupStandings();
@@ -1324,11 +1318,11 @@ function renderPredictionCard(match) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-          pred.pred1,
-          pred.pred2,
-          result.score1,
-          result.score2,
-        )
+        pred.pred1,
+        pred.pred2,
+        result.score1,
+        result.score2,
+      )
       : null;
 
   // Determine points tier for styling
@@ -1395,16 +1389,15 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-          ${
-            hasRes
-              ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
-              : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          ${hasRes
+      ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
+      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             oninput="handleScoreChange('${match.matchId}')">`
-          }
+    }
         </div>
 
         <div class="mc-middle">
@@ -1415,16 +1408,15 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-          ${
-            hasRes
-              ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
-              : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          ${hasRes
+      ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
+      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             oninput="handleScoreChange('${match.matchId}')">`
-          }
+    }
         </div>
       </div>
 
@@ -1526,8 +1518,8 @@ function renderGroupTable(groupName, fixtures) {
         </thead>
         <tbody>
           ${standings
-            .map(
-              (row, index) => `
+      .map(
+        (row, index) => `
                 <tr>
                   <td class="team-rank" data-label="#">${index + 1}</td>
                   <td data-label="Team"><span class="team-code">${escapeHtml(getTeamCode(row.team))}</span>${escapeHtml(row.team)}</td>
@@ -1539,8 +1531,8 @@ function renderGroupTable(groupName, fixtures) {
                   <td data-label="Pts"><strong>${row.points}</strong></td>
                 </tr>
               `,
-            )
-            .join("")}
+      )
+      .join("")}
         </tbody>
       </table>
     </article>
@@ -1655,11 +1647,11 @@ function openMatchDrawer(matchId) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-          pred.pred1,
-          pred.pred2,
-          result.score1,
-          result.score2,
-        )
+        pred.pred1,
+        pred.pred2,
+        result.score1,
+        result.score2,
+      )
       : null;
 
   const ptsCls =
@@ -1786,11 +1778,11 @@ function renderResults() {
       const points =
         hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-              pred.pred1,
-              pred.pred2,
-              result.score1,
-              result.score2,
-            )
+            pred.pred1,
+            pred.pred2,
+            result.score1,
+            result.score2,
+          )
           : null;
 
       return `
@@ -1841,13 +1833,13 @@ function renderBracket() {
           <h3>${escapeHtml(round)}</h3>
           <div class="bracket-stack">
           ${matches
-            .map((match) => {
-              const result = STATE.results[match.matchId];
-              const score =
-                result && hasResult(result)
-                  ? `${result.score1}-${result.score2}`
-                  : "vs";
-              return `
+          .map((match) => {
+            const result = STATE.results[match.matchId];
+            const score =
+              result && hasResult(result)
+                ? `${result.score1}-${result.score2}`
+                : "vs";
+            return `
                 <div class="bracket-match">
                   <div class="bracket-seed">
                     <span class="team-code">${escapeHtml(getTeamCode(match.team1))}</span>
@@ -1860,8 +1852,8 @@ function renderBracket() {
                   </div>
                 </div>
               `;
-            })
-            .join("")}
+          })
+          .join("")}
           </div>
         </section>
       `;
@@ -1929,8 +1921,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-        .map(
-          (request) => `
+      .map(
+        (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -1943,8 +1935,8 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-        )
-        .join("")}
+      )
+      .join("")}
     </div>
   `;
 }
