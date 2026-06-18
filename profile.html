@@ -56,19 +56,29 @@
       .profile-hero {
         position: relative;
         background:
-          linear-gradient(145deg, rgba(12,17,24,0.98) 0%, rgba(6,36,24,0.85) 100%),
-          repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 9px);
-        border: 2px solid rgba(0,209,94,0.32);
+          linear-gradient(
+            145deg,
+            rgba(12, 17, 24, 0.98) 0%,
+            rgba(6, 36, 24, 0.85) 100%
+          ),
+          repeating-linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.04) 0 1px,
+            transparent 1px 9px
+          );
+        border: 2px solid rgba(0, 209, 94, 0.32);
         border-radius: 12px;
         padding: 32px 28px 28px;
         margin-bottom: 24px;
         overflow: hidden;
-        box-shadow: 0 18px 34px rgba(0,0,0,0.26);
+        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.26);
       }
       .profile-hero::before {
         content: "";
         position: absolute;
-        top: 0; left: 0; right: 0;
+        top: 0;
+        left: 0;
+        right: 0;
         height: 4px;
         background: linear-gradient(90deg, var(--wc-blue), var(--wc-red));
       }
@@ -96,8 +106,8 @@
         font-size: 32px;
         font-weight: 900;
         color: #06120c;
-        border: 3px solid rgba(0,209,94,0.5);
-        box-shadow: 0 0 0 4px rgba(0,209,94,0.12);
+        border: 3px solid rgba(0, 209, 94, 0.5);
+        box-shadow: 0 0 0 4px rgba(0, 209, 94, 0.12);
         letter-spacing: 1px;
       }
       .profile-rank-chip {
@@ -118,9 +128,18 @@
         background: var(--wc-red);
         color: #fff;
       }
-      .profile-rank-chip.gold   { background: #ffd700; color: #333; }
-      .profile-rank-chip.silver { background: #c0c0c0; color: #333; }
-      .profile-rank-chip.bronze { background: #cd7f32; color: #fff; }
+      .profile-rank-chip.gold {
+        background: #ffd700;
+        color: #333;
+      }
+      .profile-rank-chip.silver {
+        background: #c0c0c0;
+        color: #333;
+      }
+      .profile-rank-chip.bronze {
+        background: #cd7f32;
+        color: #fff;
+      }
 
       /* Text block */
       .profile-hero-text {
@@ -159,8 +178,8 @@
         gap: 5px;
         padding: 4px 10px;
         border-radius: 999px;
-        border: 1px solid rgba(0,209,94,0.3);
-        background: rgba(0,209,94,0.08);
+        border: 1px solid rgba(0, 209, 94, 0.3);
+        background: rgba(0, 209, 94, 0.08);
         font-size: 11px;
         font-weight: 700;
         color: var(--wc-blue);
@@ -168,8 +187,8 @@
         text-transform: uppercase;
       }
       .profile-badge.admin-badge {
-        border-color: rgba(245,158,11,0.4);
-        background: rgba(245,158,11,0.1);
+        border-color: rgba(245, 158, 11, 0.4);
+        background: rgba(245, 158, 11, 0.1);
         color: var(--warning);
       }
 
@@ -182,9 +201,17 @@
       }
       .stat-card {
         background:
-          linear-gradient(145deg, rgba(12,17,24,0.98) 0%, rgba(6,36,24,0.78) 100%),
-          repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 9px);
-        border: 1px solid rgba(0,209,94,0.22);
+          linear-gradient(
+            145deg,
+            rgba(12, 17, 24, 0.98) 0%,
+            rgba(6, 36, 24, 0.78) 100%
+          ),
+          repeating-linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.04) 0 1px,
+            transparent 1px 9px
+          );
+        border: 1px solid rgba(0, 209, 94, 0.22);
         border-radius: 10px;
         padding: 18px 16px 14px;
         text-align: center;
@@ -194,16 +221,28 @@
       .stat-card::after {
         content: "";
         position: absolute;
-        bottom: 0; left: 0; right: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
         height: 2px;
         opacity: 0;
         transition: opacity 0.2s;
       }
-      .stat-card:hover::after { opacity: 1; }
-      .stat-card.stat-pts::after  { background: #ffd700; }
-      .stat-card.stat-exact::after { background: var(--success); }
-      .stat-card.stat-outcome::after { background: var(--warning); }
-      .stat-card.stat-made::after { background: var(--wc-blue); }
+      .stat-card:hover::after {
+        opacity: 1;
+      }
+      .stat-card.stat-pts::after {
+        background: #ffd700;
+      }
+      .stat-card.stat-exact::after {
+        background: var(--success);
+      }
+      .stat-card.stat-outcome::after {
+        background: var(--warning);
+      }
+      .stat-card.stat-made::after {
+        background: var(--wc-blue);
+      }
 
       .stat-value {
         font-family: var(--font-ggo-display);
@@ -213,10 +252,18 @@
         margin-bottom: 4px;
         letter-spacing: 0.5px;
       }
-      .stat-card.stat-pts  .stat-value { color: #ffd700; }
-      .stat-card.stat-exact .stat-value { color: var(--success); }
-      .stat-card.stat-outcome .stat-value { color: var(--warning); }
-      .stat-card.stat-made .stat-value { color: var(--wc-blue); }
+      .stat-card.stat-pts .stat-value {
+        color: #ffd700;
+      }
+      .stat-card.stat-exact .stat-value {
+        color: var(--success);
+      }
+      .stat-card.stat-outcome .stat-value {
+        color: var(--warning);
+      }
+      .stat-card.stat-made .stat-value {
+        color: var(--wc-blue);
+      }
 
       .stat-label {
         font-size: 10px;
@@ -237,13 +284,15 @@
         align-items: center;
         gap: 10px;
       }
-      .profile-section-title .title-accent { color: var(--wc-red); }
+      .profile-section-title .title-accent {
+        color: var(--wc-red);
+      }
       .profile-section-count {
         font-size: 13px;
         font-weight: 600;
         color: var(--muted);
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 999px;
         padding: 2px 10px;
         letter-spacing: 0;
@@ -267,28 +316,50 @@
 
       .pred-card {
         background:
-          linear-gradient(145deg, rgba(12,17,24,0.98) 0%, rgba(6,36,24,0.78) 100%),
-          repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 9px);
-        border: 1px solid rgba(0,209,94,0.22);
+          linear-gradient(
+            145deg,
+            rgba(12, 17, 24, 0.98) 0%,
+            rgba(6, 36, 24, 0.78) 100%
+          ),
+          repeating-linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.04) 0 1px,
+            transparent 1px 9px
+          );
+        border: 1px solid rgba(0, 209, 94, 0.22);
         border-radius: 10px;
         padding: 0;
         overflow: hidden;
         display: grid;
         grid-template-columns: 4px 1fr;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
       }
       .pred-card:hover {
-        border-color: rgba(0,209,94,0.45);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        border-color: rgba(0, 209, 94, 0.45);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
       }
 
       /* Left accent stripe by result */
-      .pred-stripe { grid-row: 1; }
-      .pred-stripe.stripe-exact   { background: #ffd700; }
-      .pred-stripe.stripe-good    { background: var(--success); }
-      .pred-stripe.stripe-partial { background: var(--warning); }
-      .pred-stripe.stripe-zero    { background: var(--danger); }
-      .pred-stripe.stripe-pending { background: var(--muted); }
+      .pred-stripe {
+        grid-row: 1;
+      }
+      .pred-stripe.stripe-exact {
+        background: #ffd700;
+      }
+      .pred-stripe.stripe-good {
+        background: var(--success);
+      }
+      .pred-stripe.stripe-partial {
+        background: var(--warning);
+      }
+      .pred-stripe.stripe-zero {
+        background: var(--danger);
+      }
+      .pred-stripe.stripe-pending {
+        background: var(--muted);
+      }
 
       .pred-body {
         padding: 14px 16px;
@@ -353,8 +424,12 @@
         min-width: 42px;
         text-align: center;
       }
-      .pred-score-value.actual { color: var(--light); }
-      .pred-score-value.pick   { color: rgba(255,255,255,0.58); }
+      .pred-score-value.actual {
+        color: var(--light);
+      }
+      .pred-score-value.pick {
+        color: rgba(255, 255, 255, 0.58);
+      }
       .pred-score-value.no-pick {
         color: var(--muted);
         font-size: 13px;
@@ -382,14 +457,30 @@
         opacity: 0.75;
         letter-spacing: 0.4px;
       }
-      .pred-pts.pts-exact   { background: rgba(255,215,0,0.13);  color: #ffd700; border: 1px solid rgba(255,215,0,0.28); }
-      .pred-pts.pts-good    { background: rgba(16,185,129,0.13); color: var(--success); border: 1px solid rgba(16,185,129,0.28); }
-      .pred-pts.pts-partial { background: rgba(245,158,11,0.13); color: var(--warning); border: 1px solid rgba(245,158,11,0.28); }
-      .pred-pts.pts-zero    { background: rgba(239,68,68,0.1);   color: var(--danger);  border: 1px solid rgba(239,68,68,0.22); }
+      .pred-pts.pts-exact {
+        background: rgba(255, 215, 0, 0.13);
+        color: #ffd700;
+        border: 1px solid rgba(255, 215, 0, 0.28);
+      }
+      .pred-pts.pts-good {
+        background: rgba(16, 185, 129, 0.13);
+        color: var(--success);
+        border: 1px solid rgba(16, 185, 129, 0.28);
+      }
+      .pred-pts.pts-partial {
+        background: rgba(245, 158, 11, 0.13);
+        color: var(--warning);
+        border: 1px solid rgba(245, 158, 11, 0.28);
+      }
+      .pred-pts.pts-zero {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.22);
+      }
       .pred-pts.pts-pending {
-        background: rgba(255,255,255,0.04);
+        background: rgba(255, 255, 255, 0.04);
         color: var(--muted);
-        border: 1px dashed rgba(255,255,255,0.14);
+        border: 1px dashed rgba(255, 255, 255, 0.14);
         font-size: 13px;
         font-family: var(--font-ggo-body);
         font-weight: 400;
@@ -404,7 +495,7 @@
         gap: 10px;
         flex-wrap: wrap;
         padding-top: 8px;
-        border-top: 1px solid rgba(255,255,255,0.05);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
       }
       .pred-meta-tag {
         font-size: 10px;
@@ -416,7 +507,9 @@
         align-items: center;
         gap: 4px;
       }
-      .pred-meta-tag .accent { color: var(--wc-blue); }
+      .pred-meta-tag .accent {
+        color: var(--wc-blue);
+      }
       .pred-status-tag {
         display: inline-flex;
         align-items: center;
@@ -429,9 +522,21 @@
         letter-spacing: 0.5px;
         border: 1px solid;
       }
-      .pred-status-tag.live    { color: var(--warning); border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.08); }
-      .pred-status-tag.finished { color: var(--muted);  border-color: rgba(160,160,160,0.25); background: rgba(160,160,160,0.05); }
-      .pred-status-tag.upcoming { color: var(--success); border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.07); }
+      .pred-status-tag.live {
+        color: var(--warning);
+        border-color: rgba(245, 158, 11, 0.4);
+        background: rgba(245, 158, 11, 0.08);
+      }
+      .pred-status-tag.finished {
+        color: var(--muted);
+        border-color: rgba(160, 160, 160, 0.25);
+        background: rgba(160, 160, 160, 0.05);
+      }
+      .pred-status-tag.upcoming {
+        color: var(--success);
+        border-color: rgba(16, 185, 129, 0.35);
+        background: rgba(16, 185, 129, 0.07);
+      }
 
       /* ── Trophies / Achievements placeholder ── */
       .trophies-grid {
@@ -441,7 +546,7 @@
         margin-bottom: 32px;
       }
       .trophy-card {
-        border: 1px dashed rgba(255,255,255,0.1);
+        border: 1px dashed rgba(255, 255, 255, 0.1);
         border-radius: 10px;
         padding: 16px 12px;
         text-align: center;
@@ -462,18 +567,37 @@
 
       /* ── Skeleton loader ── */
       .skel {
-        background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.05) 75%);
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.05) 25%,
+          rgba(255, 255, 255, 0.09) 50%,
+          rgba(255, 255, 255, 0.05) 75%
+        );
         background-size: 200% 100%;
         animation: skel-shimmer 1.4s infinite;
         border-radius: 6px;
       }
       @keyframes skel-shimmer {
-        0%   { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
       }
-      .skel-hero  { height: 140px; border-radius: 12px; margin-bottom: 24px; }
-      .skel-stats { height: 92px;  border-radius: 10px; }
-      .skel-card  { height: 72px;  border-radius: 10px; }
+      .skel-hero {
+        height: 140px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+      }
+      .skel-stats {
+        height: 92px;
+        border-radius: 10px;
+      }
+      .skel-card {
+        height: 72px;
+        border-radius: 10px;
+      }
 
       /* ── Error state ── */
       .profile-error {
@@ -489,7 +613,10 @@
         line-height: 1;
         margin-bottom: 12px;
       }
-      .profile-error p { color: var(--muted); font-size: 14px; }
+      .profile-error p {
+        color: var(--muted);
+        font-size: 14px;
+      }
 
       /* ── Progress bar (accuracy) ── */
       .accuracy-bar-wrap {
@@ -501,7 +628,7 @@
       .accuracy-bar-track {
         flex: 1;
         height: 5px;
-        background: rgba(255,255,255,0.08);
+        background: rgba(255, 255, 255, 0.08);
         border-radius: 999px;
         overflow: hidden;
       }
@@ -550,12 +677,13 @@
         .profile-stats-grid {
           grid-template-columns: repeat(2, 1fr);
         }
-        .stat-value { font-size: 28px; }
+        .stat-value {
+          font-size: 28px;
+        }
       }
     </style>
   </head>
   <body>
-
     <!-- Firebase SDK (same version as app) -->
     <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
@@ -582,27 +710,27 @@
             <p>Player Profile</p>
           </div>
         </div>
-
-        <!-- Return to app link -->
-        <a href="index.html" class="profile-back" style="margin-bottom:0; text-decoration:none;">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 3L5 8l5 5"/>
-          </svg>
-          Back to Predictor
-        </a>
       </div>
     </header>
 
     <!-- ════════════════════════════════════════
          MAIN CONTENT
     ════════════════════════════════════════ -->
-    <main id="profile-main" style="max-width:860px">
-
+    <main id="profile-main" style="max-width: 860px">
       <!-- Skeleton shown while loading -->
       <div id="profile-loading">
         <a href="index.html" class="profile-back">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 3L5 8l5 5"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M10 3L5 8l5 5" />
           </svg>
           Back to Predictor
         </a>
@@ -613,7 +741,7 @@
           <div class="skel skel-stats"></div>
           <div class="skel skel-stats"></div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display: flex; flex-direction: column; gap: 10px">
           <div class="skel skel-card"></div>
           <div class="skel skel-card"></div>
           <div class="skel skel-card"></div>
@@ -623,8 +751,7 @@
       </div>
 
       <!-- Rendered after data loads -->
-      <div id="profile-content" style="display:none"></div>
-
+      <div id="profile-content" style="display: none"></div>
     </main>
 
     <!-- Toast (reuse app toast style) -->
