@@ -91,7 +91,8 @@ function nullNum(v) {
 
 function getWorkerUrl() {
   return (
-    localStorage.getItem("ggo_wc_url") || "http://localhost:8787"
+    localStorage.getItem("ggo_wc_url") ||
+    "https://ggowcpredictor.ben-arthur-wiz.workers.dev"
   ).replace(/\/$/, "");
 }
 
@@ -244,9 +245,9 @@ function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
       username: user.username,
       displayName: user.displayName || user.username,
       isAdmin: Boolean(user.isAdmin),
-      totalPoints: lb.totalPoints ?? totalPoints,
-      exactScores: lb.exactScores ?? exactScores,
-      correctOutcomes: lb.correctOutcomes ?? correctOutcomes,
+      totalPoints: totalPoints,
+      exactScores: exactScores,
+      correctOutcomes: correctOutcomes,
       predicted: preds.length,
       rank,
     },
@@ -277,7 +278,8 @@ async function loadProfile(username) {
 async function loadRivalry(username) {
   try {
     const workerUrl = (
-      localStorage.getItem("ggo_wc_url") || "http://localhost:8787"
+      localStorage.getItem("ggo_wc_url") ||
+      "https://ggowcpredictor.ben-arthur-wiz.workers.dev"
     ).replace(/\/$/, "");
     const res = await fetch(
       `${workerUrl}/rivalry?username=${encodeURIComponent(username)}`,
