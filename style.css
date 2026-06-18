@@ -2205,29 +2205,31 @@ main {
 /* Mobile (768px and below) */
 @media (max-width: 768px) {
   header {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 10px;
   }
 
   .header-top {
-    flex-wrap: wrap;
-    justify-content: space-between;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
     width: 100%;
-    gap: 10px;
   }
 
   .logo {
-    flex: 1 1 100%;
+    flex: 1;
     min-width: 0;
   }
-
   .wc-logo {
     display: block;
     max-width: 42px;
     object-fit: contain;
+  }
+  .user-pill {
+    flex-shrink: 0;
   }
 
   .logo img.header-logo {
@@ -2251,17 +2253,17 @@ main {
     height: 24px;
   }
 
+  .sync-container {
+    display: none;
+  }
+
   #main-nav {
-    width: 100%;
-    gap: 8px;
-    justify-content: flex-start;
+    display: flex;
     overflow-x: auto;
+    gap: 8px;
     flex-wrap: nowrap;
+    width: 100%;
     padding-bottom: 4px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
   }
 
   #main-nav::-webkit-scrollbar {
@@ -2516,10 +2518,6 @@ main {
 
 /* Small Mobile (480px and below) */
 @media (max-width: 480px) {
-  header {
-    padding: 10px 10px 8px;
-  }
-
   .logo img.header-logo {
     height: 28px;
   }
