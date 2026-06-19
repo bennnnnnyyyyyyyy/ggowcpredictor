@@ -1,5 +1,18 @@
 # Work Log
 
+## 2026-06-19 - iPhone Safari bottom-safe mobile fix
+
+### What changed
+
+- Added `viewport-fit=cover` to `index.html` so iPhone Safari can respect the device safe area.
+- Switched the app shell and login screen to `100dvh` in `style.css` so mobile Safari uses the live viewport height instead of the old static `100vh` behavior.
+- Added extra bottom padding to the main content on narrow screens so the last standings cards stay clear of the Safari toolbar.
+
+### Why
+
+- The iPhone 13 Pro screenshot showed the bottom of the standings view being covered by the browser chrome.
+- The page now keeps a little more breathing room at the bottom on mobile, which prevents the toolbar from hiding the last visible cards.
+
 ## 2026-06-19 - Leaderboard Supabase column alignment
 
 ### What changed

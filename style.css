@@ -27,6 +27,7 @@ body {
   background: var(--dark);
   color: var(--light);
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 html {
@@ -36,6 +37,7 @@ html {
 body {
   overflow-x: hidden;
   line-height: 1.45;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 button,
@@ -54,12 +56,17 @@ select {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     linear-gradient(180deg, rgba(6, 8, 15, 0.96) 0%, rgba(6, 8, 15, 0.98) 100%),
     repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.03) 0 1px,
       transparent 1px 11px);
   padding: 20px;
+}
+
+#app {
+  min-height: 100dvh;
 }
 
 .login-card {
@@ -2367,7 +2374,7 @@ main {
 
   main {
     margin: 20px auto;
-    padding: 0 14px 24px;
+    padding: 0 14px calc(112px + env(safe-area-inset-bottom));
   }
 
   .section-title {
@@ -2625,7 +2632,7 @@ main {
 
   main {
     margin: 16px auto;
-    padding: 0 12px;
+    padding: 0 12px calc(124px + env(safe-area-inset-bottom));
   }
 
   .section-title {
