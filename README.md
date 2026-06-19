@@ -14,3 +14,6 @@ All documentation files have been organized into the `docs/` folder to keep the 
 *   **Backend Migration Plan**: [docs/migration_plan.md](file:///C:/Users/abdel/OneDrive/Desktop/ggofiles/ggowcpredictor/docs/migration_plan.md)
 *   **Work Log**: [docs/WORKLOG.md](file:///C:/Users/abdel/OneDrive/Desktop/ggofiles/ggowcpredictor/docs/WORKLOG.md)
 *   **Edit History**: [docs/history.md](file:///C:/Users/abdel/OneDrive/Desktop/ggofiles/ggowcpredictor/docs/history.md)
+
+
+Special thanks to [Reza Rahiminia](https://github.com/rezarahiminia) and his [worldcup2026 REST API](https://github.com/rezarahiminia/worldcup2026) project for powering our data.
