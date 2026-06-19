@@ -2993,11 +2993,11 @@ main {
   /* Each row = a horizontal pill card with 7 columns */
   .leaderboard-table tr {
     display: grid;
-    /* rank | player | pts | exact | outcome | predicted | percent */
-    grid-template-columns: 32px 1fr 44px 34px 34px 34px 44px;
+    /* player | pts | exact | outcome | predicted | percent */
+    grid-template-columns: minmax(0, 1fr) 42px 32px 32px 36px 46px;
     align-items: center;
-    gap: 0 6px;
-    padding: 8px 12px;
+    gap: 0 8px;
+    padding: 10px 12px;
     margin: 0;
     border: 1px solid rgba(0, 209, 94, 0.2);
     border-radius: 10px;
@@ -3023,13 +3023,7 @@ main {
 
   /* Rank cell */
   .leaderboard-table td[data-label="Rank"] {
-    justify-self: center;
-  }
-
-  .rank-badge {
-    width: 26px;
-    height: 26px;
-    font-size: 12px;
+    display: none;
   }
 
   /* Player cell – left‑aligned */
@@ -3041,7 +3035,8 @@ main {
   .player-info {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    min-width: 0;
   }
 
   .player-avatar {
@@ -3052,11 +3047,12 @@ main {
   }
 
   .player-name {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
   }
 
   /* All statistic cells: show small label above the number */
@@ -3076,7 +3072,7 @@ main {
 
   .leaderboard-table td[data-label="Points"] strong {
     font-family: "Barlow Condensed", sans-serif;
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 800;
     color: var(--wc-blue);
     line-height: 1;
@@ -3115,11 +3111,11 @@ main {
 
   /* Fine‑tune column widths */
   .leaderboard-table td[data-label="Predicted"] {
-    min-width: 28px;
+    min-width: 0;
   }
 
   .leaderboard-table td[data-label="Correct %"] {
-    min-width: 34px;
+    min-width: 0;
   }
 
   /* Horizontal layout: flag+name | score | flag+name */

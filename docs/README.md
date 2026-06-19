@@ -16,6 +16,7 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagram, Firestore schema, backend status |
 | [docs/SETUP.md](docs/SETUP.md) | Admin setup: Firebase, seeding, API key, triggers |
 | [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) | Supabase backup tables, migration, and fallback behavior |
+| [docs/FEATURE_IDEAS.md](docs/FEATURE_IDEAS.md) | Country profiles, top 3 predictions, and related product ideas |
 | [docs/WORKLOG.md](docs/WORKLOG.md) | Chronological work log |
 | [docs/ERROR_REDUCTION.md](docs/ERROR_REDUCTION.md) | Rules to follow before editing code |
 | [docs/project-tracker.html](docs/project-tracker.html) | Interactive visualizer — open directly in browser |

@@ -1,5 +1,18 @@
 # Work Log
 
+## 2026-06-19 - Mobile leaderboard spacing cleanup
+
+### What changed
+
+- Removed the rank badge from the compact mobile leaderboard card layout.
+- Rebalanced the mobile leaderboard grid so the player name gets more horizontal space.
+- Tightened the mobile stat columns slightly so names can fit without wrapping or clipping as early.
+
+### Why
+
+- The iPhone leaderboard screenshot showed the rank column taking space that is more useful for long player names on small screens.
+- The updated card layout keeps the scoring data visible while making the player column easier to read.
+
 ## 2026-06-19 - iPhone Safari bottom-safe mobile fix
 
 ### What changed
