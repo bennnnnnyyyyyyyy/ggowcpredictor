@@ -32,6 +32,7 @@ Important naming note: `src/main.js` is not the browser entrypoint. It is Google
 7. Cloudflare Worker periodically fetches real scores from `worldcup26.ir` and writes `results`.
 8. Cloudflare Worker periodically fetches official group tables from `worldcup26.ir/get/groups` and writes `group_standings`.
 9. Cloudflare Worker recalculates `leaderboard`.
+10. The browser exposes a dedicated `Standings` tab backed by the official `group_standings` data.
 
 ## Canonical Data Model
 

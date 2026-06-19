@@ -110,6 +110,9 @@
         <button class="nav-btn active" onclick="showView('predictions', this)">
           Predictions
         </button>
+        <button class="nav-btn" onclick="showView('standings', this)">
+          Standings
+        </button>
         <button class="nav-btn" onclick="showView('leaderboard', this)">
           Leaderboard
         </button>
@@ -165,14 +168,16 @@
             <p>Loading fixtures...</p>
           </div>
         </div>
-        <!-- ── GROUP STANDINGS ── -->
-        <div class="section-title" style="margin-top: 60px">
+      </div>
+      <!-- ── STANDINGS VIEW ── -->
+      <div id="view-standings" class="view">
+        <div class="section-title">
           <span class="title-accent">Group</span> Standings
         </div>
         <div id="group-standings">
           <div class="empty-state">
             <div class="empty-icon">STATS</div>
-            <p>Make predictions to see group standings...</p>
+            <p>Official group tables are loading...</p>
           </div>
         </div>
       </div>

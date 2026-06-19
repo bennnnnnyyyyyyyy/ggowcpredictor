@@ -11,6 +11,19 @@
 
 - This removes the Supabase schema-cache write failure caused by the worker targeting a column that does not exist in the documented leaderboard table.
 
+## 2026-06-19 - Standings tab and docs split
+
+### What changed
+
+- Added a dedicated `Standings` button in the main navigation.
+- Moved official group tables into a standalone standings view powered by the existing `renderGroupStandings()` renderer.
+- Added [docs/STANDINGS.md](docs/STANDINGS.md) so the core docs are split cleanly into overview, scoring, and standings.
+
+### Why
+
+- Standings now have a direct top-level destination instead of living only inside the Predictions page.
+- The docs are easier to scan because the main user-facing concerns are separated into focused markdown files.
+
 ## 2026-06-19 - Bracket implementation plan
 
 ### What changed

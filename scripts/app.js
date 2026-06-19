@@ -621,6 +621,7 @@ function showView(id, btn) {
 
   if (id === "results") renderResults();
   if (id === "bracket") renderBracket();
+  if (id === "standings") renderGroupStandings();
   if (id === "leaderboard") renderLeaderboard();
   if (id === "admin") renderAdmin();
 }
