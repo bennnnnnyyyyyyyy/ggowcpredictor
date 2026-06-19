@@ -1,4 +1,4 @@
-Claim offer
+**Claim offer
 
 8e263bce-874f-47d8-8e85-fa63a66468bd.png
 @media (max-width: 480px) {
@@ -1353,7 +1353,7 @@ text-align: center;
 font-weight: 700;
 }
 
-/_ ────────────────────────────────────────
+────────────────────────────────────────
 LEADERBOARD
 ────────────────────────────────────────── _/
 
@@ -4906,3 +4906,4 @@ Upgrade now or wait until 5:16 PM to keep using files, or chat now without fil
 New chat
 
 Claim free offer
+**
