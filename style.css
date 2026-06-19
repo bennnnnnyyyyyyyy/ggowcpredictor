@@ -224,6 +224,23 @@ select {
   transform: translateY(0);
 }
 
+
+.footer {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--muted);
+}
+
+.footer-link {
+  color: var(--wc-red);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer-link:hover {
+  text-decoration: underline;
+}
+
 /* ════════════════════════════════════════
    HEADER
 ════════════════════════════════════════ */
