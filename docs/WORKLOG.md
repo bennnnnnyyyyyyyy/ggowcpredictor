@@ -1,5 +1,15 @@
 # Work Log
 
+## 2026-06-19 - Bracket implementation plan
+
+### What changed
+
+- Added [docs/BRACKET_IMPLEMENTATION_PLAN.md](docs/BRACKET_IMPLEMENTATION_PLAN.md) with the knockout bracket data model, update behavior, and multiplier policy.
+
+### Purpose
+
+- This gives the bracket work a concrete execution plan before code changes start.
+
 ## 2026-06-19 - Local Node fallback for standings sync
 
 ### What changed
