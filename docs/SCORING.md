@@ -24,7 +24,7 @@ There are **two scoring contexts**:
 | **Exact score** (e.g. predicted 2-1, actual 2-1) | **15** |
 | **Correct outcome + goal difference within 1** (e.g. predicted 2-0, actual 3-0) | **8** |
 | **Correct outcome only** (right W/D/L, but GD off by 2+) | **5** |
-| **Wrong outcome, scores off by ≤1 per team** (close call) | **3** |
+| **Wrong outcome** | **0** |
 | **No match** | **0** |
 
 ### How "correct outcome + GD within 1" works
@@ -35,15 +35,6 @@ Example: You predict 2-0 (GD=+2), actual is 3-1 (GD=+2) → GD gap = 0 → **8 p
 Example: You predict 2-0 (GD=+2), actual is 4-1 (GD=+3) → GD gap = 1 → **8 pts**
 Example: You predict 2-0 (GD=+2), actual is 4-0 (GD=+4) → GD gap = 2 → **5 pts**
 
-### How "close call" works (wrong outcome only)
-
-`Math.abs(pred1 - actual1) + Math.abs(pred2 - actual2) <= 2`
-
-Example: You predict 1-0 (win), actual is 0-1 (loss) → |1-0| + |0-1| = 2 → **3 pts**
-Example: You predict 2-0 (win), actual is 0-2 (loss) → |2-0| + |0-2| = 4 → **0 pts**
-
----
-
 ## Mini Tourney Scoring (¼ values)
 
 Starts when group stage ends (after **2026-06-27**). Only **Round of 32 onwards** count.
@@ -53,7 +44,7 @@ Starts when group stage ends (after **2026-06-27**). Only **Round of 32 onwards*
 | Exact score | **3** |
 | Correct outcome + GD within 1 | **2** |
 | Correct outcome only | **1** |
-| Wrong outcome, close call | **0** |
+| Wrong outcome | **0** |
 | No match | **0** |
 
 ---
@@ -79,7 +70,7 @@ To make late-stage games more valuable, apply a multiplier on top of base points
 
 - The canonical `scoreMatch(p1, p2, a1, a2, stage)` function should be the **single function** used everywhere.
 - `src/leaderboard.js:calculateMatchPoints` — **DELETE** (replaced by this system).
-- `src/main.js:scoreMatch` — **UPDATE** to include multiplier and close-call partial credit.
+- `src/main.js:scoreMatch` — **UPDATE** to reflect the final 15/8/5/0 rule set and any future stage logic.
 - `scripts/app.js:calculateMatchPoints` — **UPDATE** to match exactly.
 - Multipliers should be derived from the fixture's `stage` field (`group`, `r32`, `r16`, `qf`, `sf`, `final`/`third`).
 

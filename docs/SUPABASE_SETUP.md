@@ -93,6 +93,8 @@ on group_standings(group_name, position);
 
 `group_standings` is the source of truth for official group tables. The Worker writes it from `worldcup26.ir/get/groups`; the browser only renders these rows and does not calculate group ranks.
 
+`leaderboard.scored` is the canonical count of resolved predictions. Do not add a separate `resolvedPredictions` column unless you are intentionally supporting a legacy client.
+
 ## Migration
 
 After Firebase quota resets, run `migrateFirestoreToSupabase()` in Apps Script. It copies:

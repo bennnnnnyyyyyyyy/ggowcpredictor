@@ -91,14 +91,16 @@ Important naming note: `src/main.js` is not the browser entrypoint. It is Google
 - `points`: official points
 - `updated_at`: sync timestamp
 
-## Scoring Decision To Confirm
+## Scoring
 
-There are conflicting scoring notes in the repo:
+The current scoring rule set is:
 
-- `context/context.md` says exact score 4, correct outcome plus goal difference 3, correct outcome 2.
-- `src/leaderboard.js` and `BACKEND_SETUP.md` use exact score 15, correct outcome 5, close guess 3.
+- exact score: 15
+- correct outcome + goal difference within 1: 8
+- correct outcome only: 5
+- wrong outcome: 0
 
-Before implementing leaderboard behavior, pick one scoring system and update all docs and code to match it.
+The 3-point close-call rule was cancelled and should not be referenced in active docs or runtime behavior.
 
 ## Known State On 2026-06-10
 

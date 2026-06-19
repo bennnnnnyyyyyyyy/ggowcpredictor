@@ -1,5 +1,16 @@
 # Work Log
 
+## 2026-06-19 - Leaderboard Supabase column alignment
+
+### What changed
+
+- Updated `workers/live-results.js` so leaderboard upserts write the existing `scored` column instead of `resolvedPredictions`.
+- Added a Supabase setup note clarifying that `leaderboard.scored` is the canonical resolved-prediction count.
+
+### Why
+
+- This removes the Supabase schema-cache write failure caused by the worker targeting a column that does not exist in the documented leaderboard table.
+
 ## 2026-06-19 - Bracket implementation plan
 
 ### What changed
@@ -328,16 +339,16 @@ where p.username = 'ben_arthur';
 
 - Ran a deep technical audit across all source files (`app.js`, `style.css`, `src/main.js`, `src/leaderboard.js`, `src/fixtures.js`, `src/firebase.js`).
 - Identified 1 P0 bug, 6 P1 bugs, 6 P2 issues, 2 P3 polish items.
-- Created `docs/SCORING.md` — canonical scoring system (15/8/5/3/0 + round multipliers + mini tourney ¼-point variant).
+- Created `docs/SCORING.md` — canonical scoring system (15/8/5/0 + round multipliers + mini tourney ¼-point variant).
 - Created `docs/ARCHITECTURE.md` — full system diagram, Firestore schema, backend file status.
 - Created `docs/SETUP.md` — step-by-step admin setup guide.
 - Created `docs/project-tracker.html` — self-contained interactive project dashboard (open in browser).
-- Locked the scoring system: 15 exact / 8 correct+GD≤1 / 5 correct outcome / 3 close wrong / 0 miss × round multipliers.
+- Locked the scoring system: 15 exact / 8 correct+GD≤1 / 5 correct outcome / 0 miss × round multipliers.
 - Confirmed game flow: players predict ALL 104 matches (group + knockout); predicted bracket auto-advances. Mini tourney activates post-group-stage with ¼ points.
 
 ### Key decisions logged
 
-- Scoring: app.js variant (15/8/5/3/0) confirmed as canonical, plus stage multipliers (×1/1/2/3/4/5).
+- Scoring: app.js variant (15/8/5/0) confirmed as canonical, plus stage multipliers (×1/1/2/3/4/5).
 - Mini tourney: separate leaderboard, knockout only, activates after 2026-06-27.
 - matchId: must be a consistent string throughout all layers.
 

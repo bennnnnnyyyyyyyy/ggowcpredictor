@@ -162,7 +162,6 @@ const leaderboardUrl = `${APPS_SCRIPT_URL}?action=leaderboard`;
 | Exact score match | 15 |
 | Correct outcome (W/D/L) | 5 |
 | Correct outcome + off by 1 goal | 8 |
-| Off by exactly 1 goal total | 3 |
 | No match | 0 |
 
 Example:

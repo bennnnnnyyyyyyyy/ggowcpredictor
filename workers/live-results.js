@@ -332,7 +332,7 @@ function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []
       ranked.push({
         ...sorted[k],
         rank: currentRank,
-        resolvedPredictions: sorted[k].scored,
+        scored: sorted[k].scored,
       });
     }
     rank += (j - i); // skip number of tied players

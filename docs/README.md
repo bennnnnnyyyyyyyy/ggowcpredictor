@@ -11,7 +11,7 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 | Doc | Purpose |
 |-----|---------|
 | [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) | Goal, architecture overview, known state |
-| [docs/SCORING.md](docs/SCORING.md) | **Canonical scoring system** — 15/8/5/3/0 + multipliers + mini tourney |
+| [docs/SCORING.md](docs/SCORING.md) | **Canonical scoring system** — 15/8/5/0 + multipliers + mini tourney |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagram, Firestore schema, backend status |
 | [docs/SETUP.md](docs/SETUP.md) | Admin setup: Firebase, seeding, API key, triggers |
 | [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) | Supabase backup tables, migration, and fallback behavior |
