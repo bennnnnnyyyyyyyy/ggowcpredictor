@@ -5,7 +5,8 @@
   "description": "GGO World Cup 2026 Prediction Game",
   "scripts": {
     "seed": "node scripts/seedDatabase.js",
-    "live-sync": "node scripts/liveResultsCron.js"
+    "live-sync": "node scripts/liveResultsCron.js",
+    "sync-group-standings": "node scripts/sync-group-standings.js"
   },
   "license": "ISC",
   "dependencies": {

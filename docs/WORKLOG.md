@@ -1,5 +1,28 @@
 # Work Log
 
+## 2026-06-19 - Local Node fallback for standings sync
+
+### What changed
+
+- Added `scripts/sync-group-standings.js`, a plain Node script that fetches `worldcup26.ir/get/groups`, resolves team names, and upserts `group_standings` directly with Supabase REST.
+- Added an npm script alias: `npm run sync-group-standings`.
+
+### Why
+
+- This gives a no-Wrangler manual verification path on machines where Cloudflare CLI tools are unavailable.
+
+## 2026-06-19 - Unused utility cleanup
+
+### What changed
+
+- Removed dead App Script test/backup/email helpers that were not referenced by any runtime entry point.
+- Removed standalone Node utilities that were not wired into `package.json`, the frontend, or the Cloudflare Worker.
+
+### Result
+
+- The active runtime surface is smaller and easier to reason about.
+- Remaining source files are the ones currently used by the browser app, Worker, or Apps Script deployment.
+
 ## 2026-06-19 - Official group standings source of truth
 
 ### What changed
