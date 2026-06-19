@@ -5,7 +5,8 @@
     "main": "workers/live-results.js",
     "triggers": {
         "crons": [
-            "*/5 * * * *"
+            "*/5 * * * *",
+            "*/15 * * * *"
         ]
     },
     // Environment variables accessible inside your worker via env.KV_KEY, etc.

@@ -1,5 +1,5 @@
 # GGO WC 2026 Predictor — Architecture
-> Last updated: 2026-06-17
+> Last updated: 2026-06-19
 
 ---
 
@@ -14,9 +14,10 @@ graph TD
     Worker -->|Read/Write| Supabase
     Worker -->|Mirror/Fallback| Firestore
     
-    Cron[CF Worker Cron Trigger] -->|Every 5m: sync-scores| Worker
+    CronScores[CF Worker Cron Trigger] -->|Every 5m: sync-scores| Worker
+    CronStandings[CF Worker Cron Trigger] -->|Every 15m: sync-standings| Worker
     
-    Worker -->|Fetch Live Scores| API[Football Scores API]
+    Worker -->|Fetch Live Scores and Official Groups| API[worldcup26.ir]
     
     Sheet[Google Sheets Apps Script] -->|Hourly: pullLeaderboard| Worker
 ```
@@ -25,8 +26,9 @@ graph TD
 
 *   **Browser Frontend (`index.html` + `scripts/app.js`)**: Direct browser client. Fetches and saves prediction entries directly via Supabase (primary) and Firestore (mirror/fallback). Connects to the Cloudflare Worker to fetch compiled tournament payloads (`/sync`) and leaderboard data.
 *   **Cloudflare Worker Backend (`workers/live-results.js`)**: Primary API backend.
-    *   Exposes endpoints `/sync`, `/sync-scores`, `/fixtures`, and `/leaderboard`.
-    *   Executes every 5 minutes via Cloudflare Cron Triggers to fetch live scores, updates tables, and recalculates standings.
+    *   Exposes endpoints `/sync`, `/sync-scores`, `/admin/sync-standings`, `/fixtures`, and `/leaderboard`.
+    *   Executes every 5 minutes via Cloudflare Cron Triggers to fetch live scores, update results, and recalculate the leaderboard.
+    *   Executes every 15 minutes to fetch official group standings from `worldcup26.ir/get/groups` and upsert `group_standings`.
     *   Implements the leaderboard ranking engine.
 *   **Google Apps Script (`src/main.js`)**: Run-time client backup. Runs once an hour via a simple time-driven trigger to fetch the current leaderboard from the Cloudflare Worker (`GET /sync`) and populate the Google Sheet cells visually.
 
@@ -41,6 +43,7 @@ Each data type has a resilient fallback hierarchy:
 | **All game data** | `/sync` (Cloudflare Worker) | Direct Supabase fetch | Firestore / Local JSON |
 | **Fixtures** | `/fixtures` (Cloudflare Worker) | Supabase `fixtures` | `2026/worldcup.json` |
 | **Results** | `/sync` (Cloudflare Worker) | Supabase `results` | Firestore `results` |
+| **Group standings** | `/sync` (Cloudflare Worker) | Supabase `group_standings` | Empty official table state |
 | **Predictions** | Supabase `predictions` | Firestore `predictions` | localStorage |
 | **Leaderboard** | `/leaderboard` (Cloudflare Worker) | Supabase `leaderboard` | buildLocalLeaderboard() |
 
@@ -98,6 +101,19 @@ Each data type has a resilient fallback hierarchy:
 *   `predicted`: int
 *   `scored`: int
 *   `updatedAt`: timestamptz
+
+### `group_standings`
+*   `id`: bigint identity primary key
+*   `group_name`: text
+*   `team_id`: text
+*   `team_name`: text
+*   `position`: int (1-4)
+*   `played`, `won`, `drawn`, `lost`: int
+*   `goals_for`, `goals_against`, `goal_difference`: int
+*   `points`: int
+*   `updated_at`: timestamptz
+
+Official group standings are synced from `worldcup26.ir/get/groups`; the frontend only renders rows from this table and does not calculate ranks, points, or goal difference.
 
 ### `accountRequests`
 *   `username`: string (primary key)

@@ -2,6 +2,8 @@
 // Primary API: Supabase reads/writes, Firestore backup, leaderboard engine.
 
 const WORLDCUP26_GAMES_URL = "https://worldcup26.ir/get/games";
+const WORLDCUP26_GROUPS_URL = "https://worldcup26.ir/get/groups";
+const WORLDCUP26_TEAMS_URL = "https://worldcup26.ir/get/teams";
 const ZAFRONIX_URL =
   "https://api.zafronix.com/fifa/worldcup/v1/tournaments/2026/matches";
 const LIVESCORE_FIXTURES_URL =
@@ -58,10 +60,12 @@ const SUPABASE_CONFLICT_KEYS = {
   users: "username",
   leaderboard: "username",
   accountRequests: "username",
+  group_standings: "group_name,team_id",
 };
 
 async function supabaseUpsert(env, table, rows) {
-  if (!rows.length) return;
+  const rowList = Array.isArray(rows) ? rows : [rows];
+  if (!rowList.length) return 0;
   const conflictKey = SUPABASE_CONFLICT_KEYS[table] || "";
   const query = conflictKey
     ? `on_conflict=${encodeURIComponent(conflictKey)}`
@@ -72,7 +76,7 @@ async function supabaseUpsert(env, table, rows) {
       "Content-Type": "application/json",
       Prefer: "resolution=merge-duplicates,return=minimal",
     }),
-    body: JSON.stringify(Array.isArray(rows) ? rows : [rows]),
+    body: JSON.stringify(rowList),
   });
   if (!response.ok) {
     const text = await response.text();
@@ -80,6 +84,7 @@ async function supabaseUpsert(env, table, rows) {
       `Supabase upsert ${table} HTTP ${response.status}: ${text}`,
     );
   }
+  return rowList.length;
 }
 
 // ─── Firestore REST helpers (backup / fallback) ─────────────────────────────
@@ -461,6 +466,107 @@ async function recalculateLeaderboard(env) {
   return data;
 }
 
+async function syncGroupStandings(env) {
+  const startedAt = Date.now();
+  const [groupsPayload, teamsPayload] = await Promise.all([
+    fetchWorldcup26Groups(),
+    fetchWorldcup26Teams(),
+  ]);
+
+  console.log("worldcup26.ir groups payload", JSON.stringify(groupsPayload));
+
+  const groups = extractArray(groupsPayload, ["groups", "data", "items"]);
+  const teamNamesById = buildTeamNameById(teamsPayload);
+  const rows = [];
+  const warnings = [];
+
+  for (const group of groups) {
+    const groupName = String(group.name || group.group || "").trim();
+    const teams = extractArray(group, ["teams", "table", "standings"]);
+    if (!groupName) {
+      warnings.push("Skipped group with no name.");
+      continue;
+    }
+    if (teams.length !== 4) {
+      warnings.push(`Group ${groupName} has ${teams.length} teams.`);
+    }
+
+    const seenTeamIds = new Set();
+    const seenPositions = new Set();
+
+    teams.forEach((team, index) => {
+      const teamId = String(
+        readFirst(team, ["team_id", "teamId", "id", "_id"]) || "",
+      ).trim();
+      if (!teamId) {
+        warnings.push(`Group ${groupName} has a team row without team_id.`);
+        return;
+      }
+
+      const position = toRequiredNumber(
+        readFirst(team, ["position", "rank", "standing", "pos"]),
+        index + 1,
+      );
+      if (position < 1 || position > 4) {
+        warnings.push(`Group ${groupName} team ${teamId} has position ${position}.`);
+      }
+      if (seenTeamIds.has(teamId)) {
+        warnings.push(`Group ${groupName} has duplicate team_id ${teamId}.`);
+      }
+      if (seenPositions.has(position)) {
+        warnings.push(`Group ${groupName} has duplicate position ${position}.`);
+      }
+      seenTeamIds.add(teamId);
+      seenPositions.add(position);
+
+      const goalsFor = toRequiredNumber(readFirst(team, ["gf", "goals_for"]), 0);
+      const goalsAgainst = toRequiredNumber(
+        readFirst(team, ["ga", "goals_against"]),
+        0,
+      );
+      const teamName =
+        readFirst(team, ["team_name", "teamName", "name"]) ||
+        teamNamesById.get(teamId) ||
+        `Team ${teamId}`;
+      if (!teamNamesById.has(teamId) && !readFirst(team, ["team_name", "teamName", "name"])) {
+        warnings.push(`No team name found for team_id ${teamId}.`);
+      }
+
+      rows.push({
+        group_name: groupName,
+        team_id: teamId,
+        team_name: String(teamName),
+        position,
+        played: toRequiredNumber(readFirst(team, ["mp", "played", "p"]), 0),
+        won: toRequiredNumber(readFirst(team, ["w", "won"]), 0),
+        drawn: toRequiredNumber(readFirst(team, ["d", "drawn", "draws"]), 0),
+        lost: toRequiredNumber(readFirst(team, ["l", "lost"]), 0),
+        goals_for: goalsFor,
+        goals_against: goalsAgainst,
+        goal_difference: goalsFor - goalsAgainst,
+        points: toRequiredNumber(readFirst(team, ["pts", "points"]), 0),
+        updated_at: new Date().toISOString(),
+      });
+    });
+  }
+
+  let updated = 0;
+  if (rows.length) {
+    updated = await supabaseUpsert(env, "group_standings", rows);
+  }
+
+  for (const warning of warnings) console.warn(`standings sync: ${warning}`);
+
+  return {
+    success: true,
+    groups: groups.length,
+    teams: rows.length,
+    updated,
+    executionMs: Date.now() - startedAt,
+    warnings,
+  };
+}
+
 async function handleRivalryGet(env, username) {
   const [allPredictions, allResults, allUsers] = await Promise.all([
     loadCollection(env, "predictions"),
@@ -682,14 +788,19 @@ async function handleProfileGet(env, username) {
 // ─── Main GET /sync endpoint ────────────────────────────────────────────────
 
 async function handleSyncGet(env) {
-  const [fixtureRows, resultRows, userRows, predictionRows] = await Promise.all(
-    [
-      loadCollection(env, "fixtures"),
-      loadCollection(env, "results"),
-      loadCollection(env, "users"),
-      loadCollection(env, "predictions"),
-    ],
-  );
+  const [
+    fixtureRows,
+    resultRows,
+    userRows,
+    predictionRows,
+    groupStandingRows,
+  ] = await Promise.all([
+    loadCollection(env, "fixtures"),
+    loadCollection(env, "results"),
+    loadCollection(env, "users"),
+    loadCollection(env, "predictions"),
+    loadCollection(env, "group_standings"),
+  ]);
 
   const fixtures = fixtureRows.map((f) => ({
     matchId: String(f.matchId || f.id || "").replace(/^match_/, ""),
@@ -737,6 +848,7 @@ async function handleSyncGet(env) {
     results,
     users,
     leaderboard,
+    groupStandings: formatGroupStandings(groupStandingRows),
     timestamp: new Date().toISOString(),
   };
 }
@@ -762,6 +874,15 @@ export default {
         }
         const result = await syncLiveResults(env);
         return corsJson({ ...result, mode: "manual-sync-scores" });
+      }
+
+      // /admin/sync-standings - fetch official group tables into Supabase
+      if (path === "/admin/sync-standings" || action === "sync-standings") {
+        if (!isAuthorized(request, env)) {
+          return corsJson({ success: false, error: "Unauthorized" }, 401);
+        }
+        const result = await syncGroupStandings(env);
+        return corsJson({ ...result, mode: "manual-sync-standings" });
       }
 
       // /seed — alias for sync-scores (backwards compat)
@@ -829,9 +950,15 @@ export default {
       // Root — API info
       return corsJson({
         ok: true,
-        routes: ["/sync", "/sync-scores", "/fixtures", "/leaderboard"],
+        routes: [
+          "/sync",
+          "/sync-scores",
+          "/admin/sync-standings",
+          "/fixtures",
+          "/leaderboard",
+        ],
         message:
-          "GGO WC 2026 Predictor API. Use /sync for all data, /sync-scores to trigger live score fetch.",
+          "GGO WC 2026 Predictor API. Use /sync for all data, /sync-scores for scores, and /admin/sync-standings for official group tables.",
       });
     } catch (error) {
       console.error("Worker error:", error);
@@ -840,6 +967,10 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
+    if (event.cron === "*/15 * * * *") {
+      ctx.waitUntil(syncGroupStandings(env));
+      return;
+    }
     ctx.waitUntil(syncLiveResults(env));
   },
 };
@@ -911,6 +1042,27 @@ async function fetchWorldcup26Matches() {
   if (!response.ok) throw new Error(`worldcup26.ir HTTP ${response.status}`);
   const data = await response.json();
   return normalizeWorldcup26Games(data);
+}
+
+async function fetchWorldcup26Groups() {
+  const response = await fetch(WORLDCUP26_GROUPS_URL, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error(`worldcup26.ir groups HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+async function fetchWorldcup26Teams() {
+  const response = await fetch(WORLDCUP26_TEAMS_URL, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    console.warn(`worldcup26.ir teams HTTP ${response.status}`);
+    return {};
+  }
+  return response.json();
 }
 
 async function fetchZafronixMatches(apiKey) {
@@ -1119,6 +1271,83 @@ function extractLivescoreArray(payload) {
     payload.results ||
     payload.items ||
     []
+  );
+}
+
+function extractArray(payload, keys) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  for (const key of keys) {
+    if (Array.isArray(payload[key])) return payload[key];
+  }
+  return [];
+}
+
+function readFirst(item, keys) {
+  if (!item || typeof item !== "object") return undefined;
+  for (const key of keys) {
+    if (item[key] !== undefined && item[key] !== null && item[key] !== "") {
+      return item[key];
+    }
+  }
+  return undefined;
+}
+
+function toRequiredNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function buildTeamNameById(payload) {
+  const teams = extractArray(payload, ["teams", "data", "items"]);
+  const byId = new Map();
+  for (const team of teams) {
+    const id = String(readFirst(team, ["team_id", "teamId", "id", "_id"]) || "").trim();
+    const name = readFirst(team, [
+      "name",
+      "team_name",
+      "teamName",
+      "name_en",
+      "country",
+    ]);
+    if (id && name) byId.set(id, String(name));
+  }
+  return byId;
+}
+
+function formatGroupStandings(rows) {
+  const groups = {};
+  for (const row of rows || []) {
+    const groupName = String(row.group_name || row.group || "").trim();
+    if (!groupName) continue;
+    if (!groups[groupName]) groups[groupName] = [];
+    groups[groupName].push({
+      group_name: groupName,
+      team_id: String(row.team_id || ""),
+      team_name: row.team_name || row.teamName || row.name || "",
+      position: toRequiredNumber(row.position, 0),
+      played: toRequiredNumber(row.played, 0),
+      won: toRequiredNumber(row.won, 0),
+      drawn: toRequiredNumber(row.drawn, 0),
+      lost: toRequiredNumber(row.lost, 0),
+      goals_for: toRequiredNumber(row.goals_for, 0),
+      goals_against: toRequiredNumber(row.goals_against, 0),
+      goal_difference: toRequiredNumber(row.goal_difference, 0),
+      points: toRequiredNumber(row.points, 0),
+      updated_at: row.updated_at || null,
+    });
+  }
+
+  Object.keys(groups).forEach((groupName) => {
+    groups[groupName].sort(
+      (a, b) =>
+        a.position - b.position ||
+        String(a.team_name).localeCompare(String(b.team_name)),
+    );
+  });
+
+  return Object.fromEntries(
+    Object.entries(groups).sort(([a], [b]) => String(a).localeCompare(String(b))),
   );
 }
 

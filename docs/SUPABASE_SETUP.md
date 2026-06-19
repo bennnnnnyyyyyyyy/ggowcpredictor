@@ -66,7 +66,32 @@ create table if not exists leaderboard (
   scored int default 0,
   "updatedAt" timestamptz
 );
+
+create table if not exists group_standings (
+  id bigint generated always as identity primary key,
+  group_name text not null,
+  team_id text not null,
+  team_name text not null,
+  position int not null check (position between 1 and 4),
+  played int default 0,
+  won int default 0,
+  drawn int default 0,
+  lost int default 0,
+  goals_for int default 0,
+  goals_against int default 0,
+  goal_difference int default 0,
+  points int default 0,
+  updated_at timestamptz default now()
+);
+
+create unique index if not exists idx_group_team
+on group_standings(group_name, team_id);
+
+create unique index if not exists idx_group_position
+on group_standings(group_name, position);
 ```
+
+`group_standings` is the source of truth for official group tables. The Worker writes it from `worldcup26.ir/get/groups`; the browser only renders these rows and does not calculate group ranks.
 
 ## Migration
 

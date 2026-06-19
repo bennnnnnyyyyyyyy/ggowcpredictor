@@ -98,6 +98,7 @@ const STATE = {
   results: {},
   predictions: {},
   leaderboard: [],
+  groupStandings: {},
   users: [],
   accountRequests: [],
   teams: {},
@@ -665,6 +666,7 @@ async function requestSync() {
     if (!STATE.fixtures.length) await loadFixtures();
     await loadResults();
     await loadLeaderboard();
+    await loadGroupStandings();
     await loadPredictions();
     await loadAccountRequests();
 
@@ -1441,72 +1443,22 @@ function renderGroupStandings() {
   const container = document.getElementById("group-standings");
   if (!container) return;
 
-  const groupFixtures = STATE.fixtures.filter(
-    (fixture) => fixture.stage === "group" && fixture.group,
-  );
-  const groups = groupBy(groupFixtures, (fixture) => fixture.group);
+  const groups = STATE.groupStandings || {};
 
   if (!Object.keys(groups).length) {
     container.innerHTML = emptyState(
-      "Group tables need group-stage fixtures.",
+      "Official group tables are not synced yet.",
       "",
     );
     return;
   }
 
   container.innerHTML = Object.entries(groups)
-    .map(([groupName, fixtures]) => renderGroupTable(groupName, fixtures))
+    .map(([groupName, standings]) => renderGroupTable(groupName, standings))
     .join("");
 }
 
-function renderGroupTable(groupName, fixtures) {
-  const teamMap = new Map();
-
-  fixtures.forEach((fixture) => {
-    [fixture.team1, fixture.team2].forEach((team) => {
-      if (!teamMap.has(team)) {
-        teamMap.set(team, {
-          team,
-          played: 0,
-          won: 0,
-          drawn: 0,
-          lost: 0,
-          gf: 0,
-          ga: 0,
-          gd: 0,
-          points: 0,
-        });
-      }
-    });
-
-    const result = STATE.results[fixture.matchId];
-    const pred = STATE.predictions[fixture.matchId];
-
-    // Use actual result if available, otherwise fall back to prediction for preview
-    if (result && hasResult(result)) {
-      applyTableResult(
-        teamMap.get(fixture.team1),
-        teamMap.get(fixture.team2),
-        result.score1,
-        result.score2,
-      );
-    } else if (hasPrediction(pred)) {
-      applyTableResult(
-        teamMap.get(fixture.team1),
-        teamMap.get(fixture.team2),
-        pred.pred1,
-        pred.pred2,
-      );
-    }
-  });
-
-  const standings = Array.from(teamMap.values()).sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.gd !== a.gd) return b.gd - a.gd;
-    if (b.gf !== a.gf) return b.gf - a.gf;
-    return a.team.localeCompare(b.team);
-  });
-
+function renderGroupTable(groupName, standings) {
   return `
     <article class="group-table">
       <div class="group-header">${escapeHtml(groupName)}</div>
@@ -1519,15 +1471,15 @@ function renderGroupTable(groupName, fixtures) {
         <tbody>
           ${standings
       .map(
-        (row, index) => `
+        (row) => `
                 <tr>
-                  <td class="team-rank" data-label="#">${index + 1}</td>
-                  <td data-label="Team"><span class="team-code">${escapeHtml(getTeamCode(row.team))}</span>${escapeHtml(row.team)}</td>
+                  <td class="team-rank" data-label="#">${row.position}</td>
+                  <td data-label="Team"><span class="team-code">${escapeHtml(getTeamCode(row.team_name))}</span>${escapeHtml(row.team_name)}</td>
                   <td data-label="P">${row.played}</td>
                   <td data-label="W">${row.won}</td>
                   <td data-label="D">${row.drawn}</td>
                   <td data-label="L">${row.lost}</td>
-                  <td data-label="GD">${row.gd > 0 ? "+" : ""}${row.gd}</td>
+                  <td data-label="GD">${row.goal_difference > 0 ? "+" : ""}${row.goal_difference}</td>
                   <td data-label="Pts"><strong>${row.points}</strong></td>
                 </tr>
               `,
@@ -2337,6 +2289,9 @@ async function loadGameData() {
     if (Array.isArray(data.leaderboard)) {
       STATE.leaderboard = data.leaderboard;
     }
+    if (data.groupStandings) {
+      STATE.groupStandings = normalizeGroupStandingsPayload(data.groupStandings);
+    }
     if (Array.isArray(data.users)) {
       STATE.users = data.users;
     }
@@ -2393,6 +2348,23 @@ async function loadLeaderboardFromApi() {
   }
 }
 
+async function loadGroupStandings() {
+  STATE.groupStandings = normalizeGroupStandingsPayload(STATE.groupStandings);
+  if (Object.keys(STATE.groupStandings).length) return;
+
+  try {
+    const data = await supabaseSelect(
+      "group_standings",
+      "*",
+      "order=group_name.asc,position.asc",
+    );
+    STATE.groupStandings = normalizeGroupStandingsPayload(data);
+  } catch (error) {
+    console.warn("Could not load Supabase group standings.", error.message);
+    STATE.groupStandings = {};
+  }
+}
+
 function normalizeResultsPayload(results) {
   if (Array.isArray(results)) {
     return results.reduce((acc, item) => {
@@ -2411,6 +2383,48 @@ function normalizeResultsPayload(results) {
   }
 
   return {};
+}
+
+function normalizeGroupStandingsPayload(payload) {
+  const groups = {};
+  const rows = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === "object"
+      ? Object.values(payload).flat()
+      : [];
+
+  rows.forEach((row) => {
+    const groupName = String(row.group_name || row.group || "").trim();
+    if (!groupName) return;
+    if (!groups[groupName]) groups[groupName] = [];
+    groups[groupName].push({
+      group_name: groupName,
+      team_id: String(row.team_id || ""),
+      team_name: row.team_name || row.teamName || row.name || "TBD",
+      position: numberOrZero(row.position),
+      played: numberOrZero(row.played),
+      won: numberOrZero(row.won),
+      drawn: numberOrZero(row.drawn),
+      lost: numberOrZero(row.lost),
+      goals_for: numberOrZero(row.goals_for),
+      goals_against: numberOrZero(row.goals_against),
+      goal_difference: numberOrZero(row.goal_difference),
+      points: numberOrZero(row.points),
+      updated_at: row.updated_at || null,
+    });
+  });
+
+  Object.keys(groups).forEach((groupName) => {
+    groups[groupName].sort(
+      (a, b) =>
+        a.position - b.position ||
+        String(a.team_name).localeCompare(String(b.team_name)),
+    );
+  });
+
+  return Object.fromEntries(
+    Object.entries(groups).sort(([a], [b]) => String(a).localeCompare(String(b))),
+  );
 }
 
 function getStageFromRound(round = "") {
@@ -2552,33 +2566,6 @@ function buildLocalLeaderboard() {
       completedPredictions,   // NEW
     },
   ];
-}
-
-function applyTableResult(team1, team2, score1, score2) {
-  team1.played += 1;
-  team2.played += 1;
-  team1.gf += score1;
-  team1.ga += score2;
-  team2.gf += score2;
-  team2.ga += score1;
-
-  if (score1 > score2) {
-    team1.won += 1;
-    team1.points += 3;
-    team2.lost += 1;
-  } else if (score2 > score1) {
-    team2.won += 1;
-    team2.points += 3;
-    team1.lost += 1;
-  } else {
-    team1.drawn += 1;
-    team2.drawn += 1;
-    team1.points += 1;
-    team2.points += 1;
-  }
-
-  team1.gd = team1.gf - team1.ga;
-  team2.gd = team2.gf - team2.ga;
 }
 
 function formatKickoff(match) {
@@ -2745,6 +2732,11 @@ function nullableNumber(value) {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function numberOrZero(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
 }
 
 function emptyState(title, subtitle) {

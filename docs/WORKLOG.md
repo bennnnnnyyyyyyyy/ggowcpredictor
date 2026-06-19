@@ -1,5 +1,19 @@
 # Work Log
 
+## 2026-06-19 - Official group standings source of truth
+
+### What changed
+
+- Added Supabase `group_standings` schema notes with one row per team, unique `(group_name, team_id)`, unique `(group_name, position)`, and position range validation.
+- Added Worker `/admin/sync-standings`, protected by the existing `SEED_TOKEN` authorization pattern.
+- Worker now fetches `worldcup26.ir/get/groups`, maps team IDs through `worldcup26.ir/get/teams`, calculates goal difference as `goals_for - goals_against`, validates duplicate teams/positions, and upserts `group_standings`.
+- Added a 15-minute Cloudflare cron for standings sync while keeping the 5-minute score sync.
+- Updated the browser standings UI to render Supabase `group_standings` rows only; frontend group standings calculations were removed.
+
+### Verification
+
+- Run `/admin/sync-standings` after deploy, then confirm Supabase `group_standings` has 12 groups, 48 rows, four teams per group, and unique positions 1-4.
+
 ## 2026-06-17 - Leaderboard matchId mapping repair
 
 ### Root cause

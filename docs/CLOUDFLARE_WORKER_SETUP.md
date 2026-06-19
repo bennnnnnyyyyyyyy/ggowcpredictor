@@ -14,6 +14,7 @@ Create a file named `.dev.vars` in the root of the project to store your secret 
 ```ini
 SUPABASE_URL="https://nthnysznieivbkncpqrk.supabase.co"
 SUPABASE_KEY="sb_publishable_q4iEOMH_S09dgmg3mHtK-w_08jFDVUo"
+SUPABASE_SERVICE_KEY="your-service-role-key-for-worker-upserts"
 FIREBASE_PROJECT_ID="ggowcpredictor"
 FIREBASE_SERVICE_ACCOUNT_JSON='{"type": "service_account", "project_id": "ggowcpredictor", ...}'
 ZAFRONIX_API_KEY="your-zafronix-key-optional"
@@ -50,13 +51,13 @@ curl http://localhost:8787/
 ```json
 {
   "ok": true,
-  "routes": ["/sync", "/sync-scores", "/fixtures", "/leaderboard"],
-  "message": "GGO WC 2026 Predictor API. Use /sync for all data, /sync-scores to trigger live score fetch."
+  "routes": ["/sync", "/sync-scores", "/admin/sync-standings", "/fixtures", "/leaderboard"],
+  "message": "GGO WC 2026 Predictor API. Use /sync for all data, /sync-scores for scores, and /admin/sync-standings for official group tables."
 }
 ```
 
 ### 2. Test Fetching Data (`/sync`)
-Fetch all current fixtures, results, user profiles, and calculated leaderboard standings:
+Fetch all current fixtures, results, official group standings, user profiles, and calculated leaderboard:
 ```powershell
 curl http://localhost:8787/sync
 ```
@@ -85,7 +86,27 @@ curl -H "Authorization: Bearer ggo-secret-admin-token-123" http://localhost:8787
 }
 ```
 
-### 4. Test Sub-endpoints
+### 4. Test Syncing Official Group Standings (`/admin/sync-standings`)
+This fetches `worldcup26.ir/get/groups`, maps team IDs to names, calculates `goal_difference` as `goals_for - goals_against`, and upserts Supabase `group_standings`.
+
+```powershell
+curl -H "Authorization: Bearer ggo-secret-admin-token-123" http://localhost:8787/admin/sync-standings
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "groups": 12,
+  "teams": 48,
+  "updated": 48,
+  "executionMs": 500,
+  "warnings": [],
+  "mode": "manual-sync-standings"
+}
+```
+
+### 5. Test Sub-endpoints
 - **Fixtures only**: `curl http://localhost:8787/fixtures`
 - **Leaderboard only**: `curl http://localhost:8787/leaderboard`
 
@@ -97,8 +118,9 @@ To verify that the worker is reading and writing correctly:
 
 1. **Verify Supabase**:
    - Open your Supabase Console.
-   - Navigate to the Table Editor and inspect `fixtures`, `results`, `predictions`, and `leaderboard`.
+   - Navigate to the Table Editor and inspect `fixtures`, `results`, `predictions`, `leaderboard`, and `group_standings`.
    - Verify that data synced via `/sync-scores` is saved in the tables.
+   - Verify that data synced via `/admin/sync-standings` is saved in `group_standings` with one row per team and unique positions per group.
 2. **Verify Firestore Failover (Testing Fallback)**:
    - Temporarily rename `SUPABASE_URL` in `.dev.vars` to an invalid URL.
    - Send a `GET` request to `http://localhost:8787/sync`.

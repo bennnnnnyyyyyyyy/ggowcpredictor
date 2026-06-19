@@ -26,7 +26,7 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 - **P0 open**: `savePrediction` crashes when match is locked
 - **P1 open**: matchId mismatch, seed Drive path wrong
 - **Backend backup**: Apps Script now tries Firebase first, falls back to Supabase, and includes a one-shot Firestore-to-Supabase migration
-- **Working**: Login, fixture loading, country flags, prediction inputs (UI), group standings, lock at kickoff
+- **Working**: Login, fixture loading, country flags, prediction inputs (UI), Supabase-backed official group standings, lock at kickoff
 - **Responsive UI**: Header controls, filters, match cards, and leaderboard/group tables now reflow more cleanly on phones
 
 ## Live Results Worker
@@ -45,7 +45,7 @@ Optional environment variables:
 - `ZAFRONIX_URL` overrides the live results endpoint
 - `LIVESCORE_API_KEY` and `LIVESCORE_API_SECRET` enable the backup live source
 - `ZAFRONIX_API_KEY` enables the secondary fallback source
-- `SEED_TOKEN` protects the manual `/seed` and `/sync` endpoints
+- `SEED_TOKEN` protects manual sync endpoints such as `/seed`, `/sync-scores`, and `/admin/sync-standings`
 - `LIVE_SYNC_CRON` defaults to `*/5 * * * *`
 - `LIVE_SYNC_RUN_ON_START=false` skips the first immediate sync
 - `LIVE_SYNC_DRY_RUN=true` logs matches without writing Firestore
