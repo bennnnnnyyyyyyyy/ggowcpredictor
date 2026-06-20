@@ -2498,6 +2498,11 @@ main {
   .group-standings-table .team-code {
     margin-right: 6px;
   }
+  .group-standings-table .rank-badge {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
 
   .match-card {
     border-radius: 14px;
