@@ -2456,36 +2456,47 @@ main {
     font-size: 16px;
   }
 
-  .group-standings-table {
-    display: block;
+.group-standings-table {
+    display: table;
+    width: 100%;
+    font-size: 11px;
   }
 
   .group-standings-table thead {
-    display: none;
+    display: table-header-group;
   }
 
   .group-standings-table tbody {
-    display: block;
+    display: table-row-group;
   }
 
   .group-standings-table tr {
-    display: grid;
-    gap: 8px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-    border: 1px solid rgba(0, 209, 94, 0.2);
-    border-radius: 12px;
-    background: rgba(0, 209, 94, 0.05);
+    display: table-row;
   }
 
+  .group-standings-table th,
   .group-standings-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 0;
+    display: table-cell;
+    padding: 8px 4px;
+    text-align: center;
     border: 0;
-    text-align: right;
+    border-bottom: 1px solid rgba(0, 209, 94, 0.1);
+  }
+
+  .group-standings-table td[data-label="Team"] {
+    text-align: left;
+    white-space: nowrap;
+  }
+  
+  .group-standings-table .inline-flag-img {
+    width: 24px;
+    height: 16px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  .group-standings-table .team-code {
+    margin-right: 6px;
   }
 
   .match-card {
