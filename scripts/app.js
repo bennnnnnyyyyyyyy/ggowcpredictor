@@ -1474,8 +1474,8 @@ function renderGroupTable(groupName, standings) {
       .map(
         (row) => `
                 <tr>
-                  <td class="team-rank" data-label="#">${row.position}</td>
-<td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
+                  <td class="team-rank" data-label="#"><span class="rank-badge ${rankClass(row.position)}">${row.position}</span></td>
+                  <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
                   <td data-label="P">${row.played}</td>
                   <td data-label="W">${row.won}</td>
                   <td data-label="D">${row.drawn}</td>
