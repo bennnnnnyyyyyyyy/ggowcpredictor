@@ -3199,3 +3199,6 @@ main {
     font-size: 12px !important;
   }
 }
+.group-standings-table td::before {
+    content: none !important;
+  }
