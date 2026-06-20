@@ -3198,7 +3198,14 @@ main {
   .mc-venue strong {
     font-size: 12px !important;
   }
-}
-.group-standings-table td::before {
+.group-table {
+    overflow-x: auto;
+  }
+
+  .group-standings-table {
+    min-width: 480px;
+  }
+  .group-standings-table td::before {
     content: none !important;
   }
+}
