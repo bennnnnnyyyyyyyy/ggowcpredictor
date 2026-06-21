@@ -2407,15 +2407,6 @@ main {
     display: block;
   }
 
-  .leaderboard-table tr {
-    display: grid;
-    gap: 8px;
-    padding: 14px;
-    margin-bottom: 12px;
-    border: 1px solid rgba(0, 209, 94, 0.2);
-    border-radius: 12px;
-    background: rgba(0, 209, 94, 0.05);
-  }
 
   .leaderboard-table td {
     display: flex;
@@ -3010,10 +3001,10 @@ main {
 .leaderboard-table tr {
     display: grid;
     /* rank | player | pts | exact | outcome | predicted | percent */
-    grid-template-columns: 26px minmax(0, 1fr) 38px 28px 28px 32px 42px;
+    grid-template-columns: 20px minmax(0, 1fr) 30px 22px 22px 22px 34px;
     align-items: center;
-    gap: 0 6px;
-    padding: 10px 12px;
+    gap: 0 4px;
+    padding: 8px 10px;
     margin: 0;
     border: 1px solid rgba(0, 209, 94, 0.2);
     border-radius: 10px;
