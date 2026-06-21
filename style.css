@@ -2407,17 +2407,6 @@ main {
     display: block;
   }
 
-
-  .leaderboard-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 0;
-    border: 0;
-    text-align: right;
-  }
-
   .leaderboard-table td::before,
   .group-standings-table td::before {
     content: attr(data-label);
