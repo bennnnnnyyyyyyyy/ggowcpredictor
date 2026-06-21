@@ -2405,36 +2405,7 @@ main {
 
   .leaderboard-table tbody {
     display: block;
-  }
-
-  .leaderboard-table td::before,
-  .group-standings-table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-  }
-
-  .leaderboard-table td[data-label="Rank"],
-  .group-standings-table td[data-label="#"] {
-    justify-content: flex-start;
-  }
-
-  .leaderboard-table td[data-label="Player"],
-  .group-standings-table td[data-label="Team"] {
-    text-align: left;
-  }
-
-  .leaderboard-table td[data-label="Player"] .player-info,
-  .group-standings-table td[data-label="Team"] .team-name {
-    width: 100%;
-  }
-
-  .leaderboard-table td strong {
-    font-size: 16px;
-  }
+  }  
 
 .group-standings-table {
     display: table;
