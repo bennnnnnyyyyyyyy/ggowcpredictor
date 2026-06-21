@@ -3007,12 +3007,12 @@ main {
   }
 
   /* Each row = a horizontal pill card with 7 columns */
-  .leaderboard-table tr {
+.leaderboard-table tr {
     display: grid;
-    /* player | pts | exact | outcome | predicted | percent */
-    grid-template-columns: minmax(0, 1fr) 42px 32px 32px 36px 46px;
+    /* rank | player | pts | exact | outcome | predicted | percent */
+    grid-template-columns: 26px minmax(0, 1fr) 38px 28px 28px 32px 42px;
     align-items: center;
-    gap: 0 8px;
+    gap: 0 6px;
     padding: 10px 12px;
     margin: 0;
     border: 1px solid rgba(0, 209, 94, 0.2);
