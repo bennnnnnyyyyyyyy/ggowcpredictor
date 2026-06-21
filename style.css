@@ -3234,7 +3234,21 @@ main {
   }
 
   .group-standings-table {
-    min-width: 480px;
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .group-standings-table th,
+  .group-standings-table td {
+    padding: 6px 2px;
+    font-size: 10px;
+  }
+
+  .group-standings-table td[data-label="Team"] {
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .group-standings-table td::before {
     content: none !important;
