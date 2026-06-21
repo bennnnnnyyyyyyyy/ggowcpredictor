@@ -1565,8 +1565,8 @@ function openMatchDrawer(matchId) {
   if (!overlay || !drawer || !inner) return;
 
   // ── Scoreline ──
-  const team1Code = getTeamCode(fixture.team1);
-  const team2Code = getTeamCode(fixture.team2);
+  const team1Flag = getFlagImg(fixture.team1);
+  const team2Flag = getFlagImg(fixture.team2);
   const hasRes = result && hasResult(result);
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
@@ -1672,7 +1672,7 @@ function openMatchDrawer(matchId) {
  
     <div class="drawer-scoreline">
       <div class="drawer-team">
-        <div class="drawer-team-badge">${escapeHtml(team1Code)}</div>
+        <div class="drawer-team-badge">${escapeHtml(team1Flag)}</div>
         <div class="drawer-team-name">${escapeHtml(fixture.team1)}</div>
       </div>
       <div class="drawer-score-block">
@@ -1683,7 +1683,7 @@ function openMatchDrawer(matchId) {
         </div>
       </div>
       <div class="drawer-team">
-        <div class="drawer-team-badge">${escapeHtml(team2Code)}</div>
+        <div class="drawer-team-badge">${escapeHtml(team2Flag)}</div>
         <div class="drawer-team-name">${escapeHtml(fixture.team2)}</div>
       </div>
     </div>
