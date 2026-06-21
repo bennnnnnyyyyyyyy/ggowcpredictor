@@ -993,15 +993,15 @@ main {
 }
 
 .pts-good {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--success);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.pts-partial {
   background: rgba(245, 158, 11, 0.15);
   color: var(--warning);
   border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pts-partial {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .pts-zero {
@@ -2802,29 +2802,28 @@ main {
 }
 
 .score-rule-card.pts-good {
-  border: 1px solid rgba(0, 209, 94, 0.3);
-}
-
-.score-rule-card.pts-good .pts-val {
-  color: #00d15e;
-}
-
-.score-rule-card.pts-good strong {
-  color: #00d15e;
-}
-
-.score-rule-card.pts-partial {
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.score-rule-card.pts-partial .pts-val {
+.score-rule-card.pts-good .pts-val {
   color: var(--warning);
+}
+
+.score-rule-card.pts-good strong {
+  color: var(--warning);
+}
+
+.score-rule-card.pts-partial {
+  border: 1px solid rgba(0, 209, 94, 0.3);
+}
+
+.score-rule-card.pts-partial .pts-val {
+  color: #00d15e;
 }
 
 .score-rule-card.pts-partial strong {
-  color: var(--warning);
+  color: #00d15e;
 }
-
 .score-rule-card.pts-close-guess {
   border: 1px solid rgba(0, 179, 89, 0.3);
 }
