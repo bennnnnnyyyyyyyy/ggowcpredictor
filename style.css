@@ -3037,11 +3037,6 @@ main {
     display: none;
   }
 
-  /* Rank cell */
-  .leaderboard-table td[data-label="Rank"] {
-    display: none;
-  }
-
   /* Player cell – left‑aligned */
   .leaderboard-table td[data-label="Player"] {
     text-align: left;
