@@ -989,7 +989,25 @@ main {
 .pts-exact {
   background: rgba(255, 215, 0, 0.15);
   color: #ffd700;
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  box-shadow:
+    0 0 12px rgba(255, 215, 0, 0.35),
+    inset 0 0 8px rgba(255, 215, 0, 0.08);
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  animation: exact-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes exact-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 12px rgba(255, 215, 0, 0.35),
+      inset 0 0 8px rgba(255, 215, 0, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 22px rgba(255, 215, 0, 0.55),
+      inset 0 0 12px rgba(255, 215, 0, 0.14);
+  }
 }
 
 .pts-good {
@@ -2806,7 +2824,8 @@ main {
 
 /* Points classes for cards */
 .score-rule-card.pts-exact {
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.25);
 }
 
 .score-rule-card.pts-exact .pts-val {
