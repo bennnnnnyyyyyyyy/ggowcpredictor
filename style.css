@@ -1091,6 +1091,22 @@ main {
   margin-right: 0;
   font-size: 10px;
 }
+  .pred-pts.pts-good {
+  background: rgba(245, 158, 11, 0.13);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+.pred-pts.pts-partial {
+  background: rgba(16, 185, 129, 0.13);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+.pred-stripe.stripe-good {
+  background: var(--warning);
+}
+.pred-stripe.stripe-partial {
+  background: var(--success);
+}
 
 /* ────────────────────────────────────────
    GROUP STANDINGS
@@ -3208,4 +3224,20 @@ main {
   .group-standings-table td::before {
     content: none !important;
   }
+  .pred-pts.pts-good {
+  background: rgba(245, 158, 11, 0.13);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+.pred-pts.pts-partial {
+  background: rgba(16, 185, 129, 0.13);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+.pred-stripe.stripe-good {
+  background: var(--warning);
+}
+.pred-stripe.stripe-partial {
+  background: var(--success);
+}
 }
