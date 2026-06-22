@@ -1,4 +1,4 @@
-﻿# Leaderboard Stabilization Plan
+# Leaderboard Stabilization Plan
 
 ## Summary
 
@@ -9,6 +9,10 @@ Canonical scoring is now `15 / 8 / 5 / 0`:
 - correct outcome + goal-difference gap `<= 1` = `8`
 - correct outcome only = `5`
 - wrong outcome = `0`
+
+Leaderboard tie-break rule:
+- exact scores must outrank non-exact rows when totals are close
+- do not let stale rank or points metadata leave a non-exact player ahead of an exact-score player
 
 ## Current State
 
@@ -24,6 +28,7 @@ Canonical scoring is now `15 / 8 / 5 / 0`:
 - Rebuild the `leaderboard` table from canonical `predictions` and `results`.
 - Verify the rebuilt rows match the recalculated totals for users with stale counts.
 - Ensure the leaderboard rank is recomputed against the full table, not per-user.
+- Use exact scores as the decisive tie-breaker when two players have the same points.
 - Confirm the profile view and the main leaderboard now agree after refresh.
 
 ## Known Mismatch Pattern
