@@ -12,10 +12,10 @@ jobs:
     steps:
       - name: Sync scores
         run: |
-          curl -H "Authorization: Bearer ggo-seed-admin-token-123" \
+          curl -H "Authorization: Bearer ggo-secret-admin-token-123" \
           https://ggowcpredictor.ben-arthur-wiz.workers.dev/sync-scores
 
       - name: Refresh data
         run: |
-          curl -H "Authorization: Bearer ggo-seed-admin-token-123" \
+          curl -H "Authorization: Bearer ggo-secret-admin-token-123" \
           https://ggowcpredictor.ben-arthur-wiz.workers.dev/sync
