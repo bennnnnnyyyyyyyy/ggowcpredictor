@@ -1,66 +1,66 @@
-# Leaderboard Stabilization Plan
+# Leaderboard Stabilization Master Checklist
 
-## Summary
+## Goal
 
-The legacy wrong-result 3-point scoring has already been removed from the runtime scoring paths. The current issue is no longer the scoring formula itself. It is stale cached leaderboard data and inconsistent source order between views.
+- [ ] Make the leaderboard and profile views agree on the same canonical scoring and totals.
+- [ ] Remove any remaining stale cached leaderboard metadata.
+- [ ] Verify exact scores win tie-breaks when totals are otherwise close.
 
-Canonical scoring is now `15 / 8 / 5 / 0`:
-- exact score = `15`
-- correct outcome + goal-difference gap `<= 1` = `8`
-- correct outcome only = `5`
-- wrong outcome = `0`
+## Canonical Rules
 
-Leaderboard tie-break rule:
-- exact scores must outrank non-exact rows when totals are close
-- do not let stale rank or points metadata leave a non-exact player ahead of an exact-score player
+- [ ] Keep scoring fixed at `15 / 8 / 5 / 0`.
+- [ ] Preserve `15` for exact score predictions.
+- [ ] Preserve `8` for correct outcome with goal-difference gap `<= 1`.
+- [ ] Preserve `5` for correct outcome only.
+- [ ] Preserve `0` for wrong outcome.
+- [ ] Ensure exact scores outrank non-exact rows when totals are close.
+- [ ] Prevent stale rank or points metadata from placing a non-exact player ahead of an exact-score player.
 
-## Current State
+## Current State To Preserve
 
-- `workers/live-results.js` no longer contains the old pre-cutoff 3-point branch.
-- `scripts/app.js` and `scripts/profile.js` now use the same no-legacy scorer.
-- The profile page was changed to read Supabase first so it matches the main app data path.
-- The main leaderboard loader was also switched to prefer Supabase first.
-- The raw prediction/result data is correct for Ray Parker and other users.
-- The denormalized `leaderboard` table still contains stale metadata for some users, especially `predicted` and `scored` counts.
+- [ ] Confirm `workers/live-results.js` stays free of the old pre-cutoff 3-point branch.
+- [ ] Confirm `scripts/app.js` and `scripts/profile.js` use the same no-legacy scorer.
+- [ ] Keep the profile page reading Supabase first so it matches the main app data path.
+- [ ] Keep the main leaderboard loader preferring Supabase first.
+- [ ] Preserve the correct raw prediction/result data for Ray Parker and other users.
 
-## What Must Happen Next
+## Data Repair Work
 
-- Rebuild the `leaderboard` table from canonical `predictions` and `results`.
-- Verify the rebuilt rows match the recalculated totals for users with stale counts.
-- Ensure the leaderboard rank is recomputed against the full table, not per-user.
-- Use exact scores as the decisive tie-breaker when two players have the same points.
-- Confirm the profile view and the main leaderboard now agree after refresh.
+- [ ] Rebuild the `leaderboard` table from canonical `predictions` and `results`.
+- [ ] Verify rebuilt rows match recalculated totals for users with stale counts.
+- [ ] Recompute leaderboard rank against the full table, not per-user.
+- [ ] Use exact scores as the decisive tie-breaker when two players have the same points.
+- [ ] Confirm the profile view and the main leaderboard agree after refresh.
 
-## Known Mismatch Pattern
+## Stale Metadata Checks
 
-- `totalPoints` is often already correct.
-- `predicted` can be overstated in the stored leaderboard row.
-- `scored` can also be stale.
-- `exactScores` and `correctOutcomes` should be verified during the rebuild.
+- [ ] Check whether `totalPoints` is already correct in existing leaderboard rows.
+- [ ] Check whether `predicted` is overstated in stored leaderboard rows.
+- [ ] Check whether `scored` is stale in stored leaderboard rows.
+- [ ] Verify `exactScores` during the rebuild.
+- [ ] Verify `correctOutcomes` during the rebuild.
 
 ## Validation
 
-- Re-run the audit query against current data:
-  - leaderboard points should match recalculated points
-  - leaderboard metadata should match recalculated metadata
-- Check Ray Parker after rebuild:
-  - `totalPoints` should remain `180`
-  - `predicted` should match the raw prediction count
-  - `scored` should match the number of finished joined results
-- Confirm the main tab and profile page show the same totals after a hard refresh.
+- [ ] Re-run the audit query against current data.
+- [ ] Confirm leaderboard points match recalculated points.
+- [ ] Confirm leaderboard metadata matches recalculated metadata.
+- [ ] Check Ray Parker after rebuild.
+- [ ] Confirm `totalPoints` remains `180` for Ray Parker.
+- [ ] Confirm `predicted` matches the raw prediction count.
+- [ ] Confirm `scored` matches the number of finished joined results.
+- [ ] Confirm the main tab and profile page show the same totals after a hard refresh.
 
-## Follow-Up Work
+## Follow-Up Guardrails
 
-- If any future scoring changes are made, update every scorer path together:
-  - `workers/live-results.js`
-  - `scripts/app.js`
-  - `scripts/profile.js`
-  - `src/leaderboard.js`
-- Keep docs aligned with the runtime behavior after any leaderboard or scoring change.
-- Defer larger bracket/knockout changes until the leaderboard cache is fully stable.
+- [ ] Update every scorer path together if any future scoring changes are made.
+- [ ] Keep `workers/live-results.js` aligned with `scripts/app.js`.
+- [ ] Keep `scripts/profile.js` aligned with `src/leaderboard.js`.
+- [ ] Keep docs aligned with runtime behavior after any leaderboard or scoring change.
+- [ ] Defer larger bracket or knockout changes until the leaderboard cache is fully stable.
 
 ## Assumptions
 
-- Supabase raw tables are the source of truth.
-- `leaderboard` is a cached/derived table and can be regenerated safely.
-- PowerShell is the preferred shell on this machine.
+- [ ] Treat Supabase raw tables as the source of truth.
+- [ ] Treat `leaderboard` as a cached or derived table that can be regenerated safely.
+- [ ] Use PowerShell as the preferred shell on this machine.
