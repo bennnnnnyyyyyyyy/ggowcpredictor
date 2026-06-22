@@ -1,3 +1,26 @@
+## 2026-06-22 - Profile loader source-order fix
+
+### What changed
+
+- Switched the profile page to load Supabase first, then fall back to the Worker and Firestore.
+- This keeps the profile view aligned with the main app data path when the Worker response is stale.
+
+### Why
+
+- Ray Parker profile was missing a saved prediction even though the main app had the row, which pointed to the Worker-first profile loader using older data.
+
+## 2026-06-22 - Remove legacy 3-point scoring
+
+### What changed
+
+- Removed the pre-cutoff 3-point consolation branch from the Cloudflare Worker scoring helper.
+- Removed the matching legacy 3-point branch from the client-side prediction/profile scoring helpers.
+- Kept the current scoring rule set at exact = 15, correct outcome + GD within 1 = 8, correct outcome only = 5, wrong outcome = 0.
+
+### Why
+
+- The runtime rules now match the intended current scoring policy everywhere.
+- This avoids confusing mixed totals between the worker, profile view, and client fallback paths.
 # Work Log
 
 ## 2026-06-19 - Mobile leaderboard spacing cleanup

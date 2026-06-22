@@ -230,11 +230,6 @@ async function loadCollection(env, table) {
 
 // ─── Leaderboard Calculation Engine ─────────────────────────────────────────
 
-// Scoring rule changed on Jun 18 2026 (Atlanta kickoff = 19:00 Cairo / 16:00 UTC).
-// Matches before this cutoff use the old rule (3 pts for close-wrong-result).
-// Matches on or after use the new rule (wrong result = 0, no consolation).
-const SCORING_CUTOFF = new Date("2026-06-18T16:00:00Z");
-
 function scoreMatch(p1, p2, a1, a2, matchDate) {
   if (p1 === a1 && p2 === a2) return 15;
   const predOutcome = Math.sign(p1 - p2);
@@ -242,12 +237,6 @@ function scoreMatch(p1, p2, a1, a2, matchDate) {
   if (predOutcome === actualOutcome) {
     const diffGap = Math.abs(p1 - p2 - (a1 - a2));
     return diffGap <= 1 ? 8 : 5;
-  }
-  // Old rule: award 3 pts for close-but-wrong-result on pre-cutoff matches only
-  const isPreCutoff = matchDate && new Date(matchDate) < SCORING_CUTOFF;
-  if (isPreCutoff) {
-    const totalGap = Math.abs(p1 - a1) + Math.abs(p2 - a2);
-    return totalGap <= 2 ? 3 : 0;
   }
   return 0;
 }

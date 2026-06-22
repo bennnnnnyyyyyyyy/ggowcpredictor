@@ -2525,11 +2525,9 @@ function hasResult(result) {
 /**
  * Client-side scoring - mirrors canonical scoreMatch on the backend.
  * Points: exact=15, correct result plus close goal difference=8,
- * correct result=5, wrong result=0 (from Jun 18 onward) or 3 (pre-cutoff).
+ * correct result=5, wrong result=0.
  */
-const CLIENT_SCORING_CUTOFF = new Date("2026-06-18T16:00:00Z");
-
-function calculateMatchPoints(pred1, pred2, actual1, actual2, matchDate) {
+function calculateMatchPoints(pred1, pred2, actual1, actual2) {
   if (pred1 === actual1 && pred2 === actual2) return 15;
 
   const predOutcome = Math.sign(pred1 - pred2);
@@ -2538,13 +2536,6 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2, matchDate) {
   if (predOutcome === actualOutcome) {
     const diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
     return diffGap <= 1 ? 8 : 5;
-  }
-
-  // Old rule: 3 pts for close wrong-result, pre-cutoff matches only
-  const isPreCutoff = matchDate && new Date(matchDate) < CLIENT_SCORING_CUTOFF;
-  if (isPreCutoff) {
-    const totalGap = Math.abs(pred1 - actual1) + Math.abs(pred2 - actual2);
-    return totalGap <= 2 ? 3 : 0;
   }
   return 0;
 }

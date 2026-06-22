@@ -55,19 +55,12 @@ function initFirebase() {
 }
 
 // ─── Scoring (mirrors scoreMatch on the backend) ────────────────────────────
-// Cutoff = Jun 18 2026 Atlanta kickoff (19:00 Cairo / 16:00 UTC).
-// Pre-cutoff matches keep the old 3-point consolation tier.
-// Post-cutoff wrong-result predictions score 0.
-const SCORING_CUTOFF = new Date("2026-06-18T16:00:00Z");
-
-function calcPoints(p1, p2, a1, a2, matchDate) {
+// Exact score = 15, correct outcome + GD within 1 = 8, correct outcome only = 5, wrong outcome = 0.
+function calcPoints(p1, p2, a1, a2) {
   if (p1 === a1 && p2 === a2) return 15;
   const po = Math.sign(p1 - p2);
   const ao = Math.sign(a1 - a2);
   if (po === ao) return Math.abs(p1 - p2 - (a1 - a2)) <= 1 ? 8 : 5;
-  // Old rule preserved for pre-cutoff matches only
-  const isPreCutoff = matchDate && new Date(matchDate) < SCORING_CUTOFF;
-  if (isPreCutoff) return Math.abs(p1 - a1) + Math.abs(p2 - a2) <= 2 ? 3 : 0;
   return 0;
 }
 
@@ -266,18 +259,18 @@ function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
 // ─── Main data loader (waterfall) ────────────────────────────────────────────
 
 async function loadProfile(username) {
-  // 1. Try Worker /profile endpoint
-  try {
-    return await fetchProfileFromWorker(username);
-  } catch (e) {
-    console.warn("Worker /profile unavailable:", e.message);
-  }
-
-  // 2. Try Supabase direct
+  // 1. Try Supabase direct first so the profile matches the main app data path.
   try {
     return await fetchProfileFromSupabase(username);
   } catch (e) {
     console.warn("Supabase profile fetch failed:", e.message);
+  }
+
+  // 2. Try Worker /profile endpoint as a fallback.
+  try {
+    return await fetchProfileFromWorker(username);
+  } catch (e) {
+    console.warn("Worker /profile unavailable:", e.message);
   }
 
   // 3. Firestore fallback
