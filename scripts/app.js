@@ -91,6 +91,14 @@ const CONFIG = {
     "https://ggowcpredictor.ben-arthur-wiz.workers.dev",
 
   apiKey: localStorage.getItem("ggo_wc_key") || "",
+
+  get workerUrl() {
+    return this.appsScriptUrl;
+  },
+
+  get seedToken() {
+    return this.apiKey;
+  }
 };
 
 const STATE = {
@@ -455,11 +463,12 @@ async function submitAccountRequest(event) {
     .getElementById("request-display-name")
     .value.trim();
   const rawUsername = document.getElementById("request-username").value.trim();
+  const email = document.getElementById("request-email").value.trim();
   const note = document.getElementById("request-note").value.trim();
   const username = normalizeUsername(rawUsername);
 
-  if (!displayName || !username) {
-    showLoginError("Please enter both a display name and username.");
+  if (!displayName || !username || !email) {
+    showLoginError("Please enter your display name, username, and email.");
     return;
   }
 
@@ -523,6 +532,7 @@ async function submitAccountRequest(event) {
     const row = {
       username,
       displayName,
+      email,
       note,
       status: "pending",
       createdAt: new Date().toISOString(),
@@ -545,6 +555,7 @@ async function submitAccountRequest(event) {
           {
             username,
             displayName,
+            email,
             note,
             status: "pending",
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -560,6 +571,21 @@ async function submitAccountRequest(event) {
     if (!saved) {
       throw new Error("Could not save request to either database.");
     }
+
+    // Ping worker to notify admin by email (fire-and-forget — don't block on failure)
+    try {
+      const workerBase = (CONFIG.appsScriptUrl || "").replace(/\/[^/]*$/, "");
+      const notifyUrl = CONFIG.workerUrl
+        ? CONFIG.workerUrl.replace(/\/$/, "") + "/notify/new-request"
+        : null;
+      if (notifyUrl) {
+        fetch(notifyUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, displayName, email, note }),
+        }).catch(() => {});
+      }
+    } catch (_) {}
 
     toggleAccountRequest(false);
     showToast("Request sent. An admin will review it soon.");
@@ -2001,10 +2027,32 @@ async function approveAccountRequest(username) {
     }
 
     const secretCode = generateAccessCode(username);
+    const workerUrl = CONFIG.workerUrl
+      ? CONFIG.workerUrl.replace(/\/$/, "") + "/admin/approve-request"
+      : null;
+    const token = CONFIG.seedToken || "";
 
-    // 1. Save to Supabase
-    let saved = false;
-    try {
+    // Delegate DB writes + email to the worker (keeps API key server-side)
+    if (workerUrl && token) {
+      const resp = await fetch(workerUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          username,
+          displayName: requestData.displayName || username,
+          email: requestData.email || "",
+          secretCode,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.text();
+        throw new Error(`Worker approve failed: ${err}`);
+      }
+    } else {
+      // Fallback: write directly to Supabase (no email sent)
       const userRow = {
         username,
         displayName: requestData.displayName || username,
@@ -2018,20 +2066,15 @@ async function approveAccountRequest(username) {
         approvedAt: new Date().toISOString(),
         secretCode,
       };
-
       await supabaseUpsert("users", [userRow], "username");
       await supabaseUpsert("accountRequests", [reqUpdateRow], "username");
-      saved = true;
-    } catch (error) {
-      console.warn("Supabase approval failed:", error.message);
     }
 
-    // 2. Save to Firestore
+    // Mirror to Firestore (optional)
     if (db) {
       try {
         const userDoc = db.collection("users").doc(username);
         const requestDoc = db.collection("accountRequests").doc(username);
-
         await userDoc.set(
           {
             username,
@@ -2039,12 +2082,10 @@ async function approveAccountRequest(username) {
             secretCode,
             isAdmin: false,
             accountStatus: "approved",
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true },
         );
-
         await requestDoc.set(
           {
             status: "approved",
@@ -2053,14 +2094,9 @@ async function approveAccountRequest(username) {
           },
           { merge: true },
         );
-        saved = true;
       } catch (error) {
-        console.error("Firestore approval failed:", error);
+        console.warn("Firestore mirror failed (non-critical):", error);
       }
-    }
-
-    if (!saved) {
-      throw new Error("Could not write approval to any database.");
     }
 
     showToast(`Approved ${username}. Code: ${secretCode}`, "success");
@@ -2074,39 +2110,67 @@ async function approveAccountRequest(username) {
 
 async function rejectAccountRequest(username) {
   try {
-    let saved = false;
+    let requestData = null;
 
-    // 1. Supabase
+    // Load request to get email
     try {
+      const reqs = await supabaseSelect(
+        "accountRequests",
+        "*",
+        `username=eq.${encodeURIComponent(username)}`,
+      );
+      if (reqs && reqs.length) requestData = reqs[0];
+    } catch (e) {
+      console.warn("Supabase request load failed:", e.message);
+    }
+    if (!requestData && db) {
+      const snap = await db.collection("accountRequests").doc(username).get();
+      if (snap.exists) requestData = snap.data();
+    }
+
+    const workerUrl = CONFIG.workerUrl
+      ? CONFIG.workerUrl.replace(/\/$/, "") + "/admin/reject-request"
+      : null;
+    const token = CONFIG.seedToken || "";
+
+    if (workerUrl && token && requestData?.email) {
+      const resp = await fetch(workerUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          username,
+          displayName: requestData.displayName || username,
+          email: requestData.email,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.text();
+        throw new Error(`Worker reject failed: ${err}`);
+      }
+    } else {
+      // Fallback: write directly (no email sent if no email on file)
       const reqUpdateRow = {
         username,
         status: "rejected",
         rejectedAt: new Date().toISOString(),
       };
       await supabaseUpsert("accountRequests", [reqUpdateRow], "username");
-      saved = true;
-    } catch (error) {
-      console.warn("Supabase rejection failed:", error.message);
-    }
-
-    // 2. Firestore
-    if (db) {
-      try {
-        await db.collection("accountRequests").doc(username).set(
-          {
-            status: "rejected",
-            rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
-        saved = true;
-      } catch (error) {
-        console.error("Firestore rejection failed:", error);
+      if (db) {
+        try {
+          await db.collection("accountRequests").doc(username).set(
+            {
+              status: "rejected",
+              rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        } catch (error) {
+          console.error("Firestore rejection failed:", error);
+        }
       }
-    }
-
-    if (!saved) {
-      throw new Error("Could not write rejection to any database.");
     }
 
     showToast(`Rejected ${username}.`, "warning");
