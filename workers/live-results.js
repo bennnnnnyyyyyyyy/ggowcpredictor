@@ -44,13 +44,31 @@ async function supabaseSelect(env, table, query) {
     table,
     `select=${encodeURIComponent(query || "*")}`,
   );
-  const response = await fetch(url, {
-    headers: supabaseHeaders(env),
-  });
-  if (!response.ok) {
-    throw new Error(`Supabase GET ${table} HTTP ${response.status}`);
+  const allRows = [];
+  let page = 0;
+  const pageSize = 1000;
+  while (true) {
+    const start = page * pageSize;
+    const end = start + pageSize - 1;
+    const response = await fetch(url, {
+      headers: supabaseHeaders(env, {
+        Range: `${start}-${end}`,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Supabase GET ${table} HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    if (!Array.isArray(data)) {
+      throw new Error(`Expected array from Supabase select, got: ${typeof data}`);
+    }
+    allRows.push(...data);
+    if (data.length < pageSize) {
+      break;
+    }
+    page++;
   }
-  return response.json();
+  return allRows;
 }
 
 const SUPABASE_CONFLICT_KEYS = {
@@ -306,14 +324,19 @@ function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []
     return a.username.localeCompare(b.username);
   });
 
-  // ── Competition ranking: ties based solely on totalPoints ──
+  // ── Competition ranking: ties based on totalPoints, exactScores, and correctOutcomes ──
   const ranked = [];
   let rank = 1;
   let i = 0;
   while (i < sorted.length) {
     let j = i;
-    // Group all players with the same totalPoints
-    while (j < sorted.length && sorted[j].totalPoints === sorted[i].totalPoints) {
+    // Group all players with the same totalPoints, exactScores, and correctOutcomes
+    while (
+      j < sorted.length &&
+      sorted[j].totalPoints === sorted[i].totalPoints &&
+      sorted[j].exactScores === sorted[i].exactScores &&
+      sorted[j].correctOutcomes === sorted[i].correctOutcomes
+    ) {
       j++;
     }
     const currentRank = rank;

@@ -966,6 +966,28 @@ async function loadLeaderboard() {
   let supabaseLeaderboard = [];
   let firestoreLeaderboard = [];
 
+  const sortFn = (a, b) => {
+    const rankA = a.rank ?? 9999;
+    const rankB = b.rank ?? 9999;
+    if (rankA !== rankB) return rankA - rankB;
+
+    const pointsA = a.totalPoints ?? 0;
+    const pointsB = b.totalPoints ?? 0;
+    if (pointsA !== pointsB) return pointsB - pointsA;
+
+    const exactA = a.exactScores ?? 0;
+    const exactB = b.exactScores ?? 0;
+    if (exactA !== exactB) return exactB - exactA;
+
+    const outcomesA = a.correctOutcomes ?? 0;
+    const outcomesB = b.correctOutcomes ?? 0;
+    if (outcomesA !== outcomesB) return outcomesB - outcomesA;
+
+    const userA = String(a.username || "").toLowerCase();
+    const userB = String(b.username || "").toLowerCase();
+    return userA.localeCompare(userB);
+  };
+
   // 1. Try Supabase first so the main leaderboard matches the profile view.
   try {
     const data = await supabaseSelect("leaderboard", "*", "order=rank.asc");
@@ -980,7 +1002,7 @@ async function loadLeaderboard() {
   if (!supabaseLeaderboard.length) {
     const apiLeaderboard = await loadLeaderboardFromApi();
     if (apiLeaderboard.length) {
-      STATE.leaderboard = apiLeaderboard;
+      STATE.leaderboard = apiLeaderboard.sort(sortFn);
       return;
     }
   }
@@ -998,13 +1020,9 @@ async function loadLeaderboard() {
   }
 
   if (supabaseLeaderboard.length) {
-    STATE.leaderboard = supabaseLeaderboard.sort(
-      (a, b) => (a.rank || 99) - (b.rank || 99),
-    );
+    STATE.leaderboard = supabaseLeaderboard.sort(sortFn);
   } else if (firestoreLeaderboard.length) {
-    STATE.leaderboard = firestoreLeaderboard.sort(
-      (a, b) => (a.rank || 99) - (b.rank || 99),
-    );
+    STATE.leaderboard = firestoreLeaderboard.sort(sortFn);
   } else {
     STATE.leaderboard = buildLocalLeaderboard();
   }
