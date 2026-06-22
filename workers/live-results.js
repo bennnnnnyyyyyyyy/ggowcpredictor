@@ -1024,13 +1024,40 @@ async function fetchPrimaryOrBackupMatches(env) {
   return fetchLivescoreMatches(livescoreApiKey, livescoreApiSecret);
 }
 
-async function fetchWorldcup26Matches() {
-  const response = await fetch(WORLDCUP26_GAMES_URL, {
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) throw new Error(`worldcup26.ir HTTP ${response.status}`);
-  const data = await response.json();
-  return normalizeWorldcup26Games(data);
+async function fetchWorldcup26Matches(retries = 3, delay = 1000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(WORLDCUP26_GAMES_URL, {
+        headers: { Accept: "application/json" },
+      });
+
+      // If the response is not 2xx
+      if (!response.ok) {
+        // Retry only if it's a server error (5xx) and we have attempts left
+        if (response.status >= 500 && attempt < retries) {
+          console.warn(`Server error ${response.status}. Retrying attempt ${attempt}...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue; // Skip to the next loop iteration
+        }
+
+        // Throw immediately for 4xx errors (client errors shouldn't be retried)
+        throw new Error(`worldcup26.ir HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return normalizeWorldcup26Games(data);
+
+    } catch (error) {
+      // If it's a network/connection error and we have attempts left, retry
+      if (attempt < retries) {
+        console.warn(`Network error. Retrying attempt ${attempt}...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        // Out of retries, bubble the error up
+        throw error;
+      }
+    }
+  }
 }
 
 async function fetchWorldcup26Groups() {
