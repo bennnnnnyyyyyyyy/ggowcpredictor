@@ -141,7 +141,7 @@ Rank | DisplayName | TotalPoints | ExactScores | CorrectOutcomes | Predicted | L
 8. `renderResults()` — match cards showing real score vs user's prediction, points badge per match
 9. `renderBracket()` — knockout bracket from R32 through Final, teams populate as they qualify
 10. Login: replace mock auth with real Apps Script `?action=login` call
-11. `renderPredictions` filter buttons: `all` / `open` / `locked` / `scored` + per-group filters
+11. `renderPredictions` filter buttons: `all` / `open` / `live` / `locked` + per-group filters
 
 ### Phase 3 — Seed Data
 12. Hardcode all 104 fixtures into the Fixtures sheet (from openfootball/worldcup.json 2026 data), mapping each to its `APIFixtureID` from API-Football

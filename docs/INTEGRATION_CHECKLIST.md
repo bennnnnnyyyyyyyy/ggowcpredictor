@@ -144,9 +144,9 @@
 - **Action**: Implement bracket rendering (complex)
 
 ### 12. **Filter Functions Not Wired**
-- **Current**: `filterMatches()` and `filterResults()` have TODO comments
-- **Should Be**: Actually filter STATE arrays and re-render
-- **Action**: Implement filter logic
+- **Current**: `filterMatches()` supports `all`, `open`, `live`, and `locked`; `filterResults()` supports `all`, `live`, and `ft`
+- **Should Be**: Filter buttons re-render the active view from in-memory state
+- **Action**: Done for predictions and results tabs
 
 ### 13. **Settings Modal Not Complete**
 - **Current**: Modal exists but save handler might not work with Firebase

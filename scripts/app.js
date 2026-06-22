@@ -1276,14 +1276,38 @@ function renderPredictions() {
   const visibleFixtures = STATE.fixtures.filter((fixture) => {
     if (activeMatchFilter === "open") return !isLocked(fixture);
     if (activeMatchFilter === "locked") return isLocked(fixture);
+    if (activeMatchFilter === "live") {
+      const result = STATE.results[fixture.matchId];
+      return result && isLiveStatus(result.status);
+    }
     return true;
   });
 
   if (!visibleFixtures.length) {
-    container.innerHTML = emptyState(
-      "Fixtures are not loaded yet.",
-      "Run the app from a local server or seed Firestore fixtures.",
-    );
+    const hasFixtures = STATE.fixtures.length > 0;
+    if (!hasFixtures) {
+      container.innerHTML = emptyState(
+        "Fixtures are not loaded yet.",
+        "Run the app from a local server or seed Firestore fixtures.",
+      );
+    } else if (activeMatchFilter === "live") {
+      container.innerHTML = emptyState(
+        "No live matches right now.",
+        "Check back when a game is in progress.",
+      );
+    } else if (activeMatchFilter === "open") {
+      container.innerHTML = emptyState(
+        "No open matches.",
+        "All upcoming fixtures are locked or finished.",
+      );
+    } else if (activeMatchFilter === "locked") {
+      container.innerHTML = emptyState(
+        "No locked matches.",
+        "Open fixtures are still accepting predictions.",
+      );
+    } else {
+      container.innerHTML = emptyState("No matches to show.", "");
+    }
     return;
   }
 
@@ -1672,7 +1696,7 @@ function openMatchDrawer(matchId) {
  
     <div class="drawer-scoreline">
       <div class="drawer-team">
-        <div class="drawer-team-badge">${escapeHtml(team1Flag)}</div>
+        <div class="drawer-team-badge">${team1Flag}</div>
         <div class="drawer-team-name">${escapeHtml(fixture.team1)}</div>
       </div>
       <div class="drawer-score-block">
@@ -1683,7 +1707,7 @@ function openMatchDrawer(matchId) {
         </div>
       </div>
       <div class="drawer-team">
-        <div class="drawer-team-badge">${escapeHtml(team2Flag)}</div>
+        <div class="drawer-team-badge">${team2Flag}</div>
         <div class="drawer-team-name">${escapeHtml(fixture.team2)}</div>
       </div>
     </div>
