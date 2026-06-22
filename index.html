@@ -96,52 +96,52 @@
         </div>
 
         <!-- User pill (top-right on desktop, stays in row 1 on mobile) -->
-        <a class="user-pill" id="user-pill" href="profile.html" id="user-profile-link" title="View your profile">
-          <div class="user-avatar" id="user-avatar">?</div>
-          <span id="user-display-name">Loading...</span>
-        </a>
-        <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">
-          X
-        </button>
-      </div>
-
-      <!-- Row 2: Navigation -->
-      <nav id="main-nav">
-        <button class="nav-btn active" onclick="showView('predictions', this)">
-          Predictions
-        </button>
-        <button class="nav-btn" onclick="showView('standings', this)">
-          Standings
-        </button>
-        <button class="nav-btn" onclick="showView('leaderboard', this)">
-          Leaderboard
-        </button>
-        <button class="nav-btn" onclick="showView('results', this)">
-          Results
-        </button>
-        <button class="nav-btn" onclick="showView('bracket', this)">
-          Bracket
-        </button>
-        <!-- Admin button injected dynamically by showApp() for admins only -->
-      </nav>
-
-      <!-- Row 3: Sync status (desktop inline, mobile below nav) -->
-      <div class="sync-container">
-        <div class="sync-status">
-          <span class="status-dot" id="sync-dot"></span>
-          <span id="last-sync-time">Not synced</span>
+        <div class="user-pill" id="user-pill">
+          <a id="user-profile-link" href="profile.html" class="user-pill-link" title="View your profile">
+            <div class="user-avatar" id="user-avatar">?</div>
+            <span id="user-display-name">Loading...</span>
+          </a>
+          <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">
+            X
+          </button>
         </div>
-        <button class="sync-btn" type="button" onclick="requestSync()">
-          Sync
-        </button>
-        <button id="settings-nav-btn" class="sync-btn" type="button" onclick="toggleSettings(true)" style="
+        <!-- Row 2: Navigation -->
+        <nav id="main-nav">
+          <button class="nav-btn active" onclick="showView('predictions', this)">
+            Predictions
+          </button>
+          <button class="nav-btn" onclick="showView('standings', this)">
+            Standings
+          </button>
+          <button class="nav-btn" onclick="showView('leaderboard', this)">
+            Leaderboard
+          </button>
+          <button class="nav-btn" onclick="showView('results', this)">
+            Results
+          </button>
+          <button class="nav-btn" onclick="showView('bracket', this)">
+            Bracket
+          </button>
+          <!-- Admin button injected dynamically by showApp() for admins only -->
+        </nav>
+
+        <!-- Row 3: Sync status (desktop inline, mobile below nav) -->
+        <div class="sync-container">
+          <div class="sync-status">
+            <span class="status-dot" id="sync-dot"></span>
+            <span id="last-sync-time">Not synced</span>
+          </div>
+          <button class="sync-btn" type="button" onclick="requestSync()">
+            Sync
+          </button>
+          <button id="settings-nav-btn" class="sync-btn" type="button" onclick="toggleSettings(true)" style="
               display: none;
               background: rgba(255, 255, 255, 0.08);
               border-color: rgba(255, 255, 255, 0.25);
             ">
-          Settings
-        </button>
-      </div>
+            Settings
+          </button>
+        </div>
     </header>
 
     <!-- MAIN CONTENT -->
@@ -329,7 +329,8 @@
         </div>
         <div class="form-group">
           <label for="request-email">Email Address</label>
-          <input type="email" id="request-email" placeholder="your.name@gulfglobaloutsourcing.com" autocomplete="email" required />
+          <input type="email" id="request-email" placeholder="your.name@gulfglobaloutsourcing.com" autocomplete="email"
+            required />
         </div>
         <div class="form-group">
           <label for="request-note">Notes</label>
