@@ -963,16 +963,10 @@ async function loadPredictions() {
 async function loadLeaderboard() {
   STATE.leaderboard = [];
 
-  const apiLeaderboard = await loadLeaderboardFromApi();
-  if (apiLeaderboard.length) {
-    STATE.leaderboard = apiLeaderboard;
-    return;
-  }
-
   let supabaseLeaderboard = [];
   let firestoreLeaderboard = [];
 
-  // 1. Try Supabase
+  // 1. Try Supabase first so the main leaderboard matches the profile view.
   try {
     const data = await supabaseSelect("leaderboard", "*", "order=rank.asc");
     if (data && data.length) {
@@ -982,7 +976,16 @@ async function loadLeaderboard() {
     console.warn("Could not load Supabase leaderboard.", error.message);
   }
 
-  // 2. Try Firestore
+  // 2. Try the API / leaderboard endpoint as a fallback.
+  if (!supabaseLeaderboard.length) {
+    const apiLeaderboard = await loadLeaderboardFromApi();
+    if (apiLeaderboard.length) {
+      STATE.leaderboard = apiLeaderboard;
+      return;
+    }
+  }
+
+  // 3. Try Firestore
   if (db) {
     try {
       const current = await db.collection("leaderboard").doc("current").get();
@@ -994,9 +997,6 @@ async function loadLeaderboard() {
     }
   }
 
-  // Merge and sort
-  // NEW:
-  // Supabase leaderboard is canonical — Firebase only fills gaps
   if (supabaseLeaderboard.length) {
     STATE.leaderboard = supabaseLeaderboard.sort(
       (a, b) => (a.rank || 99) - (b.rank || 99),

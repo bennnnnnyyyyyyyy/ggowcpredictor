@@ -1,3 +1,14 @@
+## 2026-06-22 - Main leaderboard source-order fix
+
+### What changed
+
+- Switched the main app leaderboard loader to prefer Supabase before the Worker endpoint.
+- This keeps the leaderboard view aligned with the profile page when the Worker leaderboard is stale.
+
+### Why
+
+- Ray Parker was seeing 172 points on the main tab while the profile showed 180, which pointed to different source order between the two views.
+
 ## 2026-06-22 - Profile loader source-order fix
 
 ### What changed
