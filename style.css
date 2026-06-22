@@ -572,6 +572,18 @@ header {
   color: inherit;
 }
 
+.user-pill-link,
+.user-pill-link span {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+.user-pill-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* ════════════════════════════════════════
    VIEW SWITCHING
 ════════════════════════════════════════ */
