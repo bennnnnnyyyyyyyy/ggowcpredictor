@@ -290,7 +290,7 @@ header {
 }
 
 .logo-next {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -311,7 +311,7 @@ header {
 }
 
 .logo-text h1 {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -357,12 +357,15 @@ header {
 }
 
 .nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 16px;
   background: transparent;
   color: var(--muted);
   border: 1px solid transparent;
   border-radius: 6px;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-ggo-body);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -380,12 +383,6 @@ header {
   background: var(--wc-blue);
   color: white;
   border-color: var(--wc-blue);
-}
-
-.nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .nav-badge {
@@ -420,7 +417,7 @@ header {
   color: var(--light);
   border: 1px solid rgba(0, 209, 94, 0.3);
   border-radius: 6px;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-ggo-body);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -506,7 +503,6 @@ header {
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 0.6;
@@ -514,6 +510,17 @@ header {
 
   50% {
     opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
   }
 }
 
@@ -584,7 +591,7 @@ main {
 }
 
 .section-title {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -878,7 +885,7 @@ main {
 }
 
 .mc-pred-score {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 21px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.8);
@@ -886,7 +893,7 @@ main {
 }
 
 .mc-actual-score {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 23px;
   font-weight: 800;
   color: var(--light);
@@ -914,7 +921,7 @@ main {
 }
 
 .mc-result-score {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 26px;
   font-weight: 800;
   color: var(--light);
@@ -968,7 +975,7 @@ main {
 }
 
 .mc-points {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 20px;
   font-weight: 800;
   padding: 4px 10px;
@@ -1038,7 +1045,7 @@ main {
   background: rgba(0, 0, 0, 0.4);
   color: var(--light);
   text-align: center;
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 26px;
   font-weight: 800;
   transition: all 0.2s ease;
@@ -1085,7 +1092,6 @@ main {
   color: var(--light);
 }
 
-.status-token,
 .team-code {
   display: inline-grid;
   place-items: center;
@@ -1103,25 +1109,23 @@ main {
   line-height: 1;
 }
 
-.status-token {
-  min-width: auto;
-  height: 20px;
-  margin-right: 0;
-  font-size: 10px;
-}
-  .pred-pts.pts-good {
+/* Profile page prediction indicators (shared with profile.html) */
+.pred-pts.pts-good {
   background: rgba(245, 158, 11, 0.13);
   color: var(--warning);
   border: 1px solid rgba(245, 158, 11, 0.28);
 }
+
 .pred-pts.pts-partial {
   background: rgba(16, 185, 129, 0.13);
   color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.28);
 }
+
 .pred-stripe.stripe-good {
   background: var(--warning);
 }
+
 .pred-stripe.stripe-partial {
   background: var(--success);
 }
@@ -1324,7 +1328,6 @@ main {
 
 /* ════════════════════════════════════════
    MATCH DETAIL DRAWER
-   Append to bottom of style.css
 ════════════════════════════════════════ */
 
 /* ── Drawer overlay ── */
@@ -1469,6 +1472,7 @@ main {
   height: 100%;
   object-fit: cover;
 }
+
 .drawer-team-name {
   font-family: var(--font-ggo-display);
   font-size: 14px;
@@ -1714,16 +1718,7 @@ main {
   color: var(--muted);
 }
 
-/* ── Result card clickable cursor ── */
-.result-card {
-  cursor: pointer;
-}
-
-.result-card:hover .match-teams {
-  opacity: 0.85;
-}
-
-/* ── Mobile ── */
+/* ── Mobile drawer ── */
 @media (max-width: 480px) {
   .match-drawer {
     width: 100vw;
@@ -1762,6 +1757,7 @@ main {
   transition: all 0.25s ease;
   position: relative;
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.26);
+  cursor: pointer;
 }
 
 .result-card::before {
@@ -1784,6 +1780,10 @@ main {
 
 .result-card:hover::before {
   opacity: 1;
+}
+
+.result-card:hover .match-teams {
+  opacity: 0.85;
 }
 
 .result-card .match-date {
@@ -1856,7 +1856,7 @@ main {
 }
 
 .result-card .result-score {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 32px;
   font-weight: 800;
   color: var(--light);
@@ -1921,7 +1921,7 @@ main {
 }
 
 .champion-title {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 18px;
   font-weight: 700;
   color: var(--wc-red);
@@ -2075,7 +2075,7 @@ main {
 
 .admin-card strong {
   display: block;
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 30px;
   margin-bottom: 4px;
 }
@@ -2135,6 +2135,26 @@ main {
   width: auto;
   min-width: 96px;
   margin-top: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--muted);
+}
+
+.empty-state .empty-icon {
+  font-family: var(--font-ggo-display);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--wc-blue);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.empty-state p {
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .empty-state.compact {
@@ -2202,7 +2222,7 @@ main {
 }
 
 .modal-header h2 {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 20px;
   font-weight: 700;
 }
@@ -2373,6 +2393,8 @@ main {
     flex-wrap: nowrap;
     width: 100%;
     padding-bottom: 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
   #main-nav::-webkit-scrollbar {
@@ -2382,16 +2404,6 @@ main {
   .nav-btn {
     flex: 0 0 auto;
     padding: 10px 14px;
-  }
-
-  .sync-container {
-    justify-content: space-between;
-    width: 100%;
-    gap: 10px;
-  }
-
-  .sync-status {
-    display: flex;
   }
 
   .matches-filter {
@@ -2430,26 +2442,15 @@ main {
 
   .group-table {
     border-radius: 12px;
+    overflow-x: auto;
   }
 
-  .leaderboard-table {
-    display: block;
-    background: transparent;
-    border: 0;
-  }
-
-  .leaderboard-table thead {
-    display: none;
-  }
-
-  .leaderboard-table tbody {
-    display: block;
-  }  
-
-.group-standings-table {
+  .group-standings-table {
     display: table;
     width: 100%;
-    font-size: 11px;
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 10px;
   }
 
   .group-standings-table thead {
@@ -2467,7 +2468,7 @@ main {
   .group-standings-table th,
   .group-standings-table td {
     display: table-cell;
-    padding: 8px 4px;
+    padding: 6px 2px;
     text-align: center;
     border: 0;
     border-bottom: 1px solid rgba(0, 209, 94, 0.1);
@@ -2475,9 +2476,15 @@ main {
 
   .group-standings-table td[data-label="Team"] {
     text-align: left;
-    white-space: nowrap;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  
+
+  .group-standings-table td::before {
+    content: none;
+  }
+
   .group-standings-table .inline-flag-img {
     width: 24px;
     height: 16px;
@@ -2488,42 +2495,209 @@ main {
   .group-standings-table .team-code {
     margin-right: 6px;
   }
+
   .group-standings-table .rank-badge {
     width: 22px;
     height: 22px;
     font-size: 11px;
   }
 
+  /* Leaderboard: compact card rows */
+  .leaderboard-table {
+    display: block;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .leaderboard-table thead {
+    display: none;
+  }
+
+  .leaderboard-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .leaderboard-table tr {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) 30px 22px 22px 22px 34px;
+    align-items: center;
+    gap: 0 4px;
+    padding: 8px 10px;
+    border: 1px solid rgba(0, 209, 94, 0.2);
+    border-radius: 10px;
+    background: rgba(0, 209, 94, 0.05);
+  }
+
+  .leaderboard-table tr.current-user {
+    background: rgba(0, 179, 89, 0.13);
+    border-color: rgba(0, 209, 94, 0.45);
+  }
+
+  .leaderboard-table td {
+    display: block;
+    padding: 0;
+    border: none;
+    text-align: center;
+  }
+
+  .leaderboard-table td[data-label="Rank"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    flex-shrink: 0;
+  }
+
+  .leaderboard-table td[data-label="Rank"] .rank-badge {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .leaderboard-table td[data-label="Player"] {
+    text-align: left;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .player-avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .player-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  .leaderboard-table td[data-label="Points"],
+  .leaderboard-table td[data-label="Exact"],
+  .leaderboard-table td[data-label="Outcome"],
+  .leaderboard-table td[data-label="Predicted"],
+  .leaderboard-table td[data-label="Correct %"] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .leaderboard-table td[data-label="Points"] strong {
+    font-family: var(--font-ggo-display);
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--wc-blue);
+    line-height: 1;
+  }
+
+  .leaderboard-table td[data-label="Points"]::before {
+    content: "PTS";
+  }
+
+  .leaderboard-table td[data-label="Exact"]::before {
+    content: "EXA";
+  }
+
+  .leaderboard-table td[data-label="Outcome"]::before {
+    content: "OUT";
+  }
+
+  .leaderboard-table td[data-label="Predicted"]::before {
+    content: "PRD";
+  }
+
+  .leaderboard-table td[data-label="Correct %"]::before {
+    content: "%";
+  }
+
+  .leaderboard-table td::before {
+    display: block;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1;
+  }
+
+  .leaderboard-table td[data-label="Predicted"],
+  .leaderboard-table td[data-label="Correct %"] {
+    min-width: 0;
+  }
+
+  /* Match cards: compact horizontal layout */
   .match-card {
     border-radius: 14px;
   }
 
   .mc-header {
     flex-direction: column;
-    gap: 10px;
-    padding: 14px;
+    gap: 6px;
+    padding: 10px 12px;
   }
 
   .mc-badge {
     align-self: flex-start;
   }
 
+  .mc-kickoff {
+    font-size: 13px;
+  }
+
+  .mc-venue strong {
+    font-size: 12px;
+  }
+
   .mc-body {
-    grid-template-columns: 1fr;
-    gap: 14px;
-    padding: 16px 14px 18px;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    padding: 12px 10px;
   }
 
   .mc-team,
   .mc-team:first-child,
   .mc-team:last-child {
+    flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 4px;
+  }
+
+  .team-mark {
+    width: 44px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .team-mark .inline-flag-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .mc-name {
-    max-width: none;
-    font-size: 15px;
+    font-size: 11px;
+    max-width: 80px;
+    line-height: 1.1;
   }
 
   .mc-middle {
@@ -2531,13 +2705,22 @@ main {
   }
 
   .mc-result-grid {
-    width: 100%;
+    width: min(100%, 160px);
+    gap: 4px;
+  }
+
+  .mc-result-score {
+    font-size: 20px;
+  }
+
+  .mc-result-score--sub {
+    font-size: 14px;
   }
 
   .score-input {
-    width: 72px;
-    height: 48px;
-    font-size: 24px;
+    width: 48px;
+    height: 42px;
+    font-size: 20px;
   }
 
   .result-card {
@@ -2733,7 +2916,7 @@ main {
 }
 
 .welcome-text {
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-ggo-body);
   font-size: 14px;
   line-height: 1.6;
   color: var(--light);
@@ -2741,7 +2924,7 @@ main {
 }
 
 .modal-section-title {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 18px;
   font-weight: 700;
   text-transform: uppercase;
@@ -2780,12 +2963,6 @@ main {
   margin-bottom: 25px;
 }
 
-@media (max-width: 480px) {
-  .scoring-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .score-rule-card {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 10px;
@@ -2803,14 +2980,14 @@ main {
   position: absolute;
   top: 10px;
   right: 12px;
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: var(--font-ggo-display);
   font-size: 18px;
   font-weight: 800;
 }
 
 .score-rule-card strong {
   display: block;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-ggo-body);
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 4px;
@@ -2859,6 +3036,7 @@ main {
 .score-rule-card.pts-partial strong {
   color: #00d15e;
 }
+
 .score-rule-card.pts-close-guess {
   border: 1px solid rgba(0, 179, 89, 0.3);
 }
@@ -2968,295 +3146,4 @@ main {
 
 .start-playing-btn:hover {
   box-shadow: 0 6px 20px rgba(0, 209, 94, 0.4);
-}
-
-/* ── LEADERBOARD MOBILE: compact card layout ──────────────────
-   Drop this at the bottom of style.css (replaces/overrides the
-   existing @media (max-width: 768px) leaderboard block).
-   ────────────────────────────────────────────────────────────── */
-
-@media (max-width: 768px) {
-
-  /* Wrapper becomes a plain stack */
-  .leaderboard-table {
-    display: block;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    border-radius: 0;
-  }
-
-  .leaderboard-table thead {
-    display: none;
-  }
-
-  .leaderboard-table tbody {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  /* Each row = a horizontal pill card with 7 columns */
-.leaderboard-table tr {
-    display: grid;
-    /* rank | player | pts | exact | outcome | predicted | percent */
-    grid-template-columns: 20px minmax(0, 1fr) 30px 22px 22px 22px 34px;
-    align-items: center;
-    gap: 0 4px;
-    padding: 8px 10px;
-    margin: 0;
-    border: 1px solid rgba(0, 209, 94, 0.2);
-    border-radius: 10px;
-    background: rgba(0, 209, 94, 0.05);
-  }
-
-  .leaderboard-table tr.current-user {
-    background: rgba(0, 179, 89, 0.13);
-    border-color: rgba(0, 209, 94, 0.45);
-  }
-
-  .leaderboard-table td {
-    display: block;
-    padding: 0;
-    border: none;
-    text-align: center;
-  }
-
-  /* Hide the old data-label pseudo‑content */
-  .leaderboard-table td::before {
-    display: none;
-  }
-
-  /* Player cell – left‑aligned */
-  .leaderboard-table td[data-label="Player"] {
-    text-align: left;
-    min-width: 0;
-  }
-
-  /* Rank cell — show as a compact badge instead of hiding it */
-  .leaderboard-table td[data-label="Rank"] {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    flex-shrink: 0;
-  }
-
-  .leaderboard-table td[data-label="Rank"] .rank-badge {
-    width: 22px;
-    height: 22px;
-    font-size: 11px;
-  }
-
-  /* Player cell – left‑aligned */
-  .leaderboard-table td[data-label="Player"] {
-    text-align: left;
-    min-width: 0;
-    flex: 1;
-  }
-
-  .player-info {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .player-avatar {
-    width: 22px;
-    height: 22px;
-    font-size: 10px;
-    flex-shrink: 0;
-  }
-
-  .player-name {
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-  }
-
-  .player-name {
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-  }
-
-  /* All statistic cells: show small label above the number */
-  .leaderboard-table td[data-label="Points"],
-  .leaderboard-table td[data-label="Exact"],
-  .leaderboard-table td[data-label="Outcome"],
-  .leaderboard-table td[data-label="Predicted"],
-  .leaderboard-table td[data-label="Correct %"] {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .leaderboard-table td[data-label="Points"] strong {
-    font-family: "Barlow Condensed", sans-serif;
-    font-size: 17px;
-    font-weight: 800;
-    color: var(--wc-blue);
-    line-height: 1;
-  }
-
-  /* Add labels via pseudo‑elements */
-  .leaderboard-table td[data-label="Points"]::before {
-    content: "PTS";
-  }
-
-  .leaderboard-table td[data-label="Exact"]::before {
-    content: "EXA";
-  }
-
-  .leaderboard-table td[data-label="Outcome"]::before {
-    content: "OUT";
-  }
-
-  .leaderboard-table td[data-label="Predicted"]::before {
-    content: "PRD";
-  }
-
-  .leaderboard-table td[data-label="Correct %"]::before {
-    content: "%";
-  }
-
-  .leaderboard-table td::before {
-    display: block !important;
-    font-size: 7px;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    color: var(--muted);
-    line-height: 1;
-  }
-
-  /* Fine‑tune column widths */
-  .leaderboard-table td[data-label="Predicted"] {
-    min-width: 0;
-  }
-
-  .leaderboard-table td[data-label="Correct %"] {
-    min-width: 0;
-  }
-
-  /* Horizontal layout: flag+name | score | flag+name */
-  .mc-body {
-    grid-template-columns: 1fr auto 1fr !important;
-    gap: 8px !important;
-    padding: 12px 10px !important;
-  }
-
-  .mc-team,
-  .mc-team:first-child,
-  .mc-team:last-child {
-    flex-direction: column;
-    align-items: center !important;
-    text-align: center !important;
-    gap: 4px;
-  }
-
-  /* Smaller flag box */
-  .team-mark {
-    width: 44px !important;
-    height: 32px !important;
-    font-size: 16px !important;
-  }
-
-  .team-mark .inline-flag-img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-  }
-
-  .mc-name {
-    font-size: 11px !important;
-    max-width: 80px !important;
-    line-height: 1.1;
-  }
-
-  /* Tighten the score input */
-  .score-input {
-    width: 48px !important;
-    height: 42px !important;
-    font-size: 20px !important;
-  }
-
-  /* Shrink the result grid */
-  .mc-result-grid {
-    width: 160px !important;
-    gap: 4px !important;
-  }
-
-  .mc-result-score {
-    font-size: 20px !important;
-  }
-
-  .mc-result-score--sub {
-    font-size: 14px !important;
-  }
-
-  /* Tighten header */
-  .mc-header {
-    padding: 10px 12px !important;
-    gap: 6px !important;
-  }
-
-  .mc-kickoff {
-    font-size: 13px !important;
-  }
-
-  .mc-venue strong {
-    font-size: 12px !important;
-  }
-.group-table {
-    overflow-x: auto;
-  }
-
-  .group-standings-table {
-    min-width: 0;
-    width: 100%;
-    table-layout: fixed;
-  }
-
-  .group-standings-table th,
-  .group-standings-table td {
-    padding: 6px 2px;
-    font-size: 10px;
-  }
-
-  .group-standings-table td[data-label="Team"] {
-    white-space: normal;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .group-standings-table td::before {
-    content: none !important;
-  }
-  .pred-pts.pts-good {
-  background: rgba(245, 158, 11, 0.13);
-  color: var(--warning);
-  border: 1px solid rgba(245, 158, 11, 0.28);
-}
-.pred-pts.pts-partial {
-  background: rgba(16, 185, 129, 0.13);
-  color: var(--success);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-}
-.pred-stripe.stripe-good {
-  background: var(--warning);
-}
-.pred-stripe.stripe-partial {
-  background: var(--success);
-}
 }
