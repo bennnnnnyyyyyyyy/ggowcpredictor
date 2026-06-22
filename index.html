@@ -96,13 +96,13 @@
         </div>
 
         <!-- User pill (top-right on desktop, stays in row 1 on mobile) -->
-        <div class="user-pill" id="user-pill">
+        <a class="user-pill" id="user-pill" href="profile.html" id="user-profile-link" title="View your profile">
           <div class="user-avatar" id="user-avatar">?</div>
           <span id="user-display-name">Loading...</span>
-          <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">
-            X
-          </button>
-        </div>
+        </a>
+        <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">
+          X
+        </button>
       </div>
 
       <!-- Row 2: Navigation -->
@@ -326,6 +326,10 @@
         <div class="form-group">
           <label for="request-username">Username</label>
           <input type="text" id="request-username" placeholder="Choose a username" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="request-email">Email Address</label>
+          <input type="email" id="request-email" placeholder="your.name@gulfglobaloutsourcing.com" autocomplete="email" required />
         </div>
         <div class="form-group">
           <label for="request-note">Notes</label>
