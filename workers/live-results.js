@@ -1049,23 +1049,6 @@ export default {
         return corsJson({ success: true, username });
       }
 
-      // POST /notify/new-request — email admin when a new account request is submitted
-      if ((path === "/notify/new-request" || action === "notify-new-request") && request.method === "POST") {
-        const body = await request.json();
-        const { username, displayName, email, note } = body;
-        if (!username || !email) {
-          return corsJson({ success: false, error: "username and email required" }, 400);
-        }
-        await sendEmailViaGas(env, {
-          action: "emailNewRequest",
-          displayName: displayName || username,
-          username,
-          email,
-          note: note || "",
-        });
-        return corsJson({ success: true });
-      }
-
       // Root — API info
       return corsJson({
         ok: true,
@@ -1075,7 +1058,6 @@ export default {
           "/admin/sync-standings",
           "/admin/approve-request",
           "/admin/reject-request",
-          "/notify/new-request",
           "/fixtures",
           "/leaderboard",
         ],

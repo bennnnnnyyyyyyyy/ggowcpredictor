@@ -9,42 +9,6 @@ var APP_URL     = "https://bennnnnnyyyyyyyy.github.io/ggowcpredictor/index.html"
 // ─── Public email actions ────────────────────────────────────────────────────
 
 /**
- * Called when a new account request is submitted.
- * Notifies the admin that someone is waiting for approval.
- */
-function emailNewRequest_(displayName, username, email, note) {
-  var subject = "New account request: " + displayName + " (@" + username + ")";
-  var body = [
-    "A new account request has been submitted.",
-    "",
-    "Name:     " + displayName,
-    "Username: @" + username,
-    "Email:    " + email,
-    note ? "Note:     " + note : "",
-    "",
-    "Approve or reject from the Admin panel:",
-    APP_URL,
-  ].filter(function(l) { return l !== undefined; }).join("\n");
-
-  var html = buildEmailHtml(
-    "New Account Request 🆕",
-    "A new player wants to join GGO WC 2026.",
-    [
-      "<b>Name:</b> "     + escapeHtml_(displayName),
-      "<b>Username:</b> @" + escapeHtml_(username),
-      "<b>Email:</b> "    + escapeHtml_(email),
-      note ? "<b>Note:</b> " + escapeHtml_(note) : null,
-    ].filter(Boolean).join("<br>"),
-    "Open Admin Panel",
-    APP_URL,
-    "#1a73e8"
-  );
-
-  sendEmail_({ to: ADMIN_EMAIL, subject: subject, body: body, html: html });
-  return { sent: true };
-}
-
-/**
  * Called when an admin approves a request.
  * Sends the user their access code.
  */

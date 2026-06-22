@@ -572,21 +572,6 @@ async function submitAccountRequest(event) {
       throw new Error("Could not save request to either database.");
     }
 
-    // Ping worker to notify admin by email (fire-and-forget — don't block on failure)
-    try {
-      const workerBase = (CONFIG.appsScriptUrl || "").replace(/\/[^/]*$/, "");
-      const notifyUrl = CONFIG.workerUrl
-        ? CONFIG.workerUrl.replace(/\/$/, "") + "/notify/new-request"
-        : null;
-      if (notifyUrl) {
-        fetch(notifyUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, displayName, email, note }),
-        }).catch(() => {});
-      }
-    } catch (_) {}
-
     toggleAccountRequest(false);
     showToast("Request sent. An admin will review it soon.");
   } catch (error) {
