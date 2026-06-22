@@ -246,7 +246,37 @@ async function loadCollection(env, table) {
   return [];
 }
 
+// ─── Email Notifications (via Google Apps Script relay) ─────────────────────
+//
+// Set these as Cloudflare Worker secrets:
+//   wrangler secret put GAS_WEB_APP_URL   ← your deployed GAS web app URL
+//   wrangler secret put GAS_EMAIL_TOKEN   ← shared secret matching EMAIL_TOKEN in GAS Script Properties
+
+async function sendEmailViaGas(env, payload) {
+  const gasUrl = env.GAS_WEB_APP_URL;
+  const token  = env.GAS_EMAIL_TOKEN;
+  if (!gasUrl || !token) {
+    console.warn("Email skipped: GAS_WEB_APP_URL or GAS_EMAIL_TOKEN not set.");
+    return;
+  }
+  try {
+    const resp = await fetch(gasUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, token }),
+      redirect: "follow",
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.warn(`GAS email failed (${resp.status}): ${text}`);
+    }
+  } catch (err) {
+    console.warn("GAS email network error:", err.message);
+  }
+}
+
 // ─── Leaderboard Calculation Engine ─────────────────────────────────────────
+
 
 function scoreMatch(p1, p2, a1, a2, matchDate) {
   if (p1 === a1 && p2 === a2) return 15;

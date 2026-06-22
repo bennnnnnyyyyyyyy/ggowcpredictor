@@ -42,15 +42,26 @@ function doGet(e) {
 }
 
 /**
- * POST endpoint for triggered updates
+ * POST endpoint for triggered updates and email notifications.
+ * Email actions require a shared secret in the "token" field.
  */
 function doPost(e) {
   const data = JSON.parse(e.postData.contents);
   const action = data.action;
-  
+
+  // Shared secret guard for email actions — set via Script Properties: EMAIL_TOKEN
+  const EMAIL_ACTIONS = ["emailNewRequest", "emailApproved", "emailRejected"];
+  if (EMAIL_ACTIONS.includes(action)) {
+    const expected = PropertiesService.getScriptProperties().getProperty("EMAIL_TOKEN") || "";
+    if (!expected || data.token !== expected) {
+      return ContentService.createTextOutput(JSON.stringify({ error: "Unauthorized" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   try {
     let response = {};
-    
+
     switch (action) {
       case "seedFixtures":
         response = seedFixturesFromJSON();
@@ -67,13 +78,25 @@ function doPost(e) {
       case "pullLeaderboard":
         response = pullLeaderboardFromWorker();
         break;
+
+      // ── Email notifications ───────────────────────────────────────────────
+      case "emailNewRequest":
+        response = emailNewRequest_(data.displayName, data.username, data.email, data.note);
+        break;
+      case "emailApproved":
+        response = emailApproved_(data.displayName, data.username, data.email, data.secretCode);
+        break;
+      case "emailRejected":
+        response = emailRejected_(data.displayName, data.username, data.email);
+        break;
+
       default:
         response = { error: "Unknown action" };
     }
-    
+
     return ContentService.createTextOutput(JSON.stringify(response))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
       error: error.toString()
