@@ -989,6 +989,83 @@ export default {
         const profileData = await handleProfileGet(env, username);
         return corsJson(profileData);
       }
+
+      // POST /admin/approve-request — create user in Supabase + send approval email
+      if ((path === "/admin/approve-request" || action === "approve-request") && request.method === "POST") {
+        if (!isAuthorized(request, env)) {
+          return corsJson({ success: false, error: "Unauthorized" }, 401);
+        }
+        const body = await request.json();
+        const { username, displayName, email, secretCode } = body;
+        if (!username || !email || !secretCode) {
+          return corsJson({ success: false, error: "username, email, secretCode required" }, 400);
+        }
+        // Persist user
+        await supabaseUpsert(env, "users", [{
+          username,
+          displayName: displayName || username,
+          secretCode,
+          isAdmin: false,
+          joinedAt: new Date().toISOString(),
+        }]);
+        await supabaseUpsert(env, "accountRequests", [{
+          username,
+          status: "approved",
+          approvedAt: new Date().toISOString(),
+          secretCode,
+        }]);
+        // Fire email (non-blocking — don't fail the response if email fails)
+        await sendEmailViaGas(env, {
+          action: "emailApproved",
+          displayName: displayName || username,
+          username,
+          email,
+          secretCode,
+        });
+        return corsJson({ success: true, username });
+      }
+
+      // POST /admin/reject-request — mark rejected + send rejection email
+      if ((path === "/admin/reject-request" || action === "reject-request") && request.method === "POST") {
+        if (!isAuthorized(request, env)) {
+          return corsJson({ success: false, error: "Unauthorized" }, 401);
+        }
+        const body = await request.json();
+        const { username, displayName, email } = body;
+        if (!username || !email) {
+          return corsJson({ success: false, error: "username and email required" }, 400);
+        }
+        await supabaseUpsert(env, "accountRequests", [{
+          username,
+          status: "rejected",
+          rejectedAt: new Date().toISOString(),
+        }]);
+        await sendEmailViaGas(env, {
+          action: "emailRejected",
+          displayName: displayName || username,
+          username,
+          email,
+        });
+        return corsJson({ success: true, username });
+      }
+
+      // POST /notify/new-request — email admin when a new account request is submitted
+      if ((path === "/notify/new-request" || action === "notify-new-request") && request.method === "POST") {
+        const body = await request.json();
+        const { username, displayName, email, note } = body;
+        if (!username || !email) {
+          return corsJson({ success: false, error: "username and email required" }, 400);
+        }
+        await sendEmailViaGas(env, {
+          action: "emailNewRequest",
+          displayName: displayName || username,
+          username,
+          email,
+          note: note || "",
+        });
+        return corsJson({ success: true });
+      }
+
       // Root — API info
       return corsJson({
         ok: true,
@@ -996,6 +1073,9 @@ export default {
           "/sync",
           "/sync-scores",
           "/admin/sync-standings",
+          "/admin/approve-request",
+          "/admin/reject-request",
+          "/notify/new-request",
           "/fixtures",
           "/leaderboard",
         ],
