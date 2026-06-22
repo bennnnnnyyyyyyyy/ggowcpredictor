@@ -1541,13 +1541,12 @@ function renderLeaderboard() {
       // ---- new data ----
       const predicted = player.predicted || player.totalPredictions || player.predictions || 0;
       const correctOutcomes = player.correctOutcomes || player.outcomeCount || 0;
-      const completed = player.completedPredictions || player.resolvedPredictions || 0;
+      const scored = player.scored || player.completedPredictions || player.resolvedPredictions || 0;
 
-      // percentage based on completed predictions (if available), else total predictions
-      const denominator = completed > 0 ? completed : predicted;
-      const percent = denominator > 0 ? (correctOutcomes / denominator) * 100 : 0;
-      const percentDisplay = denominator > 0
-        ? `<span class="${percent >= 50 ? 'percent-high' : 'percent-low'}">${percent.toFixed(1)}%</span>`
+      // Accuracy % matching profile.js
+      const percent = scored > 0 ? Math.round((correctOutcomes / scored) * 100) : 0;
+      const percentDisplay = scored > 0
+        ? `<span class="${percent >= 50 ? 'percent-high' : 'percent-low'}">${percent}%</span>`
         : "—";        // ------------------
 
       // entire row is clickable → opens profile.html?user=username
@@ -2587,6 +2586,7 @@ function buildLocalLeaderboard() {
       exactScores,
       correctOutcomes,
       predicted,
+      scored: completedPredictions,
       completedPredictions,   // NEW
     },
   ];
