@@ -37,14 +37,9 @@ async function supabaseSelect(table, selectQuery = "*", extraQuery = "") {
   if (extraQuery) {
     query += `&${extraQuery}`;
   }
-  // Cache-bust on every call: prevents stale fixtures/predictions/leaderboard
-  // data from being served by the browser or any intermediary cache, which
-  // was causing state conflicts (e.g. stale predictions overwriting fresh ones).
-  query += `&_ts=${Date.now()}`;
   const url = getSupabaseUrl(table, query);
   const response = await fetch(url, {
     headers: supabaseHeaders(),
-    cache: "no-store",
   });
   if (!response.ok) {
     throw new Error(`Supabase GET ${table} HTTP ${response.status}`);
