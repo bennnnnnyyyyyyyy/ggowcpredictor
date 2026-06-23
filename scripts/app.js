@@ -78,6 +78,7 @@ const DEMO_USERS = {
 let db = null;
 let activeMatchFilter = "all";
 let activeResultFilter = "all";
+let activeSyncPromise = null;
 
 const SESSION = {
   token: localStorage.getItem("ggo_wc_token") || null,
@@ -664,6 +665,8 @@ function ensureAdminNav() {
 }
 
 async function requestSync() {
+  if (activeSyncPromise) return activeSyncPromise;
+
   const dot = document.getElementById("sync-dot");
   const timeEl = document.getElementById("last-sync-time");
   const syncBtn = document.querySelector(".sync-btn");
@@ -672,41 +675,45 @@ async function requestSync() {
   if (timeEl) timeEl.textContent = "Syncing...";
   if (syncBtn) syncBtn.classList.add("loading");
 
-  try {
-    await loadGameData();
-    if (!STATE.fixtures.length) await loadFixtures();
-    await loadResults();
-    await loadLeaderboard();
-    await loadGroupStandings();
-    await loadPredictions();
-    await loadAccountRequests();
+  activeSyncPromise = (async () => {
+    try {
+      await loadGameData();
+      if (!STATE.fixtures.length) await loadFixtures();
+      await loadResults();
+      await loadLeaderboard();
+      await loadGroupStandings();
+      await loadPredictions();
+      await loadAccountRequests();
 
-    STATE.lastSync = new Date();
-    if (dot) dot.className = "status-dot active";
-    if (timeEl) {
-      timeEl.textContent = `Live - ${STATE.lastSync.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Africa/Cairo",
-      })}`;
+      STATE.lastSync = new Date();
+      if (dot) dot.className = "status-dot active";
+      if (timeEl) {
+        timeEl.textContent = `Live - ${STATE.lastSync.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Africa/Cairo",
+        })}`;
+      }
+
+      renderPredictions();
+      renderGroupStandings();
+      renderLeaderboard();
+      renderResults();
+      renderBracket();
+      renderAdmin();
+    } catch (error) {
+      console.error("Sync error:", error);
+      if (dot) dot.className = "status-dot";
+      if (timeEl) timeEl.textContent = "Sync failed";
+    } finally {
+      updateAdminBadge();
+      if (syncBtn) syncBtn.classList.remove("loading");
+      activeSyncPromise = null;
     }
+  })();
 
-    renderPredictions();
-    renderGroupStandings();
-    renderLeaderboard();
-    renderResults();
-    renderBracket();
-    renderAdmin();
-  } catch (error) {
-    console.error("Sync error:", error);
-    if (dot) dot.className = "status-dot";
-    if (timeEl) timeEl.textContent = "Sync failed";
-  } finally {
-    updateAdminBadge();
-    if (syncBtn) syncBtn.classList.remove("loading");
-  }
+  return activeSyncPromise;
 }
-
 async function loadAccountRequests() {
   STATE.accountRequests = [];
 
@@ -874,7 +881,8 @@ async function loadResults() {
   const localResults = readLocalObject(
     `ggo_wc_results_${SESSION.username || "demo"}`,
   );
-  STATE.results = { ...localResults, ...merged };
+  const nextResults = { ...localResults, ...merged };
+  STATE.results = Object.keys(nextResults).length ? nextResults : existingResults;
 
   // Inject mock results for local development/testing if no database or API is connected
   if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
@@ -1035,7 +1043,8 @@ async function loadLeaderboard() {
   } else if (firestoreLeaderboard.length) {
     STATE.leaderboard = firestoreLeaderboard.sort(sortFn);
   } else {
-    STATE.leaderboard = buildLocalLeaderboard();
+    const localLeaderboard = buildLocalLeaderboard();
+    STATE.leaderboard = localLeaderboard.length ? localLeaderboard : existingLeaderboard;
   }
 }
 
@@ -2322,7 +2331,8 @@ function getFlagImg(teamName) {
   const code = TEAM_FLAG_CODES[String(teamName).toLowerCase().trim()];
   if (!code)
     return `<span class="team-code">${escapeHtml(getTeamCode(teamName))}</span>`;
-  return `<img class="inline-flag-img" src="https://flagcdn.com/w80/${code}.png" alt="${escapeHtml(teamName)}" width="40" height="27">`;
+  const safeTeamName = escapeHtml(teamName);
+  return `<img class="inline-flag-img" src="https://flagcdn.com/w80/${code}.png" srcset="https://flagcdn.com/w80/${code}.png 1x, https://flagcdn.com/w160/${code}.png 2x" alt="${safeTeamName}" width="40" height="27" loading="lazy" decoding="async">`;
 }
 async function loadTeamMeta() {
   try {
@@ -2367,7 +2377,14 @@ async function loadTeamMeta() {
   }
 }
 async function loadGameData() {
-  if (!CONFIG.appsScriptUrl) return;
+  const loaded = {
+    fixtures: false,
+    results: false,
+    leaderboard: false,
+    groupStandings: false,
+    users: false,
+  };
+  if (!CONFIG.appsScriptUrl) return loaded;
 
   try {
     const response = await fetch(
@@ -2381,22 +2398,28 @@ async function loadGameData() {
 
     if (Array.isArray(data.fixtures) && data.fixtures.length) {
       STATE.fixtures = sortFixtures(data.fixtures.map(normalizeFixture));
+      loaded.fixtures = true;
     }
     if (data.results) {
       STATE.results = normalizeResultsPayload(data.results);
+      loaded.results = Object.keys(STATE.results).length > 0;
     }
     if (Array.isArray(data.leaderboard)) {
       STATE.leaderboard = data.leaderboard;
+      loaded.leaderboard = data.leaderboard.length > 0;
     }
     if (data.groupStandings) {
       STATE.groupStandings = normalizeGroupStandingsPayload(data.groupStandings);
+      loaded.groupStandings = Object.keys(STATE.groupStandings).length > 0;
     }
     if (Array.isArray(data.users)) {
       STATE.users = data.users;
+      loaded.users = data.users.length > 0;
     }
   } catch (error) {
     console.warn("Game data API sync failed.", error.message);
   }
+  return loaded;
 }
 
 async function loadFixturesFromApi() {

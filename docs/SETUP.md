@@ -43,58 +43,46 @@ You can do this directly in the Firebase Console UI, or use the Firestore REST A
 
 ---
 
-## Step 3 — Set API-Football Key in Apps Script
+## Step 3 - Configure Cloudflare Worker Secrets
 
-1. Open [Apps Script](https://script.google.com) → project linked to `ggowcpredictor`
-2. Go to **Project Settings → Script Properties**
-3. Add property:
-   - Key: `API_FOOTBALL_KEY`
-   - Value: your api-sports.io key
-
-> ⚠️ Never put this key in `index.html`, `scripts/app.js`, or any frontend file.
+1. Open the Cloudflare Worker for `ggowcpredictor`.
+2. Add the Supabase and Firestore secrets listed in [CLOUDFLARE_WORKER_SETUP.md](CLOUDFLARE_WORKER_SETUP.md).
+3. Keep provider API keys in Worker secrets only; never put them in `index.html`, `scripts/app.js`, or any frontend file.
 
 ---
 
-## Step 4 — Seed Fixtures into Firestore
+## Step 4 - Seed Fixtures
 
-**Option A (recommended): Run from Apps Script editor**
+Use the active Worker/local scripts to seed or repair fixtures. The defunct Apps Script `src/` backup should not be used for new fixture seeding work unless it is deliberately revived.
 
-1. Upload `2026/worldcup.json` to the Google Drive of the account that owns the Apps Script.
-2. In the Apps Script editor, open `fixtures.js`, select `seedFixturesFromJSON`, and click **Run**.
-3. Check the Execution Log — should report `~104 created, 0 failed`.
+Recommended active paths:
 
-**Option B: Manual paste**
-
-If Drive access is unavailable, paste the JSON content directly as a parameter to a modified version of `seedFixturesFromJSON` that accepts inline data.
-
----
-
-## Step 5 — Set Up Scheduled Triggers
-
-In the Apps Script editor:
-
-1. Go to **Triggers** (clock icon)
-2. Add trigger:
-   - Function: `scheduledLiveScoresUpdate`
-   - Event source: Time-driven
-   - Type: Hour timer, every 1 hour
-3. Add trigger:
-   - Function: `scheduledLeaderboardUpdate`
-   - Event source: Time-driven
-   - Type: Day timer (e.g. midnight)
+```powershell
+npm run live-sync
+node scripts/repair-matchids.js --dry-run
+```
 
 ---
 
-## Step 6 — Configure Supabase Backup
+## Step 5 - Confirm Worker Cron Triggers
+
+Cloudflare Worker cron triggers are the active schedules:
+
+- `*/5 * * * *` for live score sync and leaderboard recalculation.
+- `*/15 * * * *` for official group standings sync.
+
+Do not enable old Apps Script score or leaderboard triggers; they are defunct and can create duplicate writes.
+
+---
+
+## Step 6 - Configure Supabase
 
 1. Open Supabase project `ggowcpredictor`.
 2. Run the SQL in [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
-3. In Apps Script **Project Settings → Script Properties**, add:
-   - `SUPABASE_URL`: `https://nthnysznieivbkncpqrk.supabase.co`
-   - `SUPABASE_KEY`: the Supabase publishable key
-4. After Firebase quota resets, run `migrateFirestoreToSupabase()` once from Apps Script.
+3. Add `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` to the Cloudflare Worker secrets for trusted writes.
+4. Keep the browser publishable key limited to client reads/writes allowed by policy.
 
-The backend will try Firestore first and fall back to Supabase if Firestore is blocked by quota.
+Supabase is the primary datastore; Firestore remains a fallback/mirror for older flows.
 
 ---
 
@@ -104,7 +92,7 @@ The backend will try Firestore first and fall back to Supabase if Firestore is b
 2. Log in with an admin account.
 3. Click the settings gear → enter the **Game Data API URL**:
    ```
-   https://script.google.com/macros/s/AKfycbwk6Xx2K9Y043hGFKCkMcIYfphV3mL3-qkNkR7yIyDEabPUqzNvseHmVwxCmmY6QN6L/exec
+   https://ggowcpredictor.ben-arthur-wiz.workers.dev
    ```
 4. Click **Save & Reconnect** → it should sync and show fixtures.
 

@@ -1,5 +1,5 @@
 # GGO WC 2026 Predictor — Architecture
-> Last updated: 2026-06-19
+> Last updated: 2026-06-23
 
 ---
 
@@ -18,8 +18,6 @@ graph TD
     CronStandings[CF Worker Cron Trigger] -->|Every 15m: sync-standings| Worker
     
     Worker -->|Fetch Live Scores and Official Groups| API[worldcup26.ir]
-    
-    Sheet[Google Sheets Apps Script] -->|Hourly: pullLeaderboard| Worker
 ```
 
 ### 1. Core Components
@@ -30,7 +28,7 @@ graph TD
     *   Executes every 5 minutes via Cloudflare Cron Triggers to fetch live scores, update results, and recalculate the leaderboard.
     *   Executes every 15 minutes to fetch official group standings from `worldcup26.ir/get/groups` and upsert `group_standings`.
     *   Implements the leaderboard ranking engine.
-*   **Google Apps Script (`src/main.js`)**: Run-time client backup. Runs once an hour via a simple time-driven trigger to fetch the current leaderboard from the Cloudflare Worker (`GET /sync`) and populate the Google Sheet cells visually.
+*   **Apps Script `src/` folder**: Defunct backup surface kept in the repository for now. Do not use it for active score sync, standings sync, leaderboard refresh, or browser data loading; `src/email.js` is the only piece still intended to be reusable.
 
 ---
 
@@ -45,7 +43,7 @@ Each data type has a resilient fallback hierarchy:
 | **Results** | `/sync` (Cloudflare Worker) | Supabase `results` | Firestore `results` |
 | **Group standings** | `/sync` (Cloudflare Worker) | Supabase `group_standings` | Empty official table state |
 | **Predictions** | Supabase `predictions` | Firestore `predictions` | localStorage |
-| **Leaderboard** | `/leaderboard` (Cloudflare Worker) | Supabase `leaderboard` | buildLocalLeaderboard() |
+| **Leaderboard** | `/sync` (Cloudflare Worker payload) | Supabase `leaderboard` | buildLocalLeaderboard() |
 
 ---
 
@@ -131,4 +129,4 @@ Official group standings are synced from `worldcup26.ir/get/groups`; the fronten
 
 *   **Frontend**: Hosted statically (Firebase Hosting, GitHub Pages, or any static server).
 *   **Worker API**: Deployed to Cloudflare using `npx wrangler deploy`.
-*   **Sheets Sync**: Pushed to Google Apps Script using `clasp push` on target project ID `1Lx-q30o3CFcM7_h6OiuoiPNgRzaZE2SK_WnKkPFoBplS8W4ckWWa0B_0`.
+*   **Apps Script / Sheets Sync**: Defunct. Skip `src/` for active backend work unless reviving email-specific helpers.

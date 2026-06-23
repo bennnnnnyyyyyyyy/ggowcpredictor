@@ -1,3 +1,16 @@
+## 2026-06-23 - Client sync and quick-win cleanup
+
+### What changed
+
+- Reused the Worker `/sync` payload during startup so fixtures, results, leaderboard, and standings do not refetch immediately when `/sync` already supplied them.
+- Added an in-flight sync guard so duplicate `requestSync()` calls share the same promise instead of starting parallel network waterfalls.
+- Tightened prediction card spacing, kept flag boxes stable, added retina flag `srcset`, and improved compact mobile leaderboard rows for visible ranks and longer names.
+- Updated scoring, architecture, setup, Supabase, and results docs to reflect the active Worker + Supabase-primary flow and the defunct Apps Script backup.
+- Added `IMPROVEMENT_CHECKLIST.md` at the repo root and marked completed quick wins from this pass.
+
+### Why
+
+- Startup was doing redundant fetch work after `/sync`, and stale docs still pointed future fixes toward defunct Apps Script paths.
 ## 2026-06-22 - Main leaderboard source-order fix
 
 ### What changed

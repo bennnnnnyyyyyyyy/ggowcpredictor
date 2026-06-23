@@ -1,6 +1,6 @@
 # Supabase Backup Setup
 
-Supabase is the backup datastore for Firebase quota outages. The Apps Script backend still tries Firestore first, then falls back to Supabase if Firestore returns a quota/error response.
+Supabase is the primary datastore for users, fixtures, predictions, results, leaderboard rows, and official group standings. Firestore remains a fallback/mirror for older flows.
 
 ## Project
 
@@ -97,18 +97,7 @@ on group_standings(group_name, position);
 
 ## Migration
 
-After Firebase quota resets, run `migrateFirestoreToSupabase()` in Apps Script. It copies:
-
-- `users`
-- `fixtures`
-- `predictions`
-- `results`
-
-You can also trigger it through `doPost` with:
-
-```json
-{ "action": "migrateToSupabase" }
-```
+Use Worker/local scripts for active migrations and repairs. The defunct Apps Script migration helpers in `src/` are not part of the active backend path.
 
 ## Row Level Security (RLS)
 
@@ -123,7 +112,7 @@ To apply this migration:
 
 ## Dual-Database Merging & Resilience
 
-To resolve issues where predictions created on one device (or during a temporary database glitch) do not sync across databases, the frontend app, backend worker, and Google Apps Script now **merge** results from both Supabase and Firestore:
+To resolve issues where predictions created on one device (or during a temporary database glitch) do not sync across databases, the frontend app and backend worker merge results from both Supabase and Firestore:
 1. When loading predictions or results, it reads from both databases.
 2. It deduplicates and merges the items by their primary key (e.g. `matchId` or prediction `id`).
 3. For rows present in both databases, it compares the update timestamps (`submittedAt`, `updatedAt`, `lastUpdated`) and retains the latest record.

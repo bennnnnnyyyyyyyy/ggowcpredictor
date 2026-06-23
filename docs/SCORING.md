@@ -1,6 +1,6 @@
 # GGO WC 2026 — Canonical Scoring Rules
 
-> **Status: LOCKED** — This is the single source of truth. All other files (`src/main.js`, `src/leaderboard.js`, `scripts/app.js`) must use these exact values.
+> **Status: LOCKED** — This is the single source of truth. Active scoring code in `workers/live-results.js`, `scripts/app.js`, and profile rendering must use these exact values. The defunct Apps Script `src/` backup is not an active scoring source.
 
 ---
 
@@ -68,10 +68,10 @@ To make late-stage games more valuable, apply a multiplier on top of base points
 
 ## Implementation Notes
 
-- The canonical `scoreMatch(p1, p2, a1, a2, stage)` function should be the **single function** used everywhere.
-- `src/leaderboard.js:calculateMatchPoints` — **DELETE** (replaced by this system).
-- `src/main.js:scoreMatch` — **UPDATE** to reflect the final 15/8/5/0 rule set and any future stage logic.
-- `scripts/app.js:calculateMatchPoints` — **UPDATE** to match exactly.
+- The canonical backend scoring function should be the single source for persisted leaderboard totals.
+- `workers/live-results.js:scoreMatch` persists the official leaderboard totals.
+- `scripts/app.js:calculateMatchPoints` mirrors the current 15/8/5/0 display rule for client-side fallbacks.
+- Ignore defunct Apps Script scoring files in `src/` unless that backup surface is deliberately revived.
 - Multipliers should be derived from the fixture's `stage` field (`group`, `r32`, `r16`, `qf`, `sf`, `final`/`third`).
 
 ---

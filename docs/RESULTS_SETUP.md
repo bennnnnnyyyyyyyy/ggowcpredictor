@@ -2,15 +2,16 @@
 
 This project now separates responsibilities:
 
-- Apps Script stays only for fixture seeding.
-- Cloudflare Workers handles live scores and results.
-- Firestore is the source of truth for the app UI.
+- Cloudflare Workers handles live scores, official standings, and leaderboard refreshes.
+- Supabase is the primary datastore for the app UI.
+- Firestore remains a fallback/mirror for older flows.
+- The Apps Script `src/` backup is defunct except for email-specific helpers.
 
 ## What Must Exist
 
-### 1. Firestore collections
+### 1. Supabase tables and Firestore fallback collections
 
-These collections must already exist in the `ggowcpredictor` Firestore database:
+These Supabase tables must exist, with matching Firestore fallback collections where legacy flows still need them:
 
 - `fixtures`
 - `results`
@@ -40,7 +41,7 @@ The document ID should be:
 
 ### 2. Fixtures must already be seeded
 
-The worker matches live scores to Firestore fixtures by team names.
+The worker matches live scores to Supabase fixtures first, then Firestore fallback fixtures.
 
 Your fixture documents need:
 
@@ -79,13 +80,15 @@ Backup 2 source secrets:
 - `LIVESCORE_API_KEY`
 - `LIVESCORE_API_SECRET`
 
-### 4. Firestore service account access
+### 4. Worker database write access
 
-The Cloudflare Worker needs permission to write to Firestore.
+The Cloudflare Worker needs Supabase service-role access for canonical writes and Firestore service account access for fallback/mirror writes.
 
-Required secret:
+Required secrets:
 
-- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_KEY`
+- `FIREBASE_SERVICE_ACCOUNT_JSON` for fallback/mirror writes
 
 Optional secret:
 
@@ -100,9 +103,9 @@ Default project:
 
 To avoid wasted quota and duplicate writes:
 
-- Disable the Apps Script trigger `scheduledLiveScoresUpdate`
-- Keep Apps Script only for fixture seeding
-- Do not use Apps Script for live results anymore
+- Do not enable old Apps Script score, standings, or leaderboard triggers.
+- Keep the defunct Apps Script `src/` backup out of the active sync path.
+- Use the Worker cron triggers as the only live writers.
 
 ## Cloudflare Worker Setup
 
@@ -111,6 +114,8 @@ In Cloudflare dashboard:
 1. Open the Worker for `ggowcpredictor`.
 2. Go to `Variables and secrets`.
 3. Add these secrets:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_KEY`
    - `FIREBASE_SERVICE_ACCOUNT_JSON`
    - `ZAFRONIX_API_KEY`
    - `LIVESCORE_API_KEY`
@@ -202,7 +207,7 @@ If `STATE.results["1"]` is empty or missing `score1` and `score2`, the sync did 
 
 ## Recommended Final State
 
-- Apps Script seeds fixtures only
-- Cloudflare Worker writes live results only
-- Firestore stores everything shared
-- The browser app only reads Firestore
+- Cloudflare Worker is the only live results, standings, and leaderboard writer.
+- Supabase stores canonical shared data.
+- Firestore remains fallback/mirror only.
+- The browser app reads the Worker `/sync` payload first, then falls back to direct Supabase/Firestore reads.
