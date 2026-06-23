@@ -37,9 +37,14 @@ async function supabaseSelect(table, selectQuery = "*", extraQuery = "") {
   if (extraQuery) {
     query += `&${extraQuery}`;
   }
+  // Cache-bust on every call: prevents stale fixtures/predictions/leaderboard
+  // data from being served by the browser or any intermediary cache, which
+  // was causing state conflicts (e.g. stale predictions overwriting fresh ones).
+  query += `&_ts=${Date.now()}`;
   const url = getSupabaseUrl(table, query);
   const response = await fetch(url, {
     headers: supabaseHeaders(),
+    cache: "no-store",
   });
   if (!response.ok) {
     throw new Error(`Supabase GET ${table} HTTP ${response.status}`);
@@ -836,9 +841,8 @@ function renderVote() {
       currentVote === null
         ? "You have not voted yet."
         : `Your current vote: ${currentLabel}.`;
-    currentVoteEl.className = `vote-current-choice ${
-      currentVote === null ? "pending" : currentVote.resetLeaderboard ? "yes" : "no"
-    }`;
+    currentVoteEl.className = `vote-current-choice ${currentVote === null ? "pending" : currentVote.resetLeaderboard ? "yes" : "no"
+      }`;
   }
 
   if (totalVotesEl) totalVotesEl.textContent = String(totalVotes);
@@ -1077,14 +1081,14 @@ async function loadResults() {
   // Merge results from both databases
   const merged = {};
   // ADD after line 831 (after the localResults merge):
-  // Strip NS placeholder rows — only keep results with actual scores
+  // Strip NS placeholder rows ï¿½ only keep results with actual scores
   Object.keys(merged).forEach((mid) => {
     const r = merged[mid];
     if (!hasResult(r)) delete merged[mid];
   });
 
   // NEW:
-  // Supabase is canonical — load it first, Firestore only fills gaps
+  // Supabase is canonical ï¿½ load it first, Firestore only fills gaps
   supabaseResults.forEach((r) => {
     const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
     const norm = normalizeResult({ ...r, matchId });
@@ -1476,7 +1480,7 @@ async function savePrediction(matchId, pred1, pred2) {
     scoredAt: null,
   };
 
-  // 1. Save to Supabase FIRST — must succeed
+  // 1. Save to Supabase FIRST ï¿½ must succeed
   try {
     const docId = `${SESSION.username}_${matchId}`;
     const row = {
@@ -1492,8 +1496,8 @@ async function savePrediction(matchId, pred1, pred2) {
     await supabaseUpsert("predictions", [row], "id");
   } catch (error) {
     console.error("Failed to save prediction to Supabase:", error);
-    showToast("Save failed – please try again.", "error");
-    return; // Stop here — do NOT save locally or to Firestore
+    showToast("Save failed ï¿½ please try again.", "error");
+    return; // Stop here ï¿½ do NOT save locally or to Firestore
   }
 
   // 2. Mirror to Firestore (optional, don't block on failure)
@@ -1631,7 +1635,7 @@ function renderPredictionCard(match) {
         : !locked && !hasRes
           ? '<div class="mc-status-line"><span class="status-token open-token">OPEN</span><span>Enter prediction</span></div>'
           : "";
-  const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "—";
+  const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "ï¿½";
   const actualScore = hasRes
     ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
     : "vs";
@@ -1765,7 +1769,7 @@ function renderThirdPlaceTable() {
         Top 8 third-place teams qualify for the Round of 32. Ranking uses the synced official standings feed.
       </div>
       ${rows.length
-        ? `
+      ? `
           <table class="group-standings-table third-place-table">
             <thead>
               <tr>
@@ -1774,8 +1778,8 @@ function renderThirdPlaceTable() {
             </thead>
             <tbody>
               ${rows
-                .map(
-                  (row, index) => `
+        .map(
+          (row, index) => `
                     <tr class="${index < 8 ? "third-place-qualifying" : "third-place-eliminated"}">
                       <td class="team-rank" data-label="#"><span class="rank-badge ${index < 8 ? "rank-badge-top" : ""}">${index + 1}</span></td>
                       <td data-label="Group">${escapeHtml(row.group_name)}</td>
@@ -1788,12 +1792,12 @@ function renderThirdPlaceTable() {
                       <td data-label="Pts"><strong>${row.points}</strong></td>
                     </tr>
                   `,
-                )
-                .join("")}
+        )
+        .join("")}
             </tbody>
           </table>
         `
-        : `
+      : `
           <div class="empty-state compact third-place-empty">
             <p>Third-place standings will appear once the synced tables include position 3.</p>
           </div>
@@ -1886,7 +1890,7 @@ function renderLeaderboard() {
       const percent = scored > 0 ? Math.round((correctOutcomes / scored) * 100) : 0;
       const percentDisplay = scored > 0
         ? `<span class="${percent >= 50 ? 'percent-high' : 'percent-low'}">${percent}%</span>`
-        : "—";        // ------------------
+        : "ï¿½";        // ------------------
 
       // entire row is clickable ? opens profile.html?user=username
       const onclickAttr = username
@@ -1933,7 +1937,7 @@ function openMatchDrawer(matchId) {
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
 
-  const scoreText = hasRes ? `${result.score1} – ${result.score2}` : "– vs –";
+  const scoreText = hasRes ? `${result.score1} ï¿½ ${result.score2}` : "ï¿½ vs ï¿½";
 
   const statusLabel = isLive
     ? result.status
@@ -1947,7 +1951,7 @@ function openMatchDrawer(matchId) {
   const homeScorers = result?.homeScorers || [];
   const awayScorers = result?.awayScorers || [];
 
-  // Parse "Name 45'" into { name, minute } — handle OG, assists etc.
+  // Parse "Name 45'" into { name, minute } ï¿½ handle OG, assists etc.
   function parseScorer(s) {
     const m = String(s).match(/^(.+?)\s+(\d+['+\d]*)('?)$/);
     if (m) return { name: m[1].trim(), minute: m[2] + (m[3] || "'") };
@@ -2006,7 +2010,7 @@ function openMatchDrawer(matchId) {
             : "pts-zero";
 
   const predScoreHtml = hasPred
-    ? `<div class="drawer-pred-score">${pred.pred1} – ${pred.pred2}</div>`
+    ? `<div class="drawer-pred-score">${pred.pred1} ï¿½ ${pred.pred2}</div>`
     : `<div class="drawer-pred-score no-pred">No prediction</div>`;
 
   const predPtsHtml =
@@ -2240,7 +2244,7 @@ function resolveSlot(code) {
     return candidates[0]?.team_name || code;
   }
 
-  return code; // unknown format — pass through unchanged
+  return code; // unknown format ï¿½ pass through unchanged
 }
 
 function renderAdmin() {
@@ -2973,7 +2977,7 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
 }
 
 // ================================================================
-// 2. buildLocalLocalLeaderboard() – update to track completedPredictions
+// 2. buildLocalLocalLeaderboard() ï¿½ update to track completedPredictions
 //    (used as fallback when no server leaderboard exists)
 // ================================================================
 function buildLocalLeaderboard() {
@@ -3219,17 +3223,3 @@ function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
