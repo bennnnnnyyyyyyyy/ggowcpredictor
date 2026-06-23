@@ -3196,6 +3196,39 @@ main {
   border-bottom: 1px solid rgba(0, 209, 94, 0.25);
 }
 
+
+.rules-intro-banner {
+  margin: 0 0 30px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 209, 94, 0.28);
+  background:
+    radial-gradient(circle at top right, rgba(0, 209, 94, 0.16), transparent 42%),
+    linear-gradient(135deg, rgba(10, 17, 31, 0.92), rgba(8, 27, 44, 0.88));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+}
+
+.rules-intro-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ggo-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--wc-green);
+  margin-bottom: 8px;
+}
+
+.rules-intro-message {
+  margin: 0;
+  font-family: var(--font-ggo-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--light);
+}
+
 /* Features grid */
 .features-grid {
   display: grid;
@@ -3282,17 +3315,17 @@ main {
   }
 }
 
-/* ────────────────────────────────────────
+/* ----------------------------------------
    Bracket slot resolution styles
-   ──────────────────────────────────────── */
+   ---------------------------------------- */
 
-/* Unresolved slot code (e.g. "1A", "3A/B/C") — group not yet finished */
+/* Unresolved slot code (e.g. "1A", "3A/B/C") � group not yet finished */
 .slot-tbd {
   color: var(--muted);
   font-style: italic;
 }
 
-/* Resolved team name — normal appearance */
+/* Resolved team name � normal appearance */
 .slot-resolved {
   color: var(--light);
 }
