@@ -30,6 +30,8 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 - **Backend**: Cloudflare Worker is the active sync and leaderboard backend; the Apps Script `src/` backup is defunct except for email-specific helpers.
 - **Working**: Login, fixture loading, country flags, prediction inputs (UI), Supabase-backed official group standings, lock at kickoff
 - **Responsive UI**: Header controls, filters, match cards, and leaderboard/group tables now reflow more cleanly on phones
+- **Rules tab**: Added dedicated **Rules** tab in the main nav - shows App Features overview + scoring rules + guidelines; new logins now land on the tab with an inline welcome banner instead of a popup
+
 
 ## Live Results Worker
 
@@ -53,3 +55,4 @@ Optional environment variables:
 - `LIVE_SYNC_DRY_RUN=true` logs matches without writing Firestore
 
 If you already have `GOOGLE_APPLICATION_CREDENTIALS` configured, the worker can use ADC instead of a JSON service account.
+

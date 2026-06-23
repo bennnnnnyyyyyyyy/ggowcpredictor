@@ -122,6 +122,9 @@
           <button class="nav-btn" onclick="showView('bracket', this)">
             Bracket
           </button>
+          <button id="rules-nav-btn" class="nav-btn" onclick="showView('rules', this)">
+            Rules
+          </button>
           <!-- Admin button injected dynamically by showApp() for admins only -->
         </nav>
 
@@ -271,6 +274,99 @@
           </div>
         </div>
       </div>
+
+      <!-- ── RULES VIEW ── -->
+      <div id="view-rules" class="view">
+        <div class="section-title">
+          How to <span class="title-accent">Play</span>
+        </div>
+        <div id="rules-intro-banner" class="rules-intro-banner" hidden>
+          <div class="rules-intro-kicker">New login</div>
+          <p id="rules-intro-message" class="rules-intro-message"></p>
+        </div>
+
+        <!-- App Features -->
+        <div class="rules-page-section">
+          <div class="rules-page-section-title">App Features</div>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon">🎯</div>
+              <div class="feature-name">Predictions</div>
+              <p class="feature-desc">Enter your score predictions for every group-stage and knockout match before
+                kickoff. Predictions lock automatically the moment a match starts.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">📊</div>
+              <div class="feature-name">Group Standings</div>
+              <p class="feature-desc">View live group tables as they update in real time throughout the tournament. See
+                who's advancing to the Round of 32.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🏆</div>
+              <div class="feature-name">Leaderboard</div>
+              <p class="feature-desc">Track your ranking against all GGO players. Points are recalculated automatically
+                after every match result is confirmed.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">⚽</div>
+              <div class="feature-name">Live Results</div>
+              <p class="feature-desc">Follow live scores and final results for every match. Filter by live, in-progress,
+                or full-time to keep track of the action.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🗺️</div>
+              <div class="feature-name">Knockout Bracket</div>
+              <p class="feature-desc">See the full knockout-stage bracket as teams advance from the group stage all the
+                way to the World Cup Final.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">👤</div>
+              <div class="feature-name">Player Profile</div>
+              <p class="feature-desc">Click your name in the header to view your personal stats — total points, exact
+                scores, correct outcomes, and your full prediction history.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rules & Guidelines -->
+        <div class="rules-page-section">
+          <div class="rules-page-section-title">Rules &amp; Guidelines</div>
+          <ul class="rules-list rules-list-page">
+            <li>Go to the <strong>Predictions</strong> tab to enter your score predictions for upcoming matches.</li>
+            <li>Matches <strong>lock automatically</strong> as soon as kickoff begins — no late entries.</li>
+            <li>Standings and the leaderboard update automatically as results come in.</li>
+            <li>You can update a prediction any time before the match locks.</li>
+            <li>All times are displayed in <strong>Cairo time (EET/EEST)</strong>.</li>
+          </ul>
+        </div>
+
+        <!-- Scoring System -->
+        <div class="rules-page-section">
+          <div class="rules-page-section-title">Points Allocation</div>
+          <div class="scoring-grid scoring-grid-page">
+            <div class="score-rule-card pts-exact">
+              <span class="pts-val">15 pts</span>
+              <strong>Exact Score</strong>
+              <p>Your prediction matches the final score exactly.</p>
+            </div>
+            <div class="score-rule-card pts-good">
+              <span class="pts-val">8 pts</span>
+              <strong>Correct Result + Close Difference</strong>
+              <p>You picked the right winner or draw, and the goal difference is within 1.</p>
+            </div>
+            <div class="score-rule-card pts-partial">
+              <span class="pts-val">5 pts</span>
+              <strong>Correct Result</strong>
+              <p>You picked the right winner or draw, but the goal difference was not close.</p>
+            </div>
+            <div class="score-rule-card pts-zero">
+              <span class="pts-val">0 pts</span>
+              <strong>Wrong Result</strong>
+              <p>You picked the wrong winner or draw. No points awarded.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
   <!-- /#app -->
@@ -403,12 +499,6 @@
             <p>You picked the wrong winner or draw. No points awarded.</p>
           </div>
         </div>
-        <p class="scoring-cutoff-note">
-          <strong>Note:</strong> Current scoring is 15 points for an exact score,
-          8 for the correct outcome with close goal difference, 5 for the correct
-          outcome, and 0 for the wrong outcome.
-        </p>
-
         <button class="btn-primary start-playing-btn" onclick="toggleRules(false)">
           Let's Play!
         </button>

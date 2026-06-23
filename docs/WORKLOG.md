@@ -11,6 +11,22 @@
 ### Why
 
 - Startup was doing redundant fetch work after `/sync`, and stale docs still pointed future fixes toward defunct Apps Script paths.
+
+## 2026-06-23 - Rules tab first-login onboarding
+
+### What changed
+
+
+- Switched first-time logins away from the Rules modal popup and into the Rules tab itself.
+- Added an inline first-login banner at the top of the Rules tab so new users still get a clear onboarding cue without a modal interruption.
+- Kept the one-time-per-user storage check so the onboarding only appears on the first login.
+
+### Why
+
+- The rules content is already available as a dedicated tab, so onboarding reads better as part of the page instead of a blocking popup.
+- This keeps the first-login experience visible without interrupting the rest of the app shell.
+
+>>>>>>> main
 ## 2026-06-22 - Main leaderboard source-order fix
 
 ### What changed
@@ -475,3 +491,5 @@ where p.username = 'ben_arthur';
 
 - The app still falls back to Firestore/local JSON if the configured API URL is empty or unreachable.
 - No browser screenshot was captured in this run because the browser automation tool was not available in this session.
+
+

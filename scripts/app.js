@@ -589,6 +589,19 @@ function showLoginError(message) {
   errEl.classList.add("show");
 }
 
+function setRulesIntroVisible(show, message) {
+  const banner = document.getElementById("rules-intro-banner");
+  const messageEl = document.getElementById("rules-intro-message");
+  if (!banner || !messageEl) return;
+
+  banner.hidden = !show;
+  if (!show) return;
+
+  messageEl.textContent =
+    message ||
+    `Welcome, ${SESSION.displayName || SESSION.username || "Employee"}. Review the Rules tab before making predictions.`;
+}
+
 function showApp() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
@@ -598,14 +611,27 @@ function showApp() {
   document.getElementById("user-display-name").textContent =
     SESSION.displayName || SESSION.username;
 
-  if (
-    SESSION.username &&
-    !localStorage.getItem(`ggo_wc_rules_shown_${SESSION.username}`)
-  ) {
-    toggleRules(true);
+  // Point the header profile link to the logged-in user's profile page
+  const profileLink = document.getElementById("user-profile-link");
+  if (profileLink && SESSION.username) {
+    profileLink.href = `profile.html?user=${encodeURIComponent(SESSION.username)}`;
   }
 
   ensureAdminNav();
+
+  const rulesKey = SESSION.username && `ggo_wc_rules_shown_${SESSION.username}`;
+  const shouldShowRulesIntro = rulesKey && !localStorage.getItem(rulesKey);
+  if (shouldShowRulesIntro) {
+    const rulesBtn = document.getElementById("rules-nav-btn");
+    showView("rules", rulesBtn);
+    setRulesIntroVisible(
+      true,
+      `Welcome, ${SESSION.displayName || SESSION.username || "Employee"}. Review the Rules tab before making predictions.`,
+    );
+    localStorage.setItem(rulesKey, "true");
+  } else {
+    setRulesIntroVisible(false);
+  }
 
   requestSync();
 }
@@ -1878,16 +1904,22 @@ function renderBracket() {
               result && hasResult(result)
                 ? `${result.score1}-${result.score2}`
                 : "vs";
+
+            const t1 = resolveSlot(match.team1);
+            const t2 = resolveSlot(match.team2);
+            const tbd1 = t1 === match.team1 && !result;
+            const tbd2 = t2 === match.team2 && !result;
+
             return `
                 <div class="bracket-match">
                   <div class="bracket-seed">
-                    <span class="team-code">${escapeHtml(getTeamCode(match.team1))}</span>
-                    <span>${escapeHtml(match.team1)}</span>
+                    <span class="team-code">${escapeHtml(getTeamCode(t1))}</span>
+                    <span class="${tbd1 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t1)}</span>
                   </div>
                   <strong>${score}</strong>
                   <div class="bracket-seed">
-                    <span class="team-code">${escapeHtml(getTeamCode(match.team2))}</span>
-                    <span>${escapeHtml(match.team2)}</span>
+                    <span class="team-code">${escapeHtml(getTeamCode(t2))}</span>
+                    <span class="${tbd2 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t2)}</span>
                   </div>
                 </div>
               `;
@@ -1898,6 +1930,48 @@ function renderBracket() {
       `;
     })
     .join("");
+}
+
+/**
+ * Resolves a bracket slot code to a real team name using STATE.groupStandings.
+ * Handles:
+ *   "1A"        → winner of Group A
+ *   "2B"        → runner-up of Group B
+ *   "3A/B/C/D" → best 3rd-place from those groups (pts → GD → GF)
+ * Returns the original code unchanged if standings are not yet available.
+ */
+function resolveSlot(code) {
+  if (!code || typeof code !== "string") return code;
+
+  const groups = STATE.groupStandings;
+  if (!groups || !Object.keys(groups).length) return code;
+
+  // Simple slot: "1A" = winner, "2B" = runner-up
+  const simple = code.match(/^([12])([A-L])$/);
+  if (simple) {
+    const pos = Number(simple[1]) - 1; // 0 = winner, 1 = runner-up
+    const groupKey = `Group ${simple[2]}`;
+    const team = groups[groupKey]?.[pos];
+    return team?.team_name || code;
+  }
+
+  // 3rd-place slot: "3A/B/C/D/F" = best 3rd from those groups
+  const thirds = code.match(/^3([A-L](?:\/[A-L])*)$/);
+  if (thirds) {
+    const letters = thirds[1].split("/");
+    const candidates = letters
+      .map((l) => groups[`Group ${l}`]?.[2]) // index 2 = 3rd-place team
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          b.points - a.points ||
+          b.goal_difference - a.goal_difference ||
+          b.goals_for - a.goals_for,
+      );
+    return candidates[0]?.team_name || code;
+  }
+
+  return code; // unknown format — pass through unchanged
 }
 
 function renderAdmin() {
@@ -2876,3 +2950,6 @@ function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
 }
+
+
+

@@ -1043,13 +1043,13 @@ main {
   }
 }
 
-.pts-good {
+.pts-partial {
   background: rgba(245, 158, 11, 0.15);
   color: var(--warning);
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.pts-partial {
+.pts-good {
   background: rgba(16, 185, 129, 0.15);
   color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.3);
@@ -3043,27 +3043,29 @@ main {
 }
 
 .score-rule-card.pts-good {
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(0, 209, 94, 0.4);
+  box-shadow: 0 0 12px rgba(0, 209, 94, 0.15);
 }
 
 .score-rule-card.pts-good .pts-val {
-  color: var(--warning);
+  color: #00d15e;
 }
 
 .score-rule-card.pts-good strong {
-  color: var(--warning);
+  color: #00d15e;
 }
 
 .score-rule-card.pts-partial {
-  border: 1px solid rgba(0, 209, 94, 0.3);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.1);
 }
 
 .score-rule-card.pts-partial .pts-val {
-  color: #00d15e;
+  color: #eab308;
 }
 
 .score-rule-card.pts-partial strong {
-  color: #00d15e;
+  color: #eab308;
 }
 
 .score-rule-card.pts-close-guess {
@@ -3175,4 +3177,158 @@ main {
 
 .start-playing-btn:hover {
   box-shadow: 0 6px 20px rgba(0, 209, 94, 0.4);
+}
+
+/* ════════════════════════════════════════
+   RULES PAGE VIEW (full tab, not modal)
+   ════════════════════════════════════════ */
+
+.rules-page-section {
+  margin-bottom: 40px;
+}
+
+.rules-page-section-title {
+  font-family: var(--font-ggo-display);
+  font-size: 20px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--wc-blue);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 209, 94, 0.25);
+}
+
+
+.rules-intro-banner {
+  margin: 0 0 30px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 209, 94, 0.28);
+  background:
+    radial-gradient(circle at top right, rgba(0, 209, 94, 0.16), transparent 42%),
+    linear-gradient(135deg, rgba(10, 17, 31, 0.92), rgba(8, 27, 44, 0.88));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+}
+
+.rules-intro-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ggo-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--wc-green);
+  margin-bottom: 8px;
+}
+
+.rules-intro-message {
+  margin: 0;
+  font-family: var(--font-ggo-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--light);
+}
+
+/* Features grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 209, 94, 0.15);
+  border-radius: 14px;
+  padding: 20px 18px 18px;
+  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.feature-card:hover {
+  background: rgba(0, 209, 94, 0.07);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 209, 94, 0.12);
+}
+
+.feature-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+
+.feature-name {
+  font-family: var(--font-ggo-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--light);
+  margin-bottom: 8px;
+}
+
+.feature-desc {
+  font-family: var(--font-ggo-body);
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Rules list in page context (slightly bigger than modal) */
+.rules-list-page {
+  margin-bottom: 0;
+}
+
+.rules-list-page li {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--light);
+}
+
+/* Scoring grid page variant (4-col on desktop) */
+.scoring-grid-page {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Responsive: Rules page */
+@media (max-width: 900px) {
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .scoring-grid-page {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scoring-grid-page {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rules-page-section-title {
+    font-size: 17px;
+  }
+}
+
+/* ----------------------------------------
+   Bracket slot resolution styles
+   ---------------------------------------- */
+
+/* Unresolved slot code (e.g. "1A", "3A/B/C") � group not yet finished */
+.slot-tbd {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Resolved team name � normal appearance */
+.slot-resolved {
+  color: var(--light);
 }
