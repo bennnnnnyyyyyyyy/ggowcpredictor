@@ -122,7 +122,7 @@
           <button class="nav-btn" onclick="showView('bracket', this)">
             Bracket
           </button>
-          <button class="nav-btn" onclick="showView('rules', this)">
+          <button id="rules-nav-btn" class="nav-btn" onclick="showView('rules', this)">
             Rules
           </button>
           <!-- Admin button injected dynamically by showApp() for admins only -->
@@ -279,6 +279,10 @@
       <div id="view-rules" class="view">
         <div class="section-title">
           How to <span class="title-accent">Play</span>
+        </div>
+        <div id="rules-intro-banner" class="rules-intro-banner" hidden>
+          <div class="rules-intro-kicker">New login</div>
+          <p id="rules-intro-message" class="rules-intro-message"></p>
         </div>
 
         <!-- App Features -->
@@ -503,3 +507,6 @@
 <script src="scripts/app.js"></script>
 
 </html>
+
+
+

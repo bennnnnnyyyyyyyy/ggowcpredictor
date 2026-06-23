@@ -588,6 +588,19 @@ function showLoginError(message) {
   errEl.classList.add("show");
 }
 
+function setRulesIntroVisible(show, message) {
+  const banner = document.getElementById("rules-intro-banner");
+  const messageEl = document.getElementById("rules-intro-message");
+  if (!banner || !messageEl) return;
+
+  banner.hidden = !show;
+  if (!show) return;
+
+  messageEl.textContent =
+    message ||
+    `Welcome, ${SESSION.displayName || SESSION.username || "Employee"}. Review the Rules tab before making predictions.`;
+}
+
 function showApp() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
@@ -603,18 +616,24 @@ function showApp() {
     profileLink.href = `profile.html?user=${encodeURIComponent(SESSION.username)}`;
   }
 
-  if (
-    SESSION.username &&
-    !localStorage.getItem(`ggo_wc_rules_shown_${SESSION.username}`)
-  ) {
-    toggleRules(true);
-  }
-
   ensureAdminNav();
+
+  const rulesKey = SESSION.username && `ggo_wc_rules_shown_${SESSION.username}`;
+  const shouldShowRulesIntro = rulesKey && !localStorage.getItem(rulesKey);
+  if (shouldShowRulesIntro) {
+    const rulesBtn = document.getElementById("rules-nav-btn");
+    showView("rules", rulesBtn);
+    setRulesIntroVisible(
+      true,
+      `Welcome, ${SESSION.displayName || SESSION.username || "Employee"}. Review the Rules tab before making predictions.`,
+    );
+    localStorage.setItem(rulesKey, "true");
+  } else {
+    setRulesIntroVisible(false);
+  }
 
   requestSync();
 }
-
 
 function handleLogout() {
   localStorage.removeItem("ggo_wc_token");
@@ -2908,3 +2927,6 @@ function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
 }
+
+
+
