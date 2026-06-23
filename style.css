@@ -3040,27 +3040,29 @@ main {
 }
 
 .score-rule-card.pts-good {
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(0, 209, 94, 0.4);
+  box-shadow: 0 0 12px rgba(0, 209, 94, 0.15);
 }
 
 .score-rule-card.pts-good .pts-val {
-  color: var(--warning);
+  color: #00d15e;
 }
 
 .score-rule-card.pts-good strong {
-  color: var(--warning);
+  color: #00d15e;
 }
 
 .score-rule-card.pts-partial {
-  border: 1px solid rgba(0, 209, 94, 0.3);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.1);
 }
 
 .score-rule-card.pts-partial .pts-val {
-  color: #00d15e;
+  color: #eab308;
 }
 
 .score-rule-card.pts-partial strong {
-  color: #00d15e;
+  color: #eab308;
 }
 
 .score-rule-card.pts-close-guess {
@@ -3172,4 +3174,110 @@ main {
 
 .start-playing-btn:hover {
   box-shadow: 0 6px 20px rgba(0, 209, 94, 0.4);
+}
+
+/* ════════════════════════════════════════
+   RULES PAGE VIEW (full tab, not modal)
+   ════════════════════════════════════════ */
+
+.rules-page-section {
+  margin-bottom: 40px;
+}
+
+.rules-page-section-title {
+  font-family: var(--font-ggo-display);
+  font-size: 20px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--wc-blue);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 209, 94, 0.25);
+}
+
+/* Features grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 209, 94, 0.15);
+  border-radius: 14px;
+  padding: 20px 18px 18px;
+  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.feature-card:hover {
+  background: rgba(0, 209, 94, 0.07);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 209, 94, 0.12);
+}
+
+.feature-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+
+.feature-name {
+  font-family: var(--font-ggo-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--light);
+  margin-bottom: 8px;
+}
+
+.feature-desc {
+  font-family: var(--font-ggo-body);
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Rules list in page context (slightly bigger than modal) */
+.rules-list-page {
+  margin-bottom: 0;
+}
+
+.rules-list-page li {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--light);
+}
+
+/* Scoring grid page variant (4-col on desktop) */
+.scoring-grid-page {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Responsive: Rules page */
+@media (max-width: 900px) {
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .scoring-grid-page {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scoring-grid-page {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rules-page-section-title {
+    font-size: 17px;
+  }
 }
