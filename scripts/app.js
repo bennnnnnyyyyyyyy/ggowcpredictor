@@ -79,6 +79,8 @@ let db = null;
 let activeMatchFilter = "all";
 let activeResultFilter = "all";
 let activeSyncPromise = null;
+let votePromptDismissed = false;
+const VOTE_TABLE = "leaderboard_reset_votes";
 
 const SESSION = {
   token: localStorage.getItem("ggo_wc_token") || null,
@@ -110,6 +112,7 @@ const STATE = {
   groupStandings: {},
   users: [],
   accountRequests: [],
+  votes: [],
   teams: {},
   lastSync: null,
 };
@@ -656,6 +659,7 @@ function showView(id, btn) {
   if (view) view.classList.add("active");
   if (btn) btn.classList.add("active");
 
+  if (id === "vote") renderVote();
   if (id === "results") renderResults();
   if (id === "bracket") renderBracket();
   if (id === "standings") renderGroupStandings();
@@ -710,6 +714,7 @@ async function requestSync() {
       await loadGroupStandings();
       await loadPredictions();
       await loadAccountRequests();
+      await loadVotePoll();
 
       STATE.lastSync = new Date();
       if (dot) dot.className = "status-dot active";
@@ -721,6 +726,7 @@ async function requestSync() {
         })}`;
       }
 
+      renderVote();
       renderPredictions();
       renderGroupStandings();
       renderLeaderboard();
@@ -775,6 +781,195 @@ async function loadAccountRequests() {
   }
 }
 
+function parseBoolean(value) {
+  if (value === true || value === 1) return true;
+  if (value === false || value === 0 || value === null || value === undefined || value === "") return false;
+  const normalized = String(value).trim().toLowerCase();
+  return ["true", "1", "yes", "y"].includes(normalized);
+}
+
+function normalizeVote(row = {}) {
+  return {
+    ...row,
+    username: String(row.username || row.id || "").trim(),
+    displayName:
+      row.displayName || row.display_name || row.username || row.id || "Player",
+    resetLeaderboard: parseBoolean(
+      row.resetLeaderboard ?? row.shouldReset ?? row.vote ?? row.choice,
+    ),
+    createdAt: row.createdAt || row.created_at || null,
+    updatedAt: row.updatedAt || row.updated_at || null,
+  };
+}
+
+function getVoteStats() {
+  const votes = (STATE.votes || []).map(normalizeVote).filter((row) => row.username);
+  const yesVotes = votes.filter((row) => row.resetLeaderboard).length;
+  const noVotes = votes.filter((row) => !row.resetLeaderboard).length;
+  const currentVote = votes.find((row) => row.username === SESSION.username) || null;
+  return {
+    votes,
+    yesVotes,
+    noVotes,
+    totalVotes: yesVotes + noVotes,
+    currentVote,
+  };
+}
+
+function renderVote() {
+  const { yesVotes, noVotes, totalVotes, currentVote } = getVoteStats();
+  const currentVoteEl = document.getElementById("vote-current-choice");
+  const totalVotesEl = document.getElementById("vote-total-votes");
+  const yesVotesEl = document.getElementById("vote-yes-count");
+  const noVotesEl = document.getElementById("vote-no-count");
+  const yesMeterEl = document.getElementById("vote-yes-meter");
+  const noMeterEl = document.getElementById("vote-no-meter");
+  const yesBtn = document.getElementById("vote-yes-btn");
+  const noBtn = document.getElementById("vote-no-btn");
+
+  const yesLabel = "Yes, reset it";
+  const noLabel = "No, keep it";
+  const currentLabel = currentVote?.resetLeaderboard ? yesLabel : noLabel;
+
+  if (currentVoteEl) {
+    currentVoteEl.textContent =
+      currentVote === null
+        ? "You have not voted yet."
+        : `Your current vote: ${currentLabel}.`;
+    currentVoteEl.className = `vote-current-choice ${
+      currentVote === null ? "pending" : currentVote.resetLeaderboard ? "yes" : "no"
+    }`;
+  }
+
+  if (totalVotesEl) totalVotesEl.textContent = String(totalVotes);
+  if (yesVotesEl) yesVotesEl.textContent = String(yesVotes);
+  if (noVotesEl) noVotesEl.textContent = String(noVotes);
+
+  const yesShare = totalVotes ? (yesVotes / totalVotes) * 100 : 0;
+  const noShare = totalVotes ? (noVotes / totalVotes) * 100 : 0;
+  if (yesMeterEl) yesMeterEl.style.width = `${yesShare}%`;
+  if (noMeterEl) noMeterEl.style.width = `${noShare}%`;
+
+  [yesBtn, noBtn].forEach((button) => {
+    if (!button) return;
+    button.classList.remove("selected");
+    button.setAttribute("aria-pressed", "false");
+  });
+  if (yesBtn && currentVote?.resetLeaderboard) {
+    yesBtn.classList.add("selected");
+    yesBtn.setAttribute("aria-pressed", "true");
+  }
+  if (noBtn && currentVote && !currentVote.resetLeaderboard) {
+    noBtn.classList.add("selected");
+    noBtn.setAttribute("aria-pressed", "true");
+  }
+}
+
+async function loadVotePoll() {
+  STATE.votes = [];
+
+  try {
+    const data = await supabaseSelect(VOTE_TABLE, "*", "order=updatedAt.desc");
+    if (Array.isArray(data) && data.length) {
+      STATE.votes = data.map(normalizeVote);
+      renderVote();
+      maybeOpenVotePrompt();
+      return;
+    }
+  } catch (error) {
+    console.warn("Could not load Supabase vote poll.", error.message);
+  }
+
+  if (db) {
+    try {
+      const snap = await db
+        .collection("leaderboardResetVotes")
+        .orderBy("updatedAt", "desc")
+        .get();
+      STATE.votes = snap.docs.map((doc) => normalizeVote({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("Could not load Firestore vote poll.", error.message);
+    }
+  }
+
+  renderVote();
+  maybeOpenVotePrompt();
+}
+
+async function submitVote(shouldReset) {
+  if (!SESSION.username) {
+    showToast("Please log in again before voting.", "error");
+    return;
+  }
+
+  const decision = Boolean(shouldReset);
+  const existing = getVoteStats().currentVote;
+  const now = new Date().toISOString();
+  const row = normalizeVote({
+    username: SESSION.username,
+    displayName: SESSION.displayName || SESSION.username,
+    resetLeaderboard: decision,
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  });
+
+  try {
+    await supabaseUpsert(VOTE_TABLE, [row], "username");
+  } catch (error) {
+    console.error("Failed to save vote to Supabase:", error);
+    showToast("Could not save your vote.", "error");
+    return;
+  }
+
+  if (db) {
+    try {
+      await db
+        .collection("leaderboardResetVotes")
+        .doc(SESSION.username)
+        .set(
+          {
+            ...row,
+            id: SESSION.username,
+          },
+          { merge: true },
+        );
+    } catch (error) {
+      console.warn("Could not mirror vote to Firestore.", error);
+    }
+  }
+
+  const normalizedRow = normalizeVote(row);
+  STATE.votes = [
+    normalizedRow,
+    ...STATE.votes.filter((vote) => vote.username !== normalizedRow.username),
+  ];
+  renderVote();
+  toggleVotePrompt(false);
+  showToast("Vote saved.");
+}
+
+function toggleVotePrompt(show) {
+  const modal = document.getElementById("vote-modal");
+  if (!modal) return;
+  if (show) {
+    modal.classList.add("show");
+    return;
+  }
+  modal.classList.remove("show");
+  votePromptDismissed = true;
+}
+
+function maybeOpenVotePrompt() {
+  if (votePromptDismissed || !SESSION.username) return;
+  const { currentVote } = getVoteStats();
+  if (currentVote) return;
+  const modal = document.getElementById("vote-modal");
+  if (modal) modal.classList.add("show");
+}
+
+function voteChoiceLabel(shouldReset) {
+  return shouldReset ? "Yes, reset it" : "No, keep it";
+}
 function sortFixtures(fixtures) {
   return fixtures.sort((a, b) => {
     const aTime = a.kickoffDate ? a.kickoffDate.getTime() : 0;
@@ -882,14 +1077,14 @@ async function loadResults() {
   // Merge results from both databases
   const merged = {};
   // ADD after line 831 (after the localResults merge):
-  // Strip NS placeholder rows — only keep results with actual scores
+  // Strip NS placeholder rows � only keep results with actual scores
   Object.keys(merged).forEach((mid) => {
     const r = merged[mid];
     if (!hasResult(r)) delete merged[mid];
   });
 
   // NEW:
-  // Supabase is canonical — load it first, Firestore only fills gaps
+  // Supabase is canonical � load it first, Firestore only fills gaps
   supabaseResults.forEach((r) => {
     const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
     const norm = normalizeResult({ ...r, matchId });
@@ -1281,7 +1476,7 @@ async function savePrediction(matchId, pred1, pred2) {
     scoredAt: null,
   };
 
-  // 1. Save to Supabase FIRST — must succeed
+  // 1. Save to Supabase FIRST � must succeed
   try {
     const docId = `${SESSION.username}_${matchId}`;
     const row = {
@@ -1297,8 +1492,8 @@ async function savePrediction(matchId, pred1, pred2) {
     await supabaseUpsert("predictions", [row], "id");
   } catch (error) {
     console.error("Failed to save prediction to Supabase:", error);
-    showToast("Save failed – please try again.", "error");
-    return; // Stop here — do NOT save locally or to Firestore
+    showToast("Save failed � please try again.", "error");
+    return; // Stop here � do NOT save locally or to Firestore
   }
 
   // 2. Mirror to Firestore (optional, don't block on failure)
@@ -1415,7 +1610,6 @@ function renderPredictionCard(match) {
       )
       : null;
 
-  // Determine points tier for styling
   const ptsTier =
     points === null
       ? ""
@@ -1437,7 +1631,7 @@ function renderPredictionCard(match) {
         : !locked && !hasRes
           ? '<div class="mc-status-line"><span class="status-token open-token">OPEN</span><span>Enter prediction</span></div>'
           : "";
-  const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "—";
+  const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "�";
   const actualScore = hasRes
     ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
     : "vs";
@@ -1445,7 +1639,7 @@ function renderPredictionCard(match) {
     ? `
       <div class="mc-result-grid">
         <div class="mc-result-block mc-result-actual">
-          <div class="mc-result-label">Result</div>
+          <div class="mc-result-label">Actual</div>
           <div class="mc-result-score">${actualScore}</div>
           <div class="mc-result-meta">${escapeHtml(String(result.status || "NS"))}</div>
         </div>
@@ -1456,8 +1650,26 @@ function renderPredictionCard(match) {
             ${hasPred ? `${points ?? 0} pts` : "No prediction"}
           </div>
         </div>
-      </div>`
-    : `<div class="mc-vs">VS</div>`;
+      </div>
+      ${hasPred ? `<div class="mc-result-delta">${predictionScore} vs ${actualScore}</div>` : ""}
+    `
+    : `
+      <div class="mc-vs">
+        <span>VS</span>
+        <small>Pick a scoreline</small>
+      </div>`;
+
+  const teamScoreHtml = (teamNumber, value, isHome) => hasRes
+    ? `<div class="mc-side-score ${isHome ? "left" : "right"}">${Number.isInteger(value) ? value : "-"}</div>`
+    : `<div class="mc-score-slot ${isHome ? "left" : "right"}">
+        <span class="mc-score-label">${locked ? "Locked" : "Pick"}</span>
+        <input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+          inputmode="numeric" placeholder="-"
+          value="${Number.isInteger(value) ? value : ""}"
+          ${locked ? "disabled" : ""}
+          data-matchid="${match.matchId}" data-team="${teamNumber}"
+          oninput="handleScoreChange('${match.matchId}')">
+      </div>`;
 
   return `
     <article class="match-card ${locked ? "locked" : "open"} ${isLive ? "live" : ""} ${isFinal ? "final" : ""}">
@@ -1477,17 +1689,14 @@ function renderPredictionCard(match) {
 
       <div class="mc-body">
         <div class="mc-team">
-          <div class="team-mark">${getFlagImg(match.team1)}</div>
-          <div class="mc-name">${escapeHtml(match.team1)}</div>
-          ${hasRes
-      ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
-            inputmode="numeric" placeholder="-"
-            value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
-            ${locked ? "disabled" : ""}
-            data-matchid="${match.matchId}" data-team="1"
-            oninput="handleScoreChange('${match.matchId}')">`
-    }
+          <div class="mc-team-top">
+            <div class="team-mark">${getFlagImg(match.team1)}</div>
+            <div class="mc-team-copy">
+              <div class="mc-name">${escapeHtml(match.team1)}</div>
+              <div class="mc-team-code">${escapeHtml(team1Code)}</div>
+            </div>
+          </div>
+          ${teamScoreHtml(1, hasRes ? result.score1 : pred.pred1, true)}
         </div>
 
         <div class="mc-middle">
@@ -1496,17 +1705,14 @@ function renderPredictionCard(match) {
         </div>
 
         <div class="mc-team">
-          <div class="team-mark">${getFlagImg(match.team2)}</div>
-          <div class="mc-name">${escapeHtml(match.team2)}</div>
-          ${hasRes
-      ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
-            inputmode="numeric" placeholder="-"
-            value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
-            ${locked ? "disabled" : ""}
-            data-matchid="${match.matchId}" data-team="2"
-            oninput="handleScoreChange('${match.matchId}')">`
-    }
+          <div class="mc-team-top">
+            <div class="team-mark">${getFlagImg(match.team2)}</div>
+            <div class="mc-team-copy">
+              <div class="mc-name">${escapeHtml(match.team2)}</div>
+              <div class="mc-team-code">${escapeHtml(team2Code)}</div>
+            </div>
+          </div>
+          ${teamScoreHtml(2, hasRes ? result.score2 : pred.pred2, false)}
         </div>
       </div>
 
@@ -1541,9 +1747,83 @@ function renderGroupStandings() {
     return;
   }
 
-  container.innerHTML = Object.entries(groups)
+  const groupTables = Object.entries(groups)
     .map(([groupName, standings]) => renderGroupTable(groupName, standings))
     .join("");
+  const thirdPlaceTable = renderThirdPlaceTable();
+
+  container.innerHTML = [groupTables, thirdPlaceTable].filter(Boolean).join("");
+}
+
+function renderThirdPlaceTable() {
+  const rows = getThirdPlaceStandings();
+
+  return `
+    <article class="group-table group-table--third-place">
+      <div class="group-header">Third-place standings</div>
+      <div class="third-place-summary">
+        Top 8 third-place teams qualify for the Round of 32. Ranking uses the synced official standings feed.
+      </div>
+      ${rows.length
+        ? `
+          <table class="group-standings-table third-place-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Group</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows
+                .map(
+                  (row, index) => `
+                    <tr class="${index < 8 ? "third-place-qualifying" : "third-place-eliminated"}">
+                      <td class="team-rank" data-label="#"><span class="rank-badge ${index < 8 ? "rank-badge-top" : ""}">${index + 1}</span></td>
+                      <td data-label="Group">${escapeHtml(row.group_name)}</td>
+                      <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
+                      <td data-label="P">${row.played}</td>
+                      <td data-label="W">${row.won}</td>
+                      <td data-label="D">${row.drawn}</td>
+                      <td data-label="L">${row.lost}</td>
+                      <td data-label="GD">${row.goal_difference > 0 ? "+" : ""}${row.goal_difference}</td>
+                      <td data-label="Pts"><strong>${row.points}</strong></td>
+                    </tr>
+                  `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        `
+        : `
+          <div class="empty-state compact third-place-empty">
+            <p>Third-place standings will appear once the synced tables include position 3.</p>
+          </div>
+        `}
+    </article>
+  `;
+}
+
+function getThirdPlaceStandings() {
+  const groups = STATE.groupStandings || {};
+  return Object.entries(groups)
+    .map(([groupName, standings]) => {
+      const row = Array.isArray(standings)
+        ? standings.find((entry) => Number(entry.position) === 3)
+        : null;
+      if (!row) return null;
+      return {
+        ...row,
+        group_name: groupName,
+      };
+    })
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.points - a.points ||
+        b.goal_difference - a.goal_difference ||
+        b.goals_for - a.goals_for ||
+        String(a.group_name).localeCompare(String(b.group_name)) ||
+        String(a.team_name).localeCompare(String(b.team_name)),
+    );
 }
 
 function renderGroupTable(groupName, standings) {
@@ -1578,11 +1858,6 @@ function renderGroupTable(groupName, standings) {
     </article>
   `;
 }
-
-// ================================================================
-// 1. renderLeaderboard() – replace the entire function in app.js
-//    Makes rows clickable + adds "Predicted" & "Correct %" columns
-// ================================================================
 function renderLeaderboard() {
   const tbody = document.getElementById("leaderboard-body");
   if (!tbody) return;
@@ -1611,9 +1886,9 @@ function renderLeaderboard() {
       const percent = scored > 0 ? Math.round((correctOutcomes / scored) * 100) : 0;
       const percentDisplay = scored > 0
         ? `<span class="${percent >= 50 ? 'percent-high' : 'percent-low'}">${percent}%</span>`
-        : "—";        // ------------------
+        : "�";        // ------------------
 
-      // entire row is clickable → opens profile.html?user=username
+      // entire row is clickable ? opens profile.html?user=username
       const onclickAttr = username
         ? `onclick="window.location.href='profile.html?user=${encodeURIComponent(username)}'"`
         : "";
@@ -1651,14 +1926,14 @@ function openMatchDrawer(matchId) {
   const inner = document.getElementById("match-drawer-inner");
   if (!overlay || !drawer || !inner) return;
 
-  // ── Scoreline ──
+  // -- Scoreline --
   const team1Flag = getFlagImg(fixture.team1);
   const team2Flag = getFlagImg(fixture.team2);
   const hasRes = result && hasResult(result);
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
 
-  const scoreText = hasRes ? `${result.score1} – ${result.score2}` : "– vs –";
+  const scoreText = hasRes ? `${result.score1} � ${result.score2}` : "� vs �";
 
   const statusLabel = isLive
     ? result.status
@@ -1668,11 +1943,11 @@ function openMatchDrawer(matchId) {
 
   const statusCls = isLive ? "live" : isFinal ? "ft" : "ns";
 
-  // ── Scorers ──
+  // -- Scorers --
   const homeScorers = result?.homeScorers || [];
   const awayScorers = result?.awayScorers || [];
 
-  // Parse "Name 45'" into { name, minute } — handle OG, assists etc.
+  // Parse "Name 45'" into { name, minute } � handle OG, assists etc.
   function parseScorer(s) {
     const m = String(s).match(/^(.+?)\s+(\d+['+\d]*)('?)$/);
     if (m) return { name: m[1].trim(), minute: m[2] + (m[3] || "'") };
@@ -1697,7 +1972,7 @@ function openMatchDrawer(matchId) {
         <div class="scorer-row">
           <div class="scorer-name ${isHome ? "" : "empty"}">${isHome ? escapeHtml(ev.name) : ""}</div>
           <div class="scorer-minute">
-            <span class="scorer-ball">⚽</span>
+            <span class="scorer-ball">?</span>
             <span class="scorer-minute-pill">${escapeHtml(ev.minute)}</span>
           </div>
           <div class="scorer-name away-name ${!isHome ? "" : "empty"}">${!isHome ? escapeHtml(ev.name) : ""}</div>
@@ -1707,7 +1982,7 @@ function openMatchDrawer(matchId) {
       .join("");
   }
 
-  // ── Prediction block ──
+  // -- Prediction block --
   const hasPred = hasPrediction(pred);
   const points =
     hasRes && hasPred
@@ -1731,7 +2006,7 @@ function openMatchDrawer(matchId) {
             : "pts-zero";
 
   const predScoreHtml = hasPred
-    ? `<div class="drawer-pred-score">${pred.pred1} – ${pred.pred2}</div>`
+    ? `<div class="drawer-pred-score">${pred.pred1} � ${pred.pred2}</div>`
     : `<div class="drawer-pred-score no-pred">No prediction</div>`;
 
   const predPtsHtml =
@@ -1739,11 +2014,11 @@ function openMatchDrawer(matchId) {
       ? `<div class="drawer-pred-pts ${ptsCls}">${points}<sub>pts</sub></div>`
       : "";
 
-  // ── Venue ──
+  // -- Venue --
   const venue = getVenueDetails(fixture);
   const kickoffStr = formatKickoff(fixture);
 
-  // ── Render ──
+  // -- Render --
   inner.innerHTML = `
     <div class="drawer-header">
       <div class="drawer-header-meta">
@@ -1935,9 +2210,9 @@ function renderBracket() {
 /**
  * Resolves a bracket slot code to a real team name using STATE.groupStandings.
  * Handles:
- *   "1A"        → winner of Group A
- *   "2B"        → runner-up of Group B
- *   "3A/B/C/D" → best 3rd-place from those groups (pts → GD → GF)
+ *   "1A"        ? winner of Group A
+ *   "2B"        ? runner-up of Group B
+ *   "3A/B/C/D" ? best 3rd-place from those groups (pts ? GD ? GF)
  * Returns the original code unchanged if standings are not yet available.
  */
 function resolveSlot(code) {
@@ -1959,19 +2234,13 @@ function resolveSlot(code) {
   const thirds = code.match(/^3([A-L](?:\/[A-L])*)$/);
   if (thirds) {
     const letters = thirds[1].split("/");
-    const candidates = letters
-      .map((l) => groups[`Group ${l}`]?.[2]) // index 2 = 3rd-place team
-      .filter(Boolean)
-      .sort(
-        (a, b) =>
-          b.points - a.points ||
-          b.goal_difference - a.goal_difference ||
-          b.goals_for - a.goals_for,
-      );
+    const candidates = getThirdPlaceStandings().filter((row) =>
+      letters.includes(String(row.group_name).replace(/^Group\s+/, "")),
+    );
     return candidates[0]?.team_name || code;
   }
 
-  return code; // unknown format — pass through unchanged
+  return code; // unknown format � pass through unchanged
 }
 
 function renderAdmin() {
@@ -2368,7 +2637,7 @@ const TEAM_FLAG_CODES = {
   australia: "au",
   turkey: "tr",
   germany: "de",
-  curaçao: "cw",
+  curacao: "cw",
   netherlands: "nl",
   japan: "jp",
   "ivory coast": "ci",
@@ -2704,7 +2973,7 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
 }
 
 // ================================================================
-// 2. buildLocalLocalLeaderboard() – update to track completedPredictions
+// 2. buildLocalLocalLeaderboard() � update to track completedPredictions
 //    (used as fallback when no server leaderboard exists)
 // ================================================================
 function buildLocalLeaderboard() {
@@ -2950,6 +3219,17 @@ function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

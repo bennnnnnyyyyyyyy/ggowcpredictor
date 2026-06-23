@@ -107,6 +107,9 @@
         </div>
         <!-- Row 2: Navigation -->
         <nav id="main-nav">
+          <button id="vote-nav-btn" class="nav-btn" onclick="showView('vote', this)">
+            Vote
+          </button>
           <button class="nav-btn active" onclick="showView('predictions', this)">
             Predictions
           </button>
@@ -127,7 +130,6 @@
           </button>
           <!-- Admin button injected dynamically by showApp() for admins only -->
         </nav>
-
         <!-- Row 3: Sync status (desktop inline, mobile below nav) -->
         <div class="sync-container">
           <div class="sync-status">
@@ -150,6 +152,78 @@
     <!-- MAIN CONTENT -->
     <main>
       <!-- ── PREDICTIONS VIEW ── -->
+      <!-- -- VOTE VIEW -- -->
+      <div id="view-vote" class="view">
+        <div class="section-title">
+          <span class="title-accent">Vote</span> on the Leaderboard Reset
+        </div>
+        <div class="vote-banner">
+          <div class="vote-banner-kicker">Quick poll</div>
+          <p>
+            Should we reset the leaderboard before the next phase starts?
+            Cast your vote below and the latest choice will be saved for your
+            account.
+          </p>
+        </div>
+
+        <div class="vote-layout">
+          <section class="vote-card">
+            <div class="vote-card-title">Message</div>
+            <h3>Should the leaderboard reset?</h3>
+            <p>
+              Use this poll to record whether the leaderboard should start
+              fresh or keep the current standings.
+            </p>
+            <div id="vote-current-choice" class="vote-current-choice">
+              Loading your vote...
+            </div>
+            <div class="vote-meter" aria-hidden="true">
+              <span id="vote-yes-meter" class="vote-meter-yes"></span>
+              <span id="vote-no-meter" class="vote-meter-no"></span>
+            </div>
+          </section>
+
+          <section class="vote-card">
+            <div class="vote-card-title">Poll</div>
+            <div class="vote-stats">
+              <div class="vote-stat">
+                <strong id="vote-total-votes">0</strong>
+                <span>Total votes</span>
+              </div>
+              <div class="vote-stat">
+                <strong id="vote-yes-count">0</strong>
+                <span>Reset</span>
+              </div>
+              <div class="vote-stat">
+                <strong id="vote-no-count">0</strong>
+                <span>Keep</span>
+              </div>
+            </div>
+            <div class="vote-actions">
+              <button
+                id="vote-yes-btn"
+                class="vote-choice-btn yes"
+                type="button"
+                onclick="submitVote(true)"
+              >
+                Yes, reset it
+              </button>
+              <button
+                id="vote-no-btn"
+                class="vote-choice-btn no"
+                type="button"
+                onclick="submitVote(false)"
+              >
+                No, keep it
+              </button>
+            </div>
+            <p class="vote-note">
+              One vote per user. Your latest selection replaces your previous
+              one.
+            </p>
+          </section>
+        </div>
+      </div>
       <div id="view-predictions" class="view active">
         <div class="section-title">
           My <span class="title-accent">Predictions</span>
@@ -443,6 +517,29 @@
   <!-- ════════════════════════════════════════
        RULES MODAL (How to Play)
   ════════════════════════════════════════ -->
+  <div id="vote-modal" class="modal-overlay">
+    <div class="modal vote-modal-content">
+      <div class="modal-header">
+        <h2>Leaderboard reset vote</h2>
+        <button class="close-modal" onclick="toggleVotePrompt(false)" aria-label="Close vote prompt">
+          X
+        </button>
+      </div>
+      <p class="modal-copy">
+        Should we reset the leaderboard before the next phase? Cast a quick
+        yes or no vote and we will save your choice.
+      </p>
+      <div class="vote-modal-actions">
+        <button class="vote-choice-btn yes" type="button" onclick="submitVote(true)">
+          Yes, reset it
+        </button>
+        <button class="vote-choice-btn no" type="button" onclick="submitVote(false)">
+          No, keep it
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="rules-modal" class="modal-overlay">
     <div class="modal rules-modal-content">
       <div class="modal-header">
@@ -513,3 +610,5 @@
 <script src="scripts/app.js"></script>
 
 </html>
+
+

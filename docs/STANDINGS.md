@@ -1,4 +1,4 @@
-# GGO WC 2026 - Standings
+﻿# GGO WC 2026 - Standings
 
 This document covers the official group standings surface in the app.
 
@@ -13,11 +13,13 @@ This document covers the official group standings surface in the app.
 - A dedicated `Standings` button appears in the top navigation.
 - The button opens a standalone standings view powered by the same `renderGroupStandings()` renderer used elsewhere in the app.
 - The view shows the official tables only; it does not mix in prediction-derived math.
+- A derived third-place standings table now appears below the group tables so the Round of 32 qualifiers are visible in one place.
 
 ## Behavior
 
 - If standings have not synced yet, the view shows a loading/empty state.
 - Once synced, each group renders as a table ordered by official position.
+- Third-place entries are derived from the synced group tables and sorted by points, goal difference, and goals scored.
 - The standings view is intended to stay lightweight and read-only.
 
 ## Related Files

@@ -1,4 +1,4 @@
-/* GGO WC 2026 Predictor - Main Stylesheet */
+﻿/* GGO WC 2026 Predictor - Main Stylesheet */
 
 :root {
   --wc-blue: #00d15e;
@@ -47,9 +47,9 @@ select {
   font: inherit;
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    LOGIN SCREEN
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 #login-screen {
   display: flex;
@@ -248,9 +248,9 @@ select {
   text-decoration: underline;
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    HEADER
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 header {
   background: linear-gradient(180deg,
@@ -400,9 +400,9 @@ header {
   line-height: 1;
 }
 
-/* ────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    FILTER BUTTONS
-────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .matches-filter {
   display: flex;
@@ -584,9 +584,9 @@ header {
   gap: 10px;
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    VIEW SWITCHING
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .view {
   display: none;
@@ -596,9 +596,9 @@ header {
   display: block;
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN CONTENT
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 main {
   max-width: 1200px;
@@ -624,9 +624,9 @@ main {
   color: var(--wc-red);
 }
 
-/* ────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    MATCH CARDS (redesigned)
-────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .group-matches {
   display: grid;
@@ -689,7 +689,7 @@ main {
   opacity: 1;
 }
 
-/* ── Card Header ── */
+/* â”€â”€ Card Header â”€â”€ */
 .mc-header {
   display: flex;
   align-items: flex-start;
@@ -795,7 +795,7 @@ main {
   flex-shrink: 0;
 }
 
-/* ── Card Body ── */
+/* â”€â”€ Card Body â”€â”€ */
 .mc-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1098,7 +1098,7 @@ main {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-/* ── Card Footer ── */
+/* â”€â”€ Card Footer â”€â”€ */
 .mc-footer {
   padding: 10px 16px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -1156,9 +1156,9 @@ main {
   background: var(--success);
 }
 
-/* ────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    GROUP STANDINGS
-────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 #group-standings {
   display: grid;
@@ -1214,11 +1214,11 @@ main {
   font-weight: 700;
 }
 
-/* ────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    LEADERBOARD
-────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-/* ── Leaderboard – desktop ── */
+/* â”€â”€ Leaderboard â€“ desktop â”€â”€ */
 .leaderboard-table {
   width: 100%;
   max-width: 920px;
@@ -1352,11 +1352,11 @@ main {
   font-weight: 600;
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MATCH DETAIL DRAWER
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ── Drawer overlay ── */
+/* â”€â”€ Drawer overlay â”€â”€ */
 .match-drawer-overlay {
   position: fixed;
   inset: 0;
@@ -1371,7 +1371,7 @@ main {
   pointer-events: all;
 }
 
-/* ── Drawer panel ── */
+/* â”€â”€ Drawer panel â”€â”€ */
 .match-drawer {
   position: fixed;
   top: 0;
@@ -1399,7 +1399,7 @@ main {
   transform: translateX(0);
 }
 
-/* ── Drawer top accent ── */
+/* â”€â”€ Drawer top accent â”€â”€ */
 .match-drawer::before {
   content: "";
   position: absolute;
@@ -1410,7 +1410,7 @@ main {
   background: linear-gradient(90deg, var(--wc-blue), var(--wc-red));
 }
 
-/* ── Drawer header ── */
+/* â”€â”€ Drawer header â”€â”€ */
 .drawer-header {
   display: flex;
   align-items: center;
@@ -1460,7 +1460,7 @@ main {
   color: var(--danger);
 }
 
-/* ── Scoreline hero ── */
+/* â”€â”€ Scoreline hero â”€â”€ */
 .drawer-scoreline {
   padding: 28px 22px 22px;
   display: grid;
@@ -1562,7 +1562,7 @@ main {
   border-color: rgba(16, 185, 129, 0.35);
 }
 
-/* ── Scrollable body ── */
+/* â”€â”€ Scrollable body â”€â”€ */
 .drawer-body {
   flex: 1;
   overflow-y: auto;
@@ -1580,7 +1580,7 @@ main {
   border-radius: 2px;
 }
 
-/* ── Section label ── */
+/* â”€â”€ Section label â”€â”€ */
 .drawer-section-label {
   font-family: var(--font-ggo-display);
   font-size: 12px;
@@ -1593,7 +1593,7 @@ main {
   margin-bottom: 12px;
 }
 
-/* ── Goalscorer timeline ── */
+/* â”€â”€ Goalscorer timeline â”€â”€ */
 .scorer-timeline {
   display: flex;
   flex-direction: column;
@@ -1672,7 +1672,7 @@ main {
   font-style: italic;
 }
 
-/* ── Your prediction block ── */
+/* â”€â”€ Your prediction block â”€â”€ */
 .drawer-prediction {
   display: flex;
   align-items: center;
@@ -1726,7 +1726,7 @@ main {
   opacity: 0.75;
 }
 
-/* ── Venue info ── */
+/* â”€â”€ Venue info â”€â”€ */
 .drawer-venue {
   display: flex;
   flex-direction: column;
@@ -1745,7 +1745,7 @@ main {
   color: var(--muted);
 }
 
-/* ── Mobile drawer ── */
+/* â”€â”€ Mobile drawer â”€â”€ */
 @media (max-width: 480px) {
   .match-drawer {
     width: 100vw;
@@ -1766,9 +1766,9 @@ main {
   }
 }
 
-/* ────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    RESULTS VIEW
-────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .result-card {
   background:
@@ -1919,9 +1919,9 @@ main {
   font-weight: 700;
 }
 
-/* ────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    BRACKET VIEW
-────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .champion-section {
   text-align: center;
@@ -2201,9 +2201,9 @@ main {
   text-decoration: underline;
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MODAL
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .modal-overlay {
   display: none;
@@ -2300,9 +2300,9 @@ main {
   background: rgba(0, 209, 94, 0.1);
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    TOAST NOTIFICATION
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .toast {
   position: fixed;
@@ -2337,9 +2337,9 @@ main {
   background: #f59e0b;
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    RESPONSIVE
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* Tablet (900px and below) */
 @media (max-width: 900px) {
@@ -2979,7 +2979,7 @@ main {
 }
 
 .rules-list li::before {
-  content: "✦";
+  content: "âœ¦";
   position: absolute;
   left: 0;
   color: var(--wc-blue);
@@ -3179,9 +3179,9 @@ main {
   box-shadow: 0 6px 20px rgba(0, 209, 94, 0.4);
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    RULES PAGE VIEW (full tab, not modal)
-   ════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .rules-page-section {
   margin-bottom: 40px;
@@ -3322,13 +3322,261 @@ main {
    Bracket slot resolution styles
    ---------------------------------------- */
 
-/* Unresolved slot code (e.g. "1A", "3A/B/C") � group not yet finished */
+/* Unresolved slot code (e.g. "1A", "3A/B/C") — group not yet finished */
 .slot-tbd {
   color: var(--muted);
   font-style: italic;
 }
 
-/* Resolved team name � normal appearance */
+/* Resolved team name — normal appearance */
 .slot-resolved {
   color: var(--light);
+}
+
+
+/* Late overrides for match cards and third-place standings */
+.group-table--third-place {
+  grid-column: 1 / -1;
+}
+
+.third-place-summary {
+  padding: 12px 14px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.third-place-table tr.third-place-qualifying {
+  background: rgba(0, 209, 94, 0.06);
+}
+
+.third-place-table tr.third-place-eliminated {
+  opacity: 0.76;
+}
+
+.match-card .mc-team {
+  align-items: stretch;
+}
+
+.match-card .mc-team-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.match-card .mc-team-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.match-card .mc-name {
+  font-size: 15px;
+  text-align: inherit;
+  line-height: 1.06;
+  max-width: none;
+  overflow-wrap: anywhere;
+}
+
+.match-card .mc-team-code {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.match-card .mc-middle {
+  min-width: 92px;
+  gap: 8px;
+  justify-content: center;
+}
+
+.match-card .mc-result-grid {
+  width: min(100%, 240px);
+}
+
+.match-card .mc-result-delta {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.match-card .mc-vs {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  color: var(--light);
+  line-height: 1;
+}
+
+.match-card .mc-vs small {
+  font-family: var(--font-ggo-body);
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.match-card .mc-score-slot,
+.match-card .mc-side-score {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.match-card .mc-score-slot {
+  padding-top: 2px;
+}
+
+.match-card .mc-score-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+
+.match-card .mc-side-score {
+  min-height: 46px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 209, 94, 0.24);
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--font-ggo-display);
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--light);
+  place-items: center;
+}
+
+.match-card .mc-side-score.left,
+.match-card .mc-score-slot.left {
+  align-self: flex-start;
+}
+
+.match-card .mc-side-score.right,
+.match-card .mc-score-slot.right {
+  align-self: flex-end;
+}
+
+@media (max-width: 768px) {
+  .match-card .mc-body {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px;
+    padding: 12px 10px;
+  }
+
+  .match-card .mc-team-top {
+    gap: 8px;
+  }
+
+  .match-card .team-mark {
+    width: 44px;
+    height: 32px;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .match-card .mc-name {
+    font-size: 11px;
+  }
+
+  .match-card .mc-team-code {
+    font-size: 9px;
+  }
+
+  .match-card .mc-middle {
+    min-width: 82px;
+  }
+
+  .match-card .mc-result-grid {
+    width: min(100%, 160px);
+    gap: 4px;
+  }
+
+  .match-card .mc-result-score {
+    font-size: 20px;
+  }
+
+  .match-card .mc-result-score--sub {
+    font-size: 14px;
+  }
+
+  .match-card .mc-side-score {
+    min-height: 40px;
+    font-size: 24px;
+  }
+
+  .match-card .score-input {
+    width: 54px;
+    height: 42px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .match-card .mc-team-code {
+    display: none;
+  }
+
+  .match-card .mc-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .match-card .mc-result-score {
+    font-size: 24px;
+  }
+
+  .match-card .mc-result-score--sub {
+    font-size: 16px;
+  }
+
+  .match-card .score-input {
+    width: 54px;
+    height: 46px;
+    font-size: 22px;
+  }
+}
+
+/* Final card-width fix: keep the score comparison full-width */
+.match-card .mc-body {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.match-card .mc-team:first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.match-card .mc-team:last-child {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.match-card .mc-middle {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+}
+
+.match-card .mc-result-grid {
+  width: 100%;
+  max-width: none;
+}
+
+.match-card .mc-result-grid .mc-result-block {
+  min-width: 0;
+}
+
+.match-card .mc-result-label,
+.match-card .mc-result-meta,
+.match-card .mc-result-delta,
+.match-card .mc-vs small,
+.match-card .mc-score-label {
+  white-space: nowrap;
 }
