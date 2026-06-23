@@ -3281,3 +3281,18 @@ main {
     font-size: 17px;
   }
 }
+
+/* ────────────────────────────────────────
+   Bracket slot resolution styles
+   ──────────────────────────────────────── */
+
+/* Unresolved slot code (e.g. "1A", "3A/B/C") — group not yet finished */
+.slot-tbd {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Resolved team name — normal appearance */
+.slot-resolved {
+  color: var(--light);
+}
