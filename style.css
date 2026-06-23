@@ -1042,13 +1042,13 @@ main {
   }
 }
 
-.pts-good {
+.pts-partial {
   background: rgba(245, 158, 11, 0.15);
   color: var(--warning);
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.pts-partial {
+.pts-good {
   background: rgba(16, 185, 129, 0.15);
   color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.3);
