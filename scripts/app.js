@@ -2927,6 +2927,3 @@ function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
 }
-
-
-
