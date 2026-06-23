@@ -597,6 +597,12 @@ function showApp() {
   document.getElementById("user-display-name").textContent =
     SESSION.displayName || SESSION.username;
 
+  // Point the header profile link to the logged-in user's profile page
+  const profileLink = document.getElementById("user-profile-link");
+  if (profileLink && SESSION.username) {
+    profileLink.href = `profile.html?user=${encodeURIComponent(SESSION.username)}`;
+  }
+
   if (
     SESSION.username &&
     !localStorage.getItem(`ggo_wc_rules_shown_${SESSION.username}`)
@@ -608,6 +614,7 @@ function showApp() {
 
   requestSync();
 }
+
 
 function handleLogout() {
   localStorage.removeItem("ggo_wc_token");
