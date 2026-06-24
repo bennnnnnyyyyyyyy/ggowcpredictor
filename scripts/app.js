@@ -2960,6 +2960,7 @@ function buildLocalLeaderboard() {
       prediction.pred2,
       result.score1,
       result.score2,
+      matchDate,
     );
     totalPoints += points;
     if (points === 15) exactScores += 1;
