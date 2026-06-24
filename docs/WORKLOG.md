@@ -1,3 +1,29 @@
+## 2026-06-24 - Browser sync endpoint fallback fix
+
+### What changed
+
+- Filtered API and database result payloads through one score-only helper so scheduled placeholder rows do not count as synced results.
+- Documented the existing Worker-style route fallback (`/sync`, `/fixtures`, `/leaderboard`) and legacy Apps Script query actions (`?action=sync`, `?action=fixtures`, `?action=leaderboard`).
+- Preserved only scored results already returned by the full sync pass so refresh does not throw away a good `/sync` payload before loading results.
+- Removed duplicate/conflicting match-card CSS rules for venue detail and scoreline status/points styling.
+
+### Why
+
+- Local Worker URLs such as `127.0.0.1:8787` expose route paths, while older Apps Script deployments use query actions. The docs now match that client behavior.
+- Placeholder result rows can otherwise make the Results tab look synced while no actual score exists yet.
+## 2026-06-23 - Rules tab first-login onboarding
+
+### What changed
+
+- Switched first-time logins away from the Rules modal popup and into the Rules tab itself.
+- Added an inline first-login banner at the top of the Rules tab so new users still get a clear onboarding cue without a modal interruption.
+- Kept the one-time-per-user storage check so the onboarding only appears on the first login.
+
+### Why
+
+- The rules content is already available as a dedicated tab, so onboarding reads better as part of the page instead of a blocking popup.
+- This keeps the first-login experience visible without interrupting the rest of the app shell.
+
 ## 2026-06-22 - Main leaderboard source-order fix
 
 ### What changed
@@ -462,3 +488,5 @@ where p.username = 'ben_arthur';
 
 - The app still falls back to Firestore/local JSON if the configured API URL is empty or unreachable.
 - No browser screenshot was captured in this run because the browser automation tool was not available in this session.
+
+

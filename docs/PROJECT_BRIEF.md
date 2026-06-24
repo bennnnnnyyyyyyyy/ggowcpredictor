@@ -110,7 +110,8 @@ The 3-point close-call rule was cancelled and should not be referenced in active
 - Login reads Firestore directly and falls back to mock users if Firebase fails.
 - Fixture rendering exists but still has rough edges.
 - Group standings in `scripts/app.js` render Supabase `group_standings` rows and do not calculate ranks on the frontend.
-- Result rendering, bracket rendering, filtering, score sync, and real leaderboard calculation are not complete.
+- Bracket rendering now resolves knockout slots from standings and prior results, and the standings view includes the third-place qualifier table.
+- Result rendering, filtering, score sync, and real leaderboard calculation are not complete.
 - Apps Script deployment ID in context: `AKfycbwk6Xx2K9Y043hGFKCkMcIYfphV3mL3-qkNkR7yIyDEabPUqzNvseHmVwxCmmY6QN6L`.
 - Apps Script project ID in `.clasp.json`: `1Lx-q30o3CFcM7_h6OiuoiPNgRzaZE2SK_WnKkPFoBplS8W4ckWWa0B_0`.
 
@@ -123,3 +124,6 @@ The 3-point close-call rule was cancelled and should not be referenced in active
 ## Environment Constraints
 
 The user stated this PC has no cmd, no admin, and nothing added to PATH. Prefer PowerShell built-ins and existing local files. Do not assume global CLIs are installed.
+
+
+

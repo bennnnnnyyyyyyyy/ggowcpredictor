@@ -254,7 +254,7 @@ async function loadCollection(env, table) {
 
 async function sendEmailViaGas(env, payload) {
   const gasUrl = env.GAS_WEB_APP_URL;
-  const token  = env.GAS_EMAIL_TOKEN;
+  const token = env.GAS_EMAIL_TOKEN;
   if (!gasUrl || !token) {
     console.warn("Email skipped: GAS_WEB_APP_URL or GAS_EMAIL_TOKEN not set.");
     return;
@@ -1064,10 +1064,13 @@ export default {
         message:
           "GGO WC 2026 Predictor API. Use /sync for all data, /sync-scores for scores, and /admin/sync-standings for official group tables.",
       });
-    } catch (error) {
+
+    }
+    catch (error) {
       console.error("Worker error:", error);
       return corsJson({ success: false, error: error.message }, 500);
     }
+
   },
 
   async scheduled(event, env, ctx) {
@@ -1692,3 +1695,4 @@ function base64ToArrayBuffer(base64) {
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes.buffer;
 }
+

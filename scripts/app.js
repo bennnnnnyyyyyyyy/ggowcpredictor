@@ -78,6 +78,7 @@ const DEMO_USERS = {
 let db = null;
 let activeMatchFilter = "all";
 let activeResultFilter = "all";
+let savingMatchId = null; // or new Set() if multiple saves are allowed
 
 const SESSION = {
   token: localStorage.getItem("ggo_wc_token") || null,
@@ -98,7 +99,7 @@ const CONFIG = {
 
   get seedToken() {
     return this.apiKey;
-  }
+  },
 };
 
 const STATE = {
@@ -341,7 +342,7 @@ async function handleLogin(event) {
             };
           }
         }
-      } catch (_) { }
+      } catch (_) {}
     }
 
     // 4. Demo users last resort
@@ -588,6 +589,19 @@ function showLoginError(message) {
   errEl.classList.add("show");
 }
 
+function setRulesIntroVisible(show, message) {
+  const banner = document.getElementById("rules-intro-banner");
+  const messageEl = document.getElementById("rules-intro-message");
+  if (!banner || !messageEl) return;
+
+  banner.hidden = !show;
+  if (!show) return;
+
+  messageEl.textContent =
+    message ||
+    `Welcome, ${SESSION.displayName || SESSION.username || "Employee"}. Review the Rules tab before making predictions.`;
+}
+
 function showApp() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
@@ -603,18 +617,28 @@ function showApp() {
     profileLink.href = `profile.html?user=${encodeURIComponent(SESSION.username)}`;
   }
 
-  if (
-    SESSION.username &&
-    !localStorage.getItem(`ggo_wc_rules_shown_${SESSION.username}`)
-  ) {
-    toggleRules(true);
-  }
-
   ensureAdminNav();
 
+  const calendarBtn = document.getElementById("calendar-nav-btn");
+  if (calendarBtn) calendarBtn.style.display = "inline-block";
+
+  const rulesKey = SESSION.username && `ggo_wc_rules_shown_${SESSION.username}`;
+  const shouldShowRulesIntro = rulesKey && !localStorage.getItem(rulesKey);
+  if (shouldShowRulesIntro) {
+    const rulesBtn = document.getElementById("rules-nav-btn");
+    showView("rules", rulesBtn);
+    setRulesIntroVisible(
+      true,
+      `Welcome, ${SESSION.displayName || SESSION.username || "Employee"}. Review the Rules tab before making predictions.`,
+    );
+    localStorage.setItem(rulesKey, "true");
+  } else {
+    setRulesIntroVisible(false);
+  }
+
+  showNavChangeBanner();
   requestSync();
 }
-
 
 function handleLogout() {
   localStorage.removeItem("ggo_wc_token");
@@ -640,6 +664,7 @@ function showView(id, btn) {
   if (id === "bracket") renderBracket();
   if (id === "standings") renderGroupStandings();
   if (id === "leaderboard") renderLeaderboard();
+  if (id === "calendar") toggleCalendarModal(true);
   if (id === "admin") renderAdmin();
 }
 
@@ -679,41 +704,68 @@ async function requestSync() {
   if (timeEl) timeEl.textContent = "Syncing...";
   if (syncBtn) syncBtn.classList.add("loading");
 
-  try {
-    await loadGameData();
-    if (!STATE.fixtures.length) await loadFixtures();
-    await loadResults();
-    await loadLeaderboard();
-    await loadGroupStandings();
-    await loadPredictions();
-    await loadAccountRequests();
-
-    STATE.lastSync = new Date();
-    if (dot) dot.className = "status-dot active";
-    if (timeEl) {
-      timeEl.textContent = `Live - ${STATE.lastSync.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Africa/Cairo",
-      })}`;
+  let hadError = false;
+  const runStep = async (label, fn) => {
+    try {
+      await fn();
+    } catch (error) {
+      hadError = true;
+      console.warn(`${label} failed.`, error);
     }
+  };
 
-    renderPredictions();
-    renderGroupStandings();
-    renderLeaderboard();
-    renderResults();
-    renderBracket();
-    renderAdmin();
-  } catch (error) {
-    console.error("Sync error:", error);
-    if (dot) dot.className = "status-dot";
-    if (timeEl) timeEl.textContent = "Sync failed";
-  } finally {
-    updateAdminBadge();
-    if (syncBtn) syncBtn.classList.remove("loading");
+  await runStep("Game data sync", () => loadGameData());
+  if (!STATE.fixtures.length) {
+    await runStep("Fixture fallback", () => loadFixtures());
   }
-}
+  await runStep("Results sync", () => loadResults());
+  await runStep("Leaderboard sync", () => loadLeaderboard());
+  await runStep("Group standings sync", () => loadGroupStandings());
+  await runStep("Prediction sync", () => loadPredictions());
+  await runStep("Account request sync", () => loadAccountRequests());
 
+  const safeRender = async (label, fn) => {
+    try {
+      await fn();
+    } catch (error) {
+      hadError = true;
+      console.warn(`${label} render failed.`, error);
+    }
+  };
+
+  await safeRender("Predictions", () => renderPredictions());
+  await safeRender("Group standings", () => renderGroupStandings());
+  await safeRender("Leaderboard", () => renderLeaderboard());
+  await safeRender("Results", () => renderResults());
+  await safeRender("Bracket", () => renderBracket());
+  await safeRender("Admin", () => renderAdmin());
+
+  const hasAnyData =
+    STATE.fixtures.length ||
+    Object.keys(STATE.results).length ||
+    STATE.leaderboard.length ||
+    Object.keys(STATE.groupStandings).length ||
+    Object.keys(STATE.predictions).length ||
+    STATE.accountRequests.length;
+
+  STATE.lastSync = new Date();
+  if (dot)
+    dot.className =
+      hadError && !hasAnyData ? "status-dot" : "status-dot active";
+  if (timeEl) {
+    timeEl.textContent =
+      hadError && !hasAnyData
+        ? "Sync failed"
+        : `Live - ${STATE.lastSync.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Africa/Cairo",
+          })}`;
+  }
+
+  updateAdminBadge();
+  if (syncBtn) syncBtn.classList.remove("loading");
+}
 async function loadAccountRequests() {
   STATE.accountRequests = [];
 
@@ -814,9 +866,12 @@ async function loadLocalFixtures() {
 }
 
 async function loadResults() {
+  const syncedResults = resultsWithScores(STATE.results);
   STATE.results = {};
 
-  const apiResults = await loadResultsFromApi();
+  const apiResults = Object.keys(syncedResults).length
+    ? syncedResults
+    : await loadResultsFromApi();
   if (Object.keys(apiResults).length) {
     STATE.results = apiResults;
     return;
@@ -853,17 +908,7 @@ async function loadResults() {
     }
   }
 
-  // Merge results from both databases
   const merged = {};
-  // ADD after line 831 (after the localResults merge):
-  // Strip NS placeholder rows — only keep results with actual scores
-  Object.keys(merged).forEach((mid) => {
-    const r = merged[mid];
-    if (!hasResult(r)) delete merged[mid];
-  });
-
-  // NEW:
-  // Supabase is canonical — load it first, Firestore only fills gaps
   supabaseResults.forEach((r) => {
     const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
     const norm = normalizeResult({ ...r, matchId });
@@ -881,7 +926,7 @@ async function loadResults() {
   const localResults = readLocalObject(
     `ggo_wc_results_${SESSION.username || "demo"}`,
   );
-  STATE.results = { ...localResults, ...merged };
+  STATE.results = resultsWithScores({ ...localResults, ...merged });
 
   // Inject mock results for local development/testing if no database or API is connected
   if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
@@ -903,7 +948,6 @@ async function loadPredictions() {
   }
 
   let supabasePredictions = [];
-  let firestorePredictions = [];
 
   // 1. Try Supabase
   try {
@@ -919,45 +963,9 @@ async function loadPredictions() {
     console.warn("Could not load Supabase predictions.", error.message);
   }
 
-  // 2. Try Firestore
-  if (db) {
-    try {
-      const snap = await db
-        .collection("predictions")
-        .where("username", "==", SESSION.username)
-        .get();
-      snap.docs.forEach((doc) => {
-        firestorePredictions.push(doc.data());
-      });
-    } catch (error) {
-      console.warn("Could not load Firestore predictions.", error.message);
-    }
-  }
+  // Merge local and Supabase (Supabase takes precedence)
+  const merged = { ...local };
 
-  // Merge local, Firestore, and Supabase predictions
-  const merged = {};
-
-  // Start with local storage predictions
-  Object.keys(local).forEach((matchId) => {
-    merged[matchId] = local[matchId];
-  });
-
-  // Merge Firestore predictions
-  firestorePredictions.forEach((prediction) => {
-    const matchId = String(prediction.matchId);
-    const existing = merged[matchId];
-    if (existing) {
-      const existingTime = new Date(existing.submittedAt || 0).getTime();
-      const newTime = new Date(prediction.submittedAt || 0).getTime();
-      if (newTime >= existingTime) {
-        merged[matchId] = normalizePrediction(prediction);
-      }
-    } else {
-      merged[matchId] = normalizePrediction(prediction);
-    }
-  });
-
-  // Merge Supabase predictions
   supabasePredictions.forEach((prediction) => {
     const matchId = String(prediction.matchId);
     const existing = merged[matchId];
@@ -1096,21 +1104,21 @@ function readResultScore(result, side) {
   const directKeys =
     side === "home"
       ? [
-        "score1",
-        "team1Score",
-        "homeScore",
-        "home_score",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "score1",
+          "team1Score",
+          "homeScore",
+          "home_score",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "score2",
-        "team2Score",
-        "awayScore",
-        "away_score",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "score2",
+          "team2Score",
+          "awayScore",
+          "away_score",
+          "awayGoals",
+          "goalsAway",
+        ];
 
   for (const key of directKeys) {
     if (
@@ -1127,21 +1135,21 @@ function readResultScore(result, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
 
     for (const path of paths) {
       let value = nested;
@@ -1205,19 +1213,6 @@ function normalizeResultStatus(status) {
   return status ? String(status).toUpperCase() : "NS";
 }
 
-function showToast(message, type = "success") {
-  let toast = document.getElementById("toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "toast";
-    document.body.appendChild(toast);
-  }
-  toast.textContent = message;
-  toast.className = `toast toast-${type} show`;
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
-}
-
 async function savePrediction(matchId, pred1, pred2) {
   const fixture = STATE.fixtures.find(
     (match) => match.matchId === String(matchId),
@@ -1243,23 +1238,19 @@ async function savePrediction(matchId, pred1, pred2) {
     return;
   }
 
-  const prediction = {
-    matchId: String(matchId),
-    username: SESSION.username,
-    pred1: score1,
-    pred2: score2,
-    submittedAt: new Date().toISOString(),
-    pointsAwarded: null,
-    scoredAt: null,
-  };
+  const matchIdStr = String(matchId);
+  if (savingMatchId === matchIdStr) return;
 
-  // 1. Save to Supabase FIRST — must succeed
+  savingMatchId = matchIdStr;
+  renderPredictions();
+
   try {
-    const docId = `${SESSION.username}_${matchId}`;
+    // 1. Save to Supabase FIRST
+    const docId = `${SESSION.username}_${matchIdStr}`;
     const row = {
       id: docId,
       username: SESSION.username,
-      matchId: String(matchId),
+      matchId: matchIdStr,
       pred1: score1,
       pred2: score2,
       submittedAt: new Date().toISOString(),
@@ -1267,42 +1258,34 @@ async function savePrediction(matchId, pred1, pred2) {
       scoredAt: null,
     };
     await supabaseUpsert("predictions", [row], "id");
+
+    // 2. Update local state
+    const prediction = {
+      matchId: matchIdStr,
+      username: SESSION.username,
+      pred1: score1,
+      pred2: score2,
+      submittedAt: new Date().toISOString(),
+      pointsAwarded: null,
+      scoredAt: null,
+    };
+    STATE.predictions[matchIdStr] = prediction;
+    writeLocalObject(
+      `ggo_wc_predictions_${SESSION.username}`,
+      STATE.predictions,
+    );
+
+    showToast(`Saved: ${fixture.team1} ${score1}–${score2} ${fixture.team2}`);
   } catch (error) {
-    console.error("Failed to save prediction to Supabase:", error);
+    console.error("Save failed:", error);
     showToast("Save failed – please try again.", "error");
-    return; // Stop here — do NOT save locally or to Firestore
+  } finally {
+    savingMatchId = null;
+    await loadPredictions();
+    renderPredictions();
+    renderGroupStandings();
+    renderLeaderboard();
   }
-
-  // 2. Mirror to Firestore (optional, don't block on failure)
-  if (db) {
-    try {
-      await db
-        .collection("predictions")
-        .doc(`${SESSION.username}_${matchId}`)
-        .set(
-          {
-            ...prediction,
-            submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
-    } catch (error) {
-      console.warn("Could not mirror prediction to Firestore.", error);
-      // Non-critical; Supabase already has the truth.
-    }
-  }
-
-  // 3. Update local state only AFTER successful Supabase write
-  STATE.predictions[String(matchId)] = prediction;
-  writeLocalObject(
-    `ggo_wc_predictions_${SESSION.username || "demo"}`,
-    STATE.predictions,
-  );
-  showToast(`Saved: ${fixture.team1} ${score1}-${score2} ${fixture.team2}`);
-
-  renderPredictions();
-  renderGroupStandings();
-  renderLeaderboard();
 }
 
 function renderPredictions() {
@@ -1372,22 +1355,20 @@ function renderPredictionCard(match) {
   const result = STATE.results[match.matchId];
   const locked = isLocked(match);
   const status = getMatchStatus(match, result);
-  const team1Code = getTeamCode(match.team1);
-  const team2Code = getTeamCode(match.team2);
   const venue = getVenueDetails(match);
   const hasPred = hasPrediction(pred);
   const hasRes = result && hasResult(result);
+  const isSaving = savingMatchId === match.matchId; // ★ already present
+
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+        )
       : null;
-
-  // Determine points tier for styling
   const ptsTier =
     points === null
       ? ""
@@ -1401,6 +1382,7 @@ function renderPredictionCard(match) {
 
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
+
   const statusLineHtml =
     locked && !hasRes
       ? '<div class="mc-status-line"><span class="status-token">LOCK</span><span>Predictions closed</span></div>'
@@ -1409,25 +1391,34 @@ function renderPredictionCard(match) {
         : !locked && !hasRes
           ? '<div class="mc-status-line"><span class="status-token open-token">OPEN</span><span>Enter prediction</span></div>'
           : "";
+
   const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "—";
   const actualScore = hasRes
     ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
     : "vs";
+
   const resultScoreHtml = hasRes
     ? `
-      <div class="mc-result-grid">
-        <div class="mc-result-block mc-result-actual">
-          <div class="mc-result-label">Result</div>
-          <div class="mc-result-score">${actualScore}</div>
-          <div class="mc-result-meta">${escapeHtml(String(result.status || "NS"))}</div>
+      <div class="mc-scoreline">
+        <div class="mc-scoreline-row">
+          <span class="mc-scoreline-label">Result</span>
+          <span class="mc-scoreline-actual">${actualScore}</span>
         </div>
-        <div class="mc-result-block mc-result-prediction ${hasPred ? "has-pick" : "no-pick"}">
-          <div class="mc-result-label">Your Pick</div>
-          <div class="mc-result-score mc-result-score--sub">${predictionScore}</div>
-          <div class="mc-result-meta">
-            ${hasPred ? `${points ?? 0} pts` : "No prediction"}
+        <div class="mc-scoreline-divider"></div>
+        <div class="mc-scoreline-row ${hasPred ? "has-pick" : "no-pick"}">
+          <span class="mc-scoreline-label">Your Pick</span>
+          <span class="mc-scoreline-pick">${predictionScore}</span>
+        </div>
+        ${
+          hasPred
+            ? `
+          <div class="mc-scoreline-divider"></div>
+          <div class="mc-scoreline-points">
+            <span class="mc-scoreline-pts ${ptsTier}">${points ?? 0} pts</span>
           </div>
-        </div>
+        `
+            : ""
+        }
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -1442,61 +1433,87 @@ function renderPredictionCard(match) {
             <span>${escapeHtml(venue.stadium)}</span>
           </a>
         </div>
-        <span class="mc-badge ${status.className}">
-          ${isLive ? '<span class="live-dot"></span>' : ""}${status.label}
-        </span>
       </div>
 
       <div class="mc-body">
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-          ${hasRes
-      ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+      ${
+        hasRes
+          ? ``
+          : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
-            ${locked ? "disabled" : ""}
+            ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+      }
         </div>
 
         <div class="mc-middle">
           ${resultScoreHtml}
-          ${points !== null ? `<div class="mc-points ${ptsTier}">${points}<span>pts</span></div>` : ""}
         </div>
 
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-          ${hasRes
-      ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+        ${
+          hasRes
+            ? ``
+            : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
-            ${locked ? "disabled" : ""}
+            ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+        }
         </div>
       </div>
 
       ${statusLineHtml ? `<div class="mc-footer">${statusLineHtml}</div>` : ""}
+
+      <!-- ★ Add loading overlay -->
+      ${
+        isSaving
+          ? `
+        <div class="mc-loading-overlay">
+          <span class="spinner"></span>
+          <span>Saving…</span>
+        </div>
+      `
+          : ""
+      }
     </article>
   `;
 }
 
-function handleScoreChange(matchId) {
-  const input1 = document.querySelector(
-    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="1"]`,
-  );
-  const input2 = document.querySelector(
-    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="2"]`,
-  );
+let saveTimeout = null;
 
-  if (!input1 || !input2 || input1.value === "" || input2.value === "") return;
-  savePrediction(matchId, input1.value, input2.value);
+function handleScoreChange(matchId) {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    const input1 = document.querySelector(
+      `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="1"]`,
+    );
+    const input2 = document.querySelector(
+      `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="2"]`,
+    );
+    if (!input1 || !input2) return;
+    const v1 = input1.value.trim();
+    const v2 = input2.value.trim();
+    if (v1 === "" || v2 === "") return;
+    const num1 = Number(v1);
+    const num2 = Number(v2);
+    if (
+      !Number.isInteger(num1) ||
+      !Number.isInteger(num2) ||
+      num1 < 0 ||
+      num2 < 0
+    )
+      return;
+    savePrediction(matchId, num1, num2);
+  }, 400); // 400ms after the last keystroke
 }
 
 function renderGroupStandings() {
@@ -1510,51 +1527,145 @@ function renderGroupStandings() {
       "Official group tables are not synced yet.",
       "",
     );
+    renderThirdPlaceTable();
     return;
   }
 
   container.innerHTML = Object.entries(groups)
     .map(([groupName, standings]) => renderGroupTable(groupName, standings))
     .join("");
-}
 
+  renderThirdPlaceTable();
+}
 function renderGroupTable(groupName, standings) {
+  if (!standings || !standings.length) return "";
+
+  // Sort by position (already sorted from DB, but just in case)
+  const sorted = standings.sort((a, b) => a.position - b.position);
+
   return `
-    <article class="group-table">
-      <div class="group-header">${escapeHtml(groupName)}</div>
+    <div class="group-table">
+      <h3>${escapeHtml(groupName)}</h3>
       <table class="group-standings-table">
         <thead>
           <tr>
-            <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
+            <th>#</th>
+            <th>Team</th>
+            <th>P</th>
+            <th>W</th>
+            <th>D</th>
+            <th>L</th>
+            <th>GD</th>
+            <th>Pts</th>
           </tr>
         </thead>
         <tbody>
-          ${standings
-      .map(
-        (row) => `
-                <tr>
-                  <td class="team-rank" data-label="#"><span class="rank-badge ${rankClass(row.position)}">${row.position}</span></td>
-                  <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
-                  <td data-label="P">${row.played}</td>
-                  <td data-label="W">${row.won}</td>
-                  <td data-label="D">${row.drawn}</td>
-                  <td data-label="L">${row.lost}</td>
-                  <td data-label="GD">${row.goal_difference > 0 ? "+" : ""}${row.goal_difference}</td>
-                  <td data-label="Pts"><strong>${row.points}</strong></td>
-                </tr>
-              `,
-      )
-      .join("")}
+          ${sorted
+            .map(
+              (row) => `
+            <tr>
+              <td class="team-rank">${row.position}</td>
+              <td data-label="Team">${getFlagImg(row.team_name)} ${escapeHtml(row.team_name)}</td>
+              <td>${row.played ?? 0}</td>
+              <td>${row.won ?? 0}</td>
+              <td>${row.drawn ?? 0}</td>
+              <td>${row.lost ?? 0}</td>
+              <td>${(row.goal_difference ?? 0) > 0 ? "+" : ""}${row.goal_difference ?? 0}</td>
+              <td><strong>${row.points ?? 0}</strong></td>
+            </tr>
+          `,
+            )
+            .join("")}
         </tbody>
       </table>
+    </div>
+  `;
+}
+function getThirdPlaceStandings() {
+  const groups = STATE.groupStandings || {};
+  return Object.entries(groups)
+    .map(([groupName, standings]) => {
+      const thirdPlace = Array.isArray(standings)
+        ? standings.find((row) => Number(row.position) === 3)
+        : null;
+      if (!thirdPlace) return null;
+      return {
+        groupName,
+        ...thirdPlace,
+      };
+    })
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.points - a.points ||
+        b.goal_difference - a.goal_difference ||
+        b.goals_for - a.goals_for ||
+        String(a.team_name).localeCompare(String(b.team_name)),
+    )
+    .map((row, index) => ({
+      ...row,
+      rank: index + 1,
+      qualifies: index < 8,
+    }));
+}
+
+function renderThirdPlaceTable() {
+  const container = document.getElementById("third-place-standings");
+  if (!container) return;
+
+  const rows = getThirdPlaceStandings();
+
+  if (!rows.length) {
+    container.innerHTML = emptyState(
+      "Third-place qualifiers will appear here once all group tables are loaded.",
+      "",
+    );
+    return;
+  }
+
+  const cutoffIndex = Math.min(8, rows.length) - 1;
+
+  container.innerHTML = `
+    <article class="third-place-table group-table">
+      <table class="group-standings-table third-place-standings-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Team</th>
+            <th>Grp</th>
+            <th>P</th>
+            <th>GD</th>
+            <th>GF</th>
+            <th>Pts</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map(
+              (row, index) => `
+              <tr class="${row.qualifies ? "" : "eliminated"} ${index === cutoffIndex ? "cutoff-row" : ""}">
+                <td data-label="#">${row.rank}</td>
+                <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
+                <td data-label="Grp">${escapeHtml(String(row.groupName || "").replace(/^Group\s+/i, ""))}</td>
+                <td data-label="P">${row.played}</td>
+                <td data-label="GD">${row.goal_difference > 0 ? "+" : ""}${row.goal_difference}</td>
+                <td data-label="GF">${row.goals_for}</td>
+                <td data-label="Pts"><strong>${row.points}</strong></td>
+                <td data-label="Status">${row.qualifies ? "Qualifies" : "Out"}</td>
+              </tr>
+            `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+      <div class="third-place-legend">
+        <span class="legend-dot qualify" aria-hidden="true"></span>
+        <span>Top 8 third-place teams advance to the Round of 32.</span>
+      </div>
     </article>
   `;
 }
-
-// ================================================================
-// 1. renderLeaderboard() – replace the entire function in app.js
-//    Makes rows clickable + adds "Predicted" & "Correct %" columns
-// ================================================================
 function renderLeaderboard() {
   const tbody = document.getElementById("leaderboard-body");
   if (!tbody) return;
@@ -1571,19 +1682,28 @@ function renderLeaderboard() {
   tbody.innerHTML = rows
     .map((player, index) => {
       const rank = player.rank || index + 1;
-      const name = player.displayName || player.playerName || player.username || "Player";
+      const name =
+        player.displayName || player.playerName || player.username || "Player";
       const username = player.username || "";
 
       // ---- new data ----
-      const predicted = player.predicted || player.totalPredictions || player.predictions || 0;
-      const correctOutcomes = player.correctOutcomes || player.outcomeCount || 0;
-      const scored = player.scored || player.completedPredictions || player.resolvedPredictions || 0;
+      const predicted =
+        player.predicted || player.totalPredictions || player.predictions || 0;
+      const correctOutcomes =
+        player.correctOutcomes || player.outcomeCount || 0;
+      const scored =
+        player.scored ||
+        player.completedPredictions ||
+        player.resolvedPredictions ||
+        0;
 
       // Accuracy % matching profile.js
-      const percent = scored > 0 ? Math.round((correctOutcomes / scored) * 100) : 0;
-      const percentDisplay = scored > 0
-        ? `<span class="${percent >= 50 ? 'percent-high' : 'percent-low'}">${percent}%</span>`
-        : "—";        // ------------------
+      const percent =
+        scored > 0 ? Math.round((correctOutcomes / scored) * 100) : 0;
+      const percentDisplay =
+        scored > 0
+          ? `<span class="${percent >= 50 ? "percent-high" : "percent-low"}">${percent}%</span>`
+          : "—"; // ------------------
 
       // entire row is clickable → opens profile.html?user=username
       const onclickAttr = username
@@ -1684,11 +1804,11 @@ function openMatchDrawer(matchId) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+        )
       : null;
 
   const ptsCls =
@@ -1815,11 +1935,11 @@ function renderResults() {
       const points =
         hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-            pred.pred1,
-            pred.pred2,
-            result.score1,
-            result.score2,
-          )
+              pred.pred1,
+              pred.pred2,
+              result.score1,
+              result.score2,
+            )
           : null;
 
       return `
@@ -1845,158 +1965,206 @@ function renderBracket() {
   const bracket = document.getElementById("bracket");
   if (!bracket) return;
 
-  const knockout = STATE.fixtures.filter(
-    (fixture) => fixture.stage !== "group",
-  );
+  const knockout = STATE.fixtures
+    .filter((f) => f.stage !== "group")
+    .sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
   if (!knockout.length) {
     bracket.innerHTML = emptyState("Knockout fixtures are not loaded yet.", "");
     return;
   }
 
-  // Helper to format match dates
-  function formatBracketDate(dateStr) {
-    if (!dateStr) return "";
-    const parsed = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!parsed) return dateStr;
-    const dateObj = new Date(Date.UTC(Number(parsed[1]), Number(parsed[2]) - 1, Number(parsed[3])));
-    return dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  }
+  // ─── Correct visual order for each round ───
+  const visualOrder = {
+    "Round of 32": {
+      top: ["74", "77", "73", "75", "83", "84", "81", "82"],
+      bottom: ["76", "78", "79", "80", "86", "88", "85", "87"],
+    },
+    "Round of 16": {
+      top: ["89", "90", "93", "94"],
+      bottom: ["91", "92", "95", "96"],
+    },
+    "Quarter-final": {
+      top: ["97", "98"],
+      bottom: ["99", "100"],
+    },
+    "Semi-final": {
+      top: ["101"],
+      bottom: ["102"],
+    },
+  };
 
-  // Helper to render a single match card
-  function renderMatchCard(matchId) {
-    const match = knockout.find((f) => String(f.matchId) === String(matchId));
-    if (!match) return `<div class="bracket-match-placeholder">No match ${matchId}</div>`;
-
-    const result = STATE.results[match.matchId];
-    const score = result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
-    const isPlayed = result && hasResult(result);
-
-    const t1 = resolveSlot(match.team1);
-    const t2 = resolveSlot(match.team2);
-
-    const tbd1 = t1 === match.team1 && !isPlayed;
-    const tbd2 = t2 === match.team2 && !isPlayed;
-
-    function getTeamVisual(teamName) {
-      const code = TEAM_FLAG_CODES[String(teamName).toLowerCase().trim()];
-      if (code) {
-        return `<img class="bracket-flag-img" src="https://flagcdn.com/w80/${code}.png" alt="${escapeHtml(teamName)}">`;
-      }
-      return `
-        <svg class="bracket-shield-svg" viewBox="0 0 24 24">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-      `;
-    }
-
-    const t1Code = getTeamCode(t1);
-    const t2Code = getTeamCode(t2);
-    const dateDisplay = formatBracketDate(match.date);
-
-    return `
-      <div class="bracket-match" data-match-id="${match.matchId}">
-        <div class="bracket-team team-left">
-          <div class="bracket-flag-wrapper">${getTeamVisual(t1)}</div>
-          <span class="team-code ${tbd1 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t1Code)}</span>
-        </div>
-        <div class="bracket-middle">
-          <div class="bracket-score-badge ${isPlayed ? 'played' : 'tbd'}">${score}</div>
-          <div class="bracket-date">${escapeHtml(dateDisplay)}</div>
-        </div>
-        <div class="bracket-team team-right">
-          <div class="bracket-flag-wrapper">${getTeamVisual(t2)}</div>
-          <span class="team-code ${tbd2 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t2Code)}</span>
-        </div>
-      </div>
-    `;
-  }
-
-  const cols = [
-    // Left side columns (flow right)
-    { class: "bracket-column left-r32", title: "Round of 32", matches: [74, 77, 73, 75, 83, 84, 81, 82] },
-    { class: "bracket-column left-r16", title: "Round of 16", matches: [89, 90, 93, 94] },
-    { class: "bracket-column left-qf", title: "Quarter-final", matches: [97, 98] },
-    { class: "bracket-column left-sf", title: "Semi-final", matches: [101] },
-    
-    // Center column (Final, Bronze, Trophy)
-    { class: "bracket-column center-column", type: "center" },
-    
-    // Right side columns (flow left)
-    { class: "bracket-column right-sf", title: "Semi-final", matches: [102] },
-    { class: "bracket-column right-qf", title: "Quarter-final", matches: [99, 100] },
-    { class: "bracket-column right-r16", title: "Round of 16", matches: [91, 92, 95, 96] },
-    { class: "bracket-column right-r32", title: "Round of 32", matches: [76, 78, 79, 80, 86, 88, 85, 87] }
+  const roundOrder = [
+    "Round of 32",
+    "Round of 16",
+    "Quarter-final",
+    "Semi-final",
   ];
 
-  bracket.innerHTML = cols.map(col => {
-    if (col.type === "center") {
-      const champ = resolveSlot("W104");
-      const isChampDecided = champ !== "W104";
-      const champDisplay = isChampDecided ? champ : "TBD";
-      
-      return `
-        <div class="${col.class}">
-          <div class="center-trophy-section">
-            <div class="trophy-cup-wrapper">🏆</div>
-            <div class="champion-label">CHAMPION</div>
-            <div class="champion-name ${isChampDecided ? 'resolved' : 'tbd'}">${escapeHtml(champDisplay)}</div>
-          </div>
-          <div class="center-matches">
-            <div class="center-match-wrapper final-wrapper">
-              <span class="center-match-title badge-final">FINAL</span>
-              ${renderMatchCard(104)}
-            </div>
-            <div class="center-match-wrapper bronze-wrapper">
-              <span class="center-match-title badge-bronze">BRONZE-FINAL</span>
-              ${renderMatchCard(103)}
-            </div>
-          </div>
-        </div>
-      `;
-    }
+  // Helper: get matches for a round + side in correct visual order
+  const getOrderedMatches = (round, side) => {
+    const ids = visualOrder[round]?.[side] || [];
+    return ids
+      .map((id) => knockout.find((m) => String(m.matchId) === String(id)))
+      .filter(Boolean);
+  };
 
-    return `
-      <div class="${col.class}">
-        <div class="column-header">
-          <h3>${col.title}</h3>
-        </div>
-        <div class="column-stack">
-          ${col.matches.map(id => renderMatchCard(id)).join("")}
-        </div>
-      </div>
-    `;
-  }).join("");
+  // Build columns: left side (top halves), center (finals), right side (bottom halves)
+  const leftColumns = roundOrder.map((round) => ({
+    label: round,
+    matches: getOrderedMatches(round, "top"),
+  }));
+
+  const rightColumns = roundOrder.map((round) => ({
+    label: round,
+    matches: getOrderedMatches(round, "bottom"),
+  }));
+
+  // Center column: Final + Third Place
+  const finalMatches = knockout.filter((m) => m.round === "Final");
+  const thirdMatches = knockout.filter(
+    (m) => m.round === "Match for third place",
+  );
+
+  // ─── Build HTML ───
+  let html = `<div class="bracket-scroll-wrapper">`;
+  html += `<div class="bracket-row">`;
+
+  // Left columns
+  leftColumns.forEach((col) => {
+    if (!col.matches.length) return;
+    html += `<div class="bracket-col">`;
+    html += `<div class="bracket-round-label">${escapeHtml(col.label)}</div>`;
+    col.matches.forEach((m) => (html += renderBracketMatch(m)));
+    html += `</div>`;
+  });
+
+  // Center column
+  html += `<div class="bracket-col bracket-col-center">`;
+  if (thirdMatches.length) {
+    html += `<div class="bracket-final-block">`;
+    html += `<div class="bracket-round-label">Third Place</div>`;
+    thirdMatches.forEach((m) => (html += renderBracketMatch(m)));
+    html += `</div>`;
+  }
+  if (finalMatches.length) {
+    html += `<div class="bracket-final-block">`;
+    html += `<div class="bracket-round-label">Final</div>`;
+    finalMatches.forEach((m) => (html += renderBracketMatch(m)));
+    html += `</div>`;
+  }
+  if (!thirdMatches.length && !finalMatches.length) {
+    html += `<div class="bracket-final-placeholder">Champion TBD</div>`;
+  }
+  html += `</div>`;
+
+  // Right columns (bottom halves)
+  rightColumns.forEach((col) => {
+    if (!col.matches.length) return;
+    html += `<div class="bracket-col">`;
+    html += `<div class="bracket-round-label">${escapeHtml(col.label)}</div>`;
+    col.matches.forEach((m) => (html += renderBracketMatch(m)));
+    html += `</div>`;
+  });
+
+  html += `</div>`; // bracket-row
+  html += `</div>`; // bracket-scroll-wrapper
+
+  bracket.innerHTML = html;
 }
 
+function renderBracketMatch(match) {
+  const result = STATE.results[match.matchId];
+  const score =
+    result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
+
+  const seed1 = String(match.team1 || "");
+  const seed2 = String(match.team2 || "");
+  const t1 = resolveSlot(seed1);
+  const t2 = resolveSlot(seed2);
+  const tbd1 = t1 === seed1;
+  const tbd2 = t2 === seed2;
+  const display1 = tbd1 ? "TBD" : t1;
+  const display2 = tbd2 ? "TBD" : t2;
+
+  return `
+    <div class="bracket-match">
+      <div class="bracket-seed">
+        <span class="team-code">${escapeHtml(getTeamCode(seed1))}</span>
+        <span class="${tbd1 ? "slot-tbd" : "slot-resolved"}">
+          ${tbd1 ? "TBD" : getFlagImg(display1) + " " + escapeHtml(display1)}
+        </span>
+      </div>
+      <div class="bracket-score">${escapeHtml(score)}</div>
+      <div class="bracket-seed">
+        <span class="team-code">${escapeHtml(getTeamCode(seed2))}</span>
+        <span class="${tbd2 ? "slot-tbd" : "slot-resolved"}">
+          ${tbd2 ? "TBD" : getFlagImg(display2) + " " + escapeHtml(display2)}
+        </span>
+      </div>
+    </div>
+  `;
+}
 /**
- * Resolves a bracket slot code to a real team name using STATE.groupStandings.
- * Handles:
+ * Resolves a bracket slot code to a real team name using STATE.groupStandings
+ * and STATE.results (for knockout-round dependencies). Handles:
  *   "1A"        → winner of Group A
  *   "2B"        → runner-up of Group B
  *   "3A/B/C/D" → best 3rd-place from those groups (pts → GD → GF)
- * Returns the original code unchanged if standings are not yet available.
+ *   "W12"       → winner of match with matchId "12"
+ *   "L12"       → loser of match with matchId "12" (used for the bronze match)
+ * Returns the original code unchanged if standings/results are not yet available.
  */
 function resolveSlot(code) {
   if (!code || typeof code !== "string") return code;
 
+  // Winner/loser-of-prior-match slot: "W12" or "L12"
+  const knockoutRef = code.match(/^([WL])(\d+)$/);
+  if (knockoutRef) {
+    const [, side, refMatchId] = knockoutRef;
+    const refFixture = STATE.fixtures.find((f) => f.matchId === refMatchId);
+    const refResult = STATE.results[refMatchId];
+    if (!refFixture || !refResult || !isFinalResult(refResult)) return code;
+    const { score1, score2 } = refResult;
+    let winnerIsTeam1;
+    if (score1 > score2) winnerIsTeam1 = true;
+    else if (score2 > score1) winnerIsTeam1 = false;
+    else if (refResult.penalty_winner === "team1") winnerIsTeam1 = true;
+    else if (refResult.penalty_winner === "team2") winnerIsTeam1 = false;
+    else return code;
+
+    const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
+    const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
+    const resolvedWinner = resolveSlot(winnerTeam);
+    const resolvedLoser = resolveSlot(loserTeam);
+    return side === "W" ? resolvedWinner : resolvedLoser;
+  }
+
   const groups = STATE.groupStandings;
-  
-  // Simple slot: "1A" = winner, "2B" = runner-up
+  if (!groups || !Object.keys(groups).length) return code;
+
+  // Simple slot: "1A" or "2B" → winner/runner‑up of that group
   const simple = code.match(/^([12])([A-L])$/);
-  if (simple && groups && Object.keys(groups).length) {
-    const pos = Number(simple[1]) - 1; // 0 = winner, 1 = runner-up
-    const groupKey = `Group ${simple[2]}`;
+  if (simple) {
+    const pos = Number(simple[1]) - 1; // 0 = winner, 1 = runner‑up
+    const groupKey = simple[2]; // "A", not "Group A"
     const team = groups[groupKey]?.[pos];
     return team?.team_name || code;
   }
 
-  // 3rd-place slot: "3A/B/C/D/F" = best 3rd from those groups
-  const thirds = code.match(/^3([A-L](?:\/[A-L])*)$/);
-  if (thirds && groups && Object.keys(groups).length) {
-    const letters = thirds[1].split("/");
+  // 3rd‑place slot: "3BC" or "3B/C" → best 3rd from those groups
+  const thirds = code.match(/^3([A-L\/]+)$/);
+  if (thirds) {
+    let letters = thirds[1].split("/").filter(Boolean);
+    if (letters.length === 1 && !thirds[1].includes("/")) {
+      letters = letters[0].split("");
+    }
     const candidates = letters
-      .map((l) => groups[`Group ${l}`]?.[2]) // index 2 = 3rd-place team
+      .map((l) => {
+        const groupTeams = groups[l];
+        if (!groupTeams) return null;
+        return groupTeams.find((team) => team.position === 3) || null;
+      })
       .filter(Boolean)
       .sort(
         (a, b) =>
@@ -2007,47 +2175,7 @@ function resolveSlot(code) {
     return candidates[0]?.team_name || code;
   }
 
-  // Winner slot: "W74" = winner of Match 74
-  const winnerMatch = code.match(/^W(\d+)$/);
-  if (winnerMatch && STATE.fixtures) {
-    const matchId = winnerMatch[1];
-    const match = STATE.fixtures.find((f) => String(f.matchId) === matchId);
-    if (match) {
-      const result = STATE.results?.[match.matchId];
-      if (result && hasResult(result)) {
-        const t1 = resolveSlot(match.team1);
-        const t2 = resolveSlot(match.team2);
-        if (result.score1 > result.score2) return t1;
-        if (result.score2 > result.score1) return t2;
-        if (result.winner) {
-          return result.winner === "team1" ? t1 : t2;
-        }
-      }
-    }
-    return code;
-  }
-
-  // Loser slot: "L101" = loser of Match 101
-  const loserMatch = code.match(/^L(\d+)$/);
-  if (loserMatch && STATE.fixtures) {
-    const matchId = loserMatch[1];
-    const match = STATE.fixtures.find((f) => String(f.matchId) === matchId);
-    if (match) {
-      const result = STATE.results?.[match.matchId];
-      if (result && hasResult(result)) {
-        const t1 = resolveSlot(match.team1);
-        const t2 = resolveSlot(match.team2);
-        if (result.score1 < result.score2) return t1;
-        if (result.score2 < result.score1) return t2;
-        if (result.winner) {
-          return result.winner === "team1" ? t2 : t1;
-        }
-      }
-    }
-    return code;
-  }
-
-  return code; // unknown format — pass through unchanged
+  return code;
 }
 
 function renderAdmin() {
@@ -2110,8 +2238,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-      .map(
-        (request) => `
+        .map(
+          (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -2124,8 +2252,8 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-      )
-      .join("")}
+        )
+        .join("")}
     </div>
   `;
 }
@@ -2529,26 +2657,21 @@ async function loadGameData() {
   if (!CONFIG.appsScriptUrl) return;
 
   try {
-    const response = await fetch(
-      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`,
-      {
-        cache: "no-store",
-      },
-    );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+    const data = await fetchGameDataApi(["/sync", "?action=sync"]);
 
     if (Array.isArray(data.fixtures) && data.fixtures.length) {
       STATE.fixtures = sortFixtures(data.fixtures.map(normalizeFixture));
     }
     if (data.results) {
-      STATE.results = normalizeResultsPayload(data.results);
+      STATE.results = resultsWithScores(data.results);
     }
     if (Array.isArray(data.leaderboard)) {
       STATE.leaderboard = data.leaderboard;
     }
     if (data.groupStandings) {
-      STATE.groupStandings = normalizeGroupStandingsPayload(data.groupStandings);
+      STATE.groupStandings = normalizeGroupStandingsPayload(
+        data.groupStandings,
+      );
     }
     if (Array.isArray(data.users)) {
       STATE.users = data.users;
@@ -2561,14 +2684,7 @@ async function loadGameData() {
 async function loadFixturesFromApi() {
   if (!CONFIG.appsScriptUrl) return [];
   try {
-    const response = await fetch(
-      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=fixtures`,
-      {
-        cache: "no-store",
-      },
-    );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+    const data = await fetchGameDataApi(["/fixtures", "?action=fixtures"]);
     if (Array.isArray(data.fixtures)) {
       return data.fixtures.map(normalizeFixture);
     }
@@ -2580,30 +2696,48 @@ async function loadFixturesFromApi() {
 
 async function loadResultsFromApi() {
   if (!CONFIG.appsScriptUrl) return {};
-  return Object.keys(STATE.results).length
-    ? normalizeResultsPayload(STATE.results)
-    : {};
+  try {
+    const data = await fetchGameDataApi(["/sync", "?action=sync"]);
+    return resultsWithScores(data.results);
+  } catch (error) {
+    console.warn("Results API unavailable.", error.message);
+    return {};
+  }
 }
 async function loadLeaderboardFromApi() {
   try {
-    const response = await fetch(
-      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}/leaderboard`,
-      {
-        cache: "no-store",
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await fetchGameDataApi([
+      "/leaderboard",
+      "?action=leaderboard",
+    ]);
 
     return Array.isArray(data.leaderboard) ? data.leaderboard : [];
   } catch (error) {
     console.error("Leaderboard API failed:", error);
     return [];
   }
+}
+
+function buildGameDataApiUrl(endpoint) {
+  const base = CONFIG.appsScriptUrl.replace(/\/$/, "");
+  return endpoint.startsWith("?") ? `${base}${endpoint}` : `${base}${endpoint}`;
+}
+
+async function fetchGameDataApi(endpoints) {
+  let lastError = null;
+
+  for (const endpoint of endpoints) {
+    const url = buildGameDataApiUrl(endpoint);
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`${url} HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("No game data API endpoint configured");
 }
 
 async function loadGroupStandings() {
@@ -2621,6 +2755,14 @@ async function loadGroupStandings() {
     console.warn("Could not load Supabase group standings.", error.message);
     STATE.groupStandings = {};
   }
+}
+
+function resultsWithScores(results) {
+  const normalized = normalizeResultsPayload(results);
+  return Object.entries(normalized).reduce((acc, [matchId, result]) => {
+    if (hasResult(result)) acc[matchId] = result;
+    return acc;
+  }, {});
 }
 
 function normalizeResultsPayload(results) {
@@ -2681,7 +2823,9 @@ function normalizeGroupStandingsPayload(payload) {
   });
 
   return Object.fromEntries(
-    Object.entries(groups).sort(([a], [b]) => String(a).localeCompare(String(b))),
+    Object.entries(groups).sort(([a], [b]) =>
+      String(a).localeCompare(String(b)),
+    ),
   );
 }
 
@@ -2759,8 +2903,20 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
   const actualOutcome = Math.sign(actual1 - actual2);
 
   if (predOutcome === actualOutcome) {
-    const diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
-    return diffGap <= 1 ? 8 : 5;
+    let diffGap;
+    if (predOutcome === 0) {
+      // DRAW: measure total goals difference
+      const predTotal = pred1 + pred2;
+      const actualTotal = actual1 + actual2;
+      diffGap = Math.abs(predTotal - actualTotal);
+      // Off by 0 (exact) or 2 (one goal per team) → 8 pts (if not exact)
+      // Off by 4+ → 5 pts
+      return diffGap <= 2 ? 8 : 5;
+    } else {
+      // WIN/LOSS: use goal‑difference gap
+      diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
+      return diffGap <= 1 ? 8 : 5;
+    }
   }
   return 0;
 }
@@ -2776,7 +2932,7 @@ function buildLocalLeaderboard() {
   let exactScores = 0;
   let correctOutcomes = 0;
   let predicted = 0;
-  let completedPredictions = 0;   // NEW
+  let completedPredictions = 0; // NEW
 
   Object.values(STATE.predictions).forEach((prediction) => {
     if (!hasPrediction(prediction)) return;
@@ -2785,7 +2941,7 @@ function buildLocalLeaderboard() {
     const result = STATE.results[String(prediction.matchId)];
     if (!hasResult(result)) return;
 
-    completedPredictions += 1;    // NEW: only count predictions that have a result
+    completedPredictions += 1; // NEW: only count predictions that have a result
 
     const fixture = STATE.fixtures?.find(
       (f) => String(f.matchId) === String(prediction.matchId),
@@ -2813,7 +2969,7 @@ function buildLocalLeaderboard() {
       correctOutcomes,
       predicted,
       scored: completedPredictions,
-      completedPredictions,   // NEW
+      completedPredictions, // NEW
     },
   ];
 }
@@ -2965,6 +3121,15 @@ function groupBy(items, getKey) {
     return groups;
   }, {});
 }
+function toggleCalendarModal(show) {
+  const modal = document.getElementById("calendar-modal");
+  if (!modal) return;
+  if (show) {
+    modal.classList.add("show");
+  } else {
+    modal.classList.remove("show");
+  }
+}
 
 function readLocalObject(key) {
   try {
@@ -3011,4 +3176,20 @@ function escapeHtml(value) {
 function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
+}
+function toggleSidebar(open) {
+  document.getElementById("sidebar").classList.toggle("open", open);
+  document.getElementById("sidebar-overlay").classList.toggle("open", open);
+  document.body.style.overflow = open ? "hidden" : "";
+}
+
+function showNavChangeBanner() {
+  if (localStorage.getItem("ggo_nav_banner_seen")) return;
+  const banner = document.getElementById("nav-change-banner");
+  if (banner) banner.style.display = "flex";
+}
+function isFinalResult(result) {
+  if (!result) return false;
+  const status = String(result.status || "").toUpperCase();
+  return ["FT", "AET", "PEN", "COMPLETED", "FINAL"].includes(status);
 }

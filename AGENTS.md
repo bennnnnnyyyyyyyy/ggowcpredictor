@@ -9,5 +9,5 @@
 
 ## Commit Message Help
 
-- When finishing a task, suggest a few commit message options that match the size and scope of the change.
+- When finishing a task, suggest 1 commit message option that match the size and scope of the change.
 - Offer one short conventional message, one descriptive message, and one slightly more detailed option.

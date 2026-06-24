@@ -21,16 +21,16 @@ Open [docs/project-tracker.html](docs/project-tracker.html) in a browser for the
 | [docs/ERROR_REDUCTION.md](docs/ERROR_REDUCTION.md) | Rules to follow before editing code |
 | [docs/project-tracker.html](docs/project-tracker.html) | Interactive visualizer — open directly in browser |
 
-## Current Status (Jun 23, 2026)
+## Current Status (Jun 24, 2026)
 
 - **Audit score**: 10/20 (Acceptable — significant work needed)
 - **Resolved**: post-merge `scripts/app.js` syntax break that prevented the browser app from loading and blocked login
 - **P0 open**: `savePrediction` crashes when match is locked
 - **P1 open**: matchId mismatch, seed Drive path wrong
 - **Backend backup**: Apps Script now tries Firebase first, falls back to Supabase, and includes a one-shot Firestore-to-Supabase migration
-- **Working**: Login, fixture loading, country flags, prediction inputs (UI), Supabase-backed official group standings, lock at kickoff
-- **Responsive UI**: Header controls, filters, match cards, and leaderboard/group tables now reflow more cleanly on phones
-- **Rules tab**: Added dedicated **Rules** tab in the main nav — shows App Features overview + scoring rules + guidelines; the first-login modal remains unchanged
+- **Working**: Login, fixture loading, country flags, prediction inputs (UI), Supabase-backed official group standings, third-place qualifier table, knockout bracket autofill, lock at kickoff, Worker/Apps Script sync endpoint fallback, score-only result filtering
+- **Responsive UI**: Header controls, filters, match cards, leaderboard/group tables, third-place table, and bracket now reflow more cleanly on phones
+- **Rules tab**: Added dedicated **Rules** tab in the main nav - shows App Features overview + scoring rules + guidelines; new logins now land on the tab with an inline welcome banner instead of a popup
 
 
 ## Live Results Worker
@@ -55,3 +55,5 @@ Optional environment variables:
 - `LIVE_SYNC_DRY_RUN=true` logs matches without writing Firestore
 
 If you already have `GOOGLE_APPLICATION_CREDENTIALS` configured, the worker can use ADC instead of a JSON service account.
+
+
