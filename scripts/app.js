@@ -945,14 +945,13 @@ async function loadPredictions() {
   }
 
   let supabasePredictions = [];
-  let firestorePredictions = [];
 
   // 1. Try Supabase
   try {
     const data = await supabaseSelect(
       "predictions",
       "*",
-      `username=eq.${encodeURIComponent(SESSION.username)}`,
+      `username=eq.${encodeURIComponent(SESSION.username)}`
     );
     if (data && data.length) {
       supabasePredictions = data;
@@ -961,45 +960,9 @@ async function loadPredictions() {
     console.warn("Could not load Supabase predictions.", error.message);
   }
 
-  // 2. Try Firestore
-  if (db) {
-    try {
-      const snap = await db
-        .collection("predictions")
-        .where("username", "==", SESSION.username)
-        .get();
-      snap.docs.forEach((doc) => {
-        firestorePredictions.push(doc.data());
-      });
-    } catch (error) {
-      console.warn("Could not load Firestore predictions.", error.message);
-    }
-  }
+  // Merge local and Supabase (Supabase takes precedence)
+  const merged = { ...local };
 
-  // Merge local, Firestore, and Supabase predictions
-  const merged = {};
-
-  // Start with local storage predictions
-  Object.keys(local).forEach((matchId) => {
-    merged[matchId] = local[matchId];
-  });
-
-  // Merge Firestore predictions
-  firestorePredictions.forEach((prediction) => {
-    const matchId = String(prediction.matchId);
-    const existing = merged[matchId];
-    if (existing) {
-      const existingTime = new Date(existing.submittedAt || 0).getTime();
-      const newTime = new Date(prediction.submittedAt || 0).getTime();
-      if (newTime >= existingTime) {
-        merged[matchId] = normalizePrediction(prediction);
-      }
-    } else {
-      merged[matchId] = normalizePrediction(prediction);
-    }
-  });
-
-  // Merge Supabase predictions
   supabasePredictions.forEach((prediction) => {
     const matchId = String(prediction.matchId);
     const existing = merged[matchId];
@@ -1247,21 +1210,10 @@ function normalizeResultStatus(status) {
   return status ? String(status).toUpperCase() : "NS";
 }
 
-function showToast(message, type = "success") {
-  let toast = document.getElementById("toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "toast";
-    document.body.appendChild(toast);
-  }
-  toast.textContent = message;
-  toast.className = `toast toast-${type} show`;
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.classList.remove("show"), 2500);
-}
-
 async function savePrediction(matchId, pred1, pred2) {
-  const fixture = STATE.fixtures.find(match => match.matchId === String(matchId));
+  const fixture = STATE.fixtures.find(
+    (match) => match.matchId === String(matchId)
+  );
   const score1 = Number(pred1);
   const score2 = Number(pred2);
 
@@ -1273,21 +1225,24 @@ async function savePrediction(matchId, pred1, pred2) {
     return;
   }
 
-  if (!Number.isInteger(score1) || !Number.isInteger(score2) || score1 < 0 || score2 < 0) {
+  if (
+    !Number.isInteger(score1) ||
+    !Number.isInteger(score2) ||
+    score1 < 0 ||
+    score2 < 0
+  ) {
     showToast("Please enter valid scores.", "error");
     return;
   }
 
-  // Prevent overlapping saves for the same match
   const matchIdStr = String(matchId);
   if (savingMatchId === matchIdStr) return;
 
-  // Set loading state and re‑render to show overlay
   savingMatchId = matchIdStr;
-  renderPredictions();  // shows loading overlay immediately
+  renderPredictions();
 
   try {
-    // 1. Save to Supabase FIRST — must succeed
+    // 1. Save to Supabase FIRST
     const docId = `${SESSION.username}_${matchIdStr}`;
     const row = {
       id: docId,
@@ -1301,19 +1256,7 @@ async function savePrediction(matchId, pred1, pred2) {
     };
     await supabaseUpsert("predictions", [row], "id");
 
-    // 2. Mirror to Firestore (optional, don't block)
-    if (db) {
-      try {
-        await db.collection("predictions").doc(docId).set({
-          ...row,
-          submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-      } catch (error) {
-        console.warn("Firestore mirror failed:", error);
-      }
-    }
-
-    // 3. Update local state
+    // 2. Update local state
     const prediction = {
       matchId: matchIdStr,
       username: SESSION.username,
@@ -1324,7 +1267,10 @@ async function savePrediction(matchId, pred1, pred2) {
       scoredAt: null,
     };
     STATE.predictions[matchIdStr] = prediction;
-    writeLocalObject(`ggo_wc_predictions_${SESSION.username}`, STATE.predictions);
+    writeLocalObject(
+      `ggo_wc_predictions_${SESSION.username}`,
+      STATE.predictions
+    );
 
     showToast(`Saved: ${fixture.team1} ${score1}–${score2} ${fixture.team2}`);
   } catch (error) {
@@ -1332,7 +1278,6 @@ async function savePrediction(matchId, pred1, pred2) {
     showToast("Save failed – please try again.", "error");
   } finally {
     savingMatchId = null;
-    // Reload predictions from Supabase to ensure fresh data, then re‑render
     await loadPredictions();
     renderPredictions();
     renderGroupStandings();
@@ -1970,18 +1915,18 @@ function renderBracket() {
   if (!bracket) return;
 
   const knockout = STATE.fixtures
-    .filter(f => f.stage !== "group")
+    .filter((f) => f.stage !== "group")
     .sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
   if (!knockout.length) {
-    bracket.innerHTML = emptyState("Knockout fixtures are not loaded yet.", "");
+    bracket.innerHTML = emptyState(
+      "Knockout fixtures are not loaded yet.",
+      ""
+    );
     return;
   }
 
-  // Hardcoded visual order for each round (left column = top, right column = bottom)
-  // Matches FotMob's bracket layout exactly — no ID appears in both top and bottom.
-  // R32: left side feeds left R16 bracket; right side feeds right R16 bracket.
-  // R16/QF/SF: left half progresses toward left SF, right half toward right SF.
+  // ─── Correct visual order for each round ───
   const visualOrder = {
     "Round of 32": {
       top: ["74", "77", "73", "75", "83", "84", "81", "82"],
@@ -2001,52 +1946,46 @@ function renderBracket() {
     }
   };
 
-  // Define rounds in order from outer to inner
   const roundOrder = ["Round of 32", "Round of 16", "Quarter-final", "Semi-final"];
-  const matchesByRound = {};
-  roundOrder.forEach(r => {
-    matchesByRound[r] = knockout.filter(m => m.round === r);
-  });
 
-  // For each round, reorder matches according to visualOrder
-  const reorderMatches = (round, matches) => {
-    const order = visualOrder[round];
-    if (!order) return { top: matches, bottom: [] };
-    const topIds = order.top || [];
-    const bottomIds = order.bottom || [];
-    const top = topIds.map(id => matches.find(m => String(m.matchId) === String(id))).filter(Boolean);
-    const bottom = bottomIds.map(id => matches.find(m => String(m.matchId) === String(id))).filter(Boolean);
-    // If some matches not in order, append them at end
-    const unmatched = matches.filter(m => !topIds.includes(String(m.matchId)) && !bottomIds.includes(String(m.matchId)));
-    // Distribute unmatched evenly if needed, or just append to top
-    return { top: [...top, ...unmatched], bottom };
+  // Helper: get matches for a round + side in correct visual order
+  const getOrderedMatches = (round, side) => {
+    const ids = visualOrder[round]?.[side] || [];
+    return ids
+      .map(id => knockout.find(m => String(m.matchId) === String(id)))
+      .filter(Boolean);
   };
 
-  const halves = {};
-  roundOrder.forEach(r => {
-    const matches = matchesByRound[r] || [];
-    halves[r] = reorderMatches(r, matches);
-  });
+  // Build columns: left side (top halves), center (finals), right side (bottom halves)
+  const leftColumns = roundOrder.map(round => ({
+    label: round,
+    matches: getOrderedMatches(round, "top")
+  }));
 
-  // Build HTML: three columns
-  let html = '<div class="bracket-three-column">';
+  const rightColumns = roundOrder.map(round => ({
+    label: round,
+    matches: getOrderedMatches(round, "bottom")
+  }));
 
-  // LEFT COLUMN: top half of each round (outer to inner)
-  html += '<div class="bracket-col bracket-col-left">';
-  roundOrder.forEach(round => {
-    const matches = halves[round].top;
-    if (!matches.length) return;
-    html += `<div class="bracket-round-group">`;
-    html += `<div class="bracket-round-label">${escapeHtml(round)}</div>`;
-    matches.forEach(m => html += renderBracketMatch(m));
-    html += `</div>`;
-  });
-  html += '</div>';
-
-  // CENTER COLUMN: Final + Third Place
+  // Center column: Final + Third Place
   const finalMatches = knockout.filter(m => m.round === "Final");
   const thirdMatches = knockout.filter(m => m.round === "Match for third place");
-  html += '<div class="bracket-col bracket-col-center">';
+
+  // ─── Build HTML ───
+  let html = `<div class="bracket-scroll-wrapper">`;
+  html += `<div class="bracket-row">`;
+
+  // Left columns
+  leftColumns.forEach(col => {
+    if (!col.matches.length) return;
+    html += `<div class="bracket-col">`;
+    html += `<div class="bracket-round-label">${escapeHtml(col.label)}</div>`;
+    col.matches.forEach(m => html += renderBracketMatch(m));
+    html += `</div>`;
+  });
+
+  // Center column
+  html += `<div class="bracket-col bracket-col-center">`;
   if (thirdMatches.length) {
     html += `<div class="bracket-final-block">`;
     html += `<div class="bracket-round-label">Third Place</div>`;
@@ -2062,21 +2001,20 @@ function renderBracket() {
   if (!thirdMatches.length && !finalMatches.length) {
     html += `<div class="bracket-final-placeholder">Champion TBD</div>`;
   }
-  html += '</div>';
+  html += `</div>`;
 
-  // RIGHT COLUMN: bottom half of each round (outer to inner)
-  html += '<div class="bracket-col bracket-col-right">';
-  roundOrder.forEach(round => {
-    const matches = halves[round].bottom;
-    if (!matches.length) return;
-    html += `<div class="bracket-round-group">`;
-    html += `<div class="bracket-round-label">${escapeHtml(round)}</div>`;
-    matches.forEach(m => html += renderBracketMatch(m));
+  // Right columns (bottom halves)
+  rightColumns.forEach(col => {
+    if (!col.matches.length) return;
+    html += `<div class="bracket-col">`;
+    html += `<div class="bracket-round-label">${escapeHtml(col.label)}</div>`;
+    col.matches.forEach(m => html += renderBracketMatch(m));
     html += `</div>`;
   });
-  html += '</div>';
 
-  html += '</div>'; // end bracket-three-column
+  html += `</div>`; // bracket-row
+  html += `</div>`; // bracket-scroll-wrapper
+
   bracket.innerHTML = html;
 }
 

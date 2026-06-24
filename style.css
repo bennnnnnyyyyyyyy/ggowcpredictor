@@ -2411,14 +2411,6 @@ main {
 }
 
 /* Three‑column bracket layout */
-.bracket-three-column {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  align-items: stretch;
-}
 
 .bracket-col {
   flex: 1;
@@ -2502,6 +2494,115 @@ main {
 .bracket-col-center .bracket-final-block {
   width: 100%;
   text-align: center;
+}
+
+.bracket-final-placeholder {
+  font-family: var(--font-ggo-display);
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--wc-red);
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* Scrollable horizontal bracket */
+.bracket-scroll-wrapper {
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-inline: -8px;
+  padding-inline: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.bracket-scroll-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.bracket-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--wc-blue);
+  border-radius: 3px;
+}
+
+.bracket-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: stretch;
+  min-width: max-content;
+}
+
+.bracket-col {
+  flex: 0 0 auto;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bracket-col-center {
+  flex: 0 0 160px;
+  justify-content: center;
+  align-items: center;
+}
+
+.bracket-round-label {
+  font-family: var(--font-ggo-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--wc-blue);
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 209, 94, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.bracket-match {
+  background: rgba(12, 18, 24, 0.95);
+  border: 1px solid rgba(0, 209, 94, 0.25);
+  border-radius: 6px;
+  padding: 6px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.bracket-seed {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bracket-seed .team-code {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: right;
+}
+
+.bracket-score {
+  text-align: center;
+  font-family: var(--font-ggo-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--wc-blue);
+  padding: 2px 0;
+}
+
+.slot-tbd {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.slot-resolved {
+  color: var(--light);
 }
 
 .bracket-final-placeholder {
@@ -2621,6 +2722,118 @@ main {
   display: flex;
 }
 
+/* ── Scrollable bracket container ── */
+.bracket-scroll-wrapper {
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-inline: -8px;
+  padding-inline: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.bracket-scroll-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.bracket-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--wc-blue);
+  border-radius: 3px;
+}
+
+.bracket-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: stretch;
+  min-width: max-content;
+}
+
+.bracket-col {
+  flex: 0 0 auto;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bracket-col-center {
+  flex: 0 0 160px;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ── Round label ── */
+.bracket-round-label {
+  font-family: var(--font-ggo-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--wc-blue);
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 209, 94, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+/* ── Match card inside bracket ── */
+.bracket-match {
+  background: rgba(12, 18, 24, 0.95);
+  border: 1px solid rgba(0, 209, 94, 0.25);
+  border-radius: 6px;
+  padding: 6px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.bracket-seed {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bracket-seed .team-code {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: right;
+}
+
+.bracket-score {
+  text-align: center;
+  font-family: var(--font-ggo-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--wc-blue);
+  padding: 2px 0;
+}
+
+.slot-tbd {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.slot-resolved {
+  color: var(--light);
+}
+
+.bracket-final-placeholder {
+  font-family: var(--font-ggo-display);
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--wc-red);
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ── Remove any old .bracket-three-column / .bracket-two-column rules ── */
 .modal {
   background: var(--dark);
   border: 1px solid rgba(0, 209, 94, 0.3);
@@ -4015,6 +4228,51 @@ main {
   }
 }
 
+/* Bracket – scrollable horizontal layout */
+.bracket-scroll-wrapper {
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-inline: -8px;
+  padding-inline: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bracket-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: stretch;
+  min-width: 100%;
+}
+
+.bracket-col {
+  flex: 0 0 auto;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bracket-col-center {
+  flex: 0 0 160px;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Existing bracket-match styles stay as they are */
+.bracket-round-label {
+  font-family: var(--font-ggo-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--wc-blue);
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 209, 94, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+/* Remove any previous `.bracket-three-column` or `.bracket-two-column` rules – they are replaced */
 /* ════════════════════════════════════════
    RESPONSIVE OVERRIDES
 ════════════════════════════════════════ */
