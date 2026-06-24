@@ -618,6 +618,9 @@ function showApp() {
 
   ensureAdminNav();
 
+  const calendarBtn = document.getElementById("calendar-nav-btn");
+  if (calendarBtn) calendarBtn.style.display = "inline-block";
+
   const rulesKey = SESSION.username && `ggo_wc_rules_shown_${SESSION.username}`;
   const shouldShowRulesIntro = rulesKey && !localStorage.getItem(rulesKey);
   if (shouldShowRulesIntro) {
@@ -1985,20 +1988,22 @@ function renderBracket() {
     return;
   }
 
-  // Hardcoded visual order for each round (top half left, bottom half right)
-  // Format: { roundName: { top: [matchIds], bottom: [matchIds] } }
+  // Hardcoded visual order for each round (left column = top, right column = bottom)
+  // Matches FotMob's bracket layout exactly — no ID appears in both top and bottom.
+  // R32: left side feeds left R16 bracket; right side feeds right R16 bracket.
+  // R16/QF/SF: left half progresses toward left SF, right half toward right SF.
   const visualOrder = {
     "Round of 32": {
       top: ["74", "77", "73", "75", "83", "84", "81", "82"],
       bottom: ["76", "78", "79", "80", "86", "88", "85", "87"]
     },
     "Round of 16": {
-      top: ["89", "90", "93", "94", "95", "96", "91", "92"], // order from FotMob left column
-      bottom: ["91", "92", "89", "90", "93", "94", "95", "96"] // approximate - adjust as needed
+      top: ["89", "90", "93", "94"],
+      bottom: ["91", "92", "95", "96"]
     },
     "Quarter-final": {
-      top: ["97", "98", "99", "100"],
-      bottom: ["97", "98", "99", "100"] // actually split top/bottom
+      top: ["97", "98"],
+      bottom: ["99", "100"]
     },
     "Semi-final": {
       top: ["101"],
@@ -3171,7 +3176,3 @@ function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
 }
-
-
-
-
