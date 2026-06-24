@@ -642,7 +642,7 @@ main {
     repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
       transparent 1px 9px);
-  border: 2px solid rgba(0, 209, 94, 0.32);
+  border: 2px solid rgba(57, 172, 46, 0.925);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.25s ease;
@@ -692,17 +692,19 @@ main {
 /* ── Card Header ── */
 .mc-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 16px 18px 12px;
+  padding: 12px 18px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .mc-meta {
   display: flex;
-  flex-direction: column;
-  gap: 7px;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
   min-width: 0;
 }
 
@@ -717,15 +719,18 @@ main {
 }
 
 .mc-venue {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 8px;
-  row-gap: 1px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   color: var(--muted);
   text-decoration: none;
   letter-spacing: 0.2px;
   line-height: 1.25;
-  max-width: 260px;
+  white-space: nowrap;
+}
+
+.mc-venue span:last-child {
+  display: none;
 }
 
 .mc-venue strong {
@@ -752,6 +757,8 @@ main {
   color: var(--wc-blue);
   text-transform: uppercase;
   letter-spacing: 0.8px;
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .mc-badge {
@@ -840,14 +847,18 @@ main {
 
 .mc-name {
   font-family: var(--font-ggo-display);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 900;
   text-align: center;
   color: var(--light);
   letter-spacing: 0.2px;
   line-height: 1.02;
-  max-width: 130px;
+  max-width: 100px;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .mc-middle {
@@ -867,53 +878,118 @@ main {
   text-align: center;
 }
 
-.mc-result-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  width: min(100%, 220px);
-}
+/* REPLACE the whole block with: */
 
-.mc-result-grid .mc-result-block {
-  padding: 9px 8px 8px;
+/* scoreline (replaces old mc-result-grid) */
+.mc-scoreline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: min(100%, 200px);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.mc-result-actual {
-  box-shadow: inset 0 0 0 1px rgba(0, 209, 94, 0.12);
+.mc-scoreline-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
 }
 
-.mc-result-prediction {
-  box-shadow: inset 0 0 0 1px rgba(77, 132, 255, 0.12);
+.mc-scoreline-row.no-pick {
+  opacity: 0.5;
 }
 
-.mc-result-prediction.no-pick {
-  opacity: 0.72;
-  border-style: dashed;
+.mc-scoreline-row.has-pick {
+  background: rgba(77, 132, 255, 0.07);
 }
 
-.mc-result-prediction.has-pick {
-  background: rgba(77, 132, 255, 0.08);
+.mc-scoreline-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 0;
 }
 
-.mc-result-label {
+.mc-scoreline-points {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.mc-scoreline-pts {
+  font-family: var(--font-ggo-display);
+  font-size: 16px;
+  font-weight: 900;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border-width: 1.5px;
+  border-style: solid;
+}
+
+.mc-scoreline-label {
   font-size: 9px;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.6px;
+  flex: 0 0 auto;
+  width: 46px;
 }
 
-.mc-pred-score {
+.mc-scoreline-actual {
   font-family: var(--font-ggo-display);
-  font-size: 21px;
+  font-size: 28px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.8);
-  min-height: 1em;
+  color: var(--light);
+  letter-spacing: 1px;
+  flex: 1;
 }
 
+.mc-scoreline-pick {
+  font-family: var(--font-ggo-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 1px;
+  flex: 1;
+}
+
+.mc-scoreline-status {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* REPLACE WITH: */
+.mc-scoreline-pts {
+  font-family: var(--font-ggo-display);
+  font-size: 14px;
+  font-weight: 900;
+  padding: 3px 9px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+  border-width: 1.5px;
+  border-style: solid;
+}
+
+/* Keep mc-vs for open cards */
+.mc-vs {
+  font-family: var(--font-ggo-display);
+  font-size: 22px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.34);
+  letter-spacing: 1px;
+  padding-inline: 4px;
+}
+
+/* Keep mc-actual-score for score display beside team name */
 .mc-actual-score {
   font-family: var(--font-ggo-display);
   font-size: 23px;
@@ -925,45 +1001,6 @@ main {
 .match-card.live .mc-actual-score {
   color: var(--warning);
   text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
-}
-
-.mc-pick-line {
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 0.3px;
-}
-
-.mc-vs {
-  font-family: var(--font-ggo-display);
-  font-size: 22px;
-  font-weight: 900;
-  color: rgba(255, 255, 255, 0.34);
-  letter-spacing: 1px;
-  padding-inline: 4px;
-}
-
-.mc-result-score {
-  font-family: var(--font-ggo-display);
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--light);
-  letter-spacing: 1px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.mc-result-score--sub {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.mc-result-meta {
-  font-family: var(--font-ggo-body);
-  font-size: 10px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .mc-status-line {
@@ -1213,6 +1250,47 @@ main {
   font-weight: 700;
 }
 
+.third-place-title {
+  margin-top: 36px;
+}
+
+.third-place-table {
+  margin-bottom: 8px;
+}
+
+.third-place-standings-table th:nth-child(2),
+.third-place-standings-table td[data-label="Grp"] {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.third-place-table tr.eliminated {
+  opacity: 0.5;
+}
+
+.third-place-table tr.cutoff-row td {
+  border-bottom: 2px dashed rgba(0, 209, 94, 0.55);
+}
+
+.third-place-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid rgba(0, 209, 94, 0.15);
+}
+
+.legend-dot.qualify {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wc-blue, #00d15e);
+  display: inline-block;
+}
+
 /* ────────────────────────────────────────
    LEADERBOARD
 ────────────────────────────────────────── */
@@ -1298,6 +1376,19 @@ main {
   text-align: center;
   padding: 40px;
   color: var(--muted);
+}
+
+.mc-scoreline-status {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.mc-badge.final {
+  position: absolute;
+  top: 12px;
+  left: 12px;
 }
 
 .rank-badge {
@@ -1747,11 +1838,14 @@ main {
 /* ── Mobile drawer ── */
 @media (max-width: 480px) {
   .match-drawer {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
     width: 100vw;
+    height: 90vh;
     border-left: none;
     border-top: 2px solid rgba(0, 209, 94, 0.28);
-    top: auto;
-    height: 90vh;
     border-radius: 16px 16px 0 0;
     transform: translateY(100%);
   }
@@ -2347,7 +2441,6 @@ main {
 
   .sync-status {
     display: none;
-    /* hide verbose "Live - HH:MM" on smaller screens */
   }
 
   .sync-container {
@@ -2425,6 +2518,11 @@ main {
 
   #main-nav::-webkit-scrollbar {
     display: none;
+  }
+
+  .third-place-standings-table th:nth-child(2),
+  .third-place-standings-table td[data-label="Grp"] {
+    font-size: 9px;
   }
 
   .nav-btn {
@@ -2842,7 +2940,6 @@ main {
 
   #user-display-name {
     display: none;
-    /* just show avatar on tiny screens */
   }
 
   main {
@@ -2900,6 +2997,32 @@ main {
 
   .modal {
     padding: 20px 16px;
+  }
+
+  .vertical-bracket {
+    min-width: 720px;
+  }
+
+  .bracket-round {
+    width: 150px;
+    padding: 0 16px 0 0;
+  }
+
+  .bracket-match {
+    padding: 6px;
+    min-height: 78px;
+    font-size: 11px;
+  }
+
+  .bracket-seed {
+    grid-template-columns: 30px 1fr;
+    gap: 5px;
+    min-height: 24px;
+  }
+
+  .bracket-match strong {
+    font-size: 15px;
+    margin: 3px 0;
   }
 
   .scoring-grid {
@@ -3319,13 +3442,11 @@ main {
    Bracket slot resolution styles
    ---------------------------------------- */
 
-/* Unresolved slot code (e.g. "1A", "3A/B/C") � group not yet finished */
 .slot-tbd {
   color: var(--muted);
   font-style: italic;
 }
 
-/* Resolved team name � normal appearance */
 .slot-resolved {
   color: var(--light);
 }

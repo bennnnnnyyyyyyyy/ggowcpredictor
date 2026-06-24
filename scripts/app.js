@@ -698,42 +698,65 @@ async function requestSync() {
   if (timeEl) timeEl.textContent = "Syncing...";
   if (syncBtn) syncBtn.classList.add("loading");
 
-  try {
-    await loadGameData();
-    if (!STATE.fixtures.length) await loadFixtures();
-    await loadResults();
-    await loadLeaderboard();
-    await loadGroupStandings();
-    await loadPredictions();
-    await loadAccountRequests();
-
-    STATE.lastSync = new Date();
-    if (dot) dot.className = "status-dot active";
-    if (timeEl) {
-      timeEl.textContent = `Live - ${STATE.lastSync.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Africa/Cairo",
-      })}`;
+  let hadError = false;
+  const runStep = async (label, fn) => {
+    try {
+      await fn();
+    } catch (error) {
+      hadError = true;
+      console.warn(`${label} failed.`, error);
     }
+  };
 
-    renderPredictions();
-    renderGroupStandings();
-    renderLeaderboard();
-    renderResults();
-    renderBracket();
-    renderAdmin();
-  } catch (error) {
-    console.error("Sync error:", error);
-    if (dot) dot.className = "status-dot";
-    if (timeEl) timeEl.textContent = "Sync failed";
-  } finally {
-    updateAdminBadge();
-    if (syncBtn) syncBtn.classList.remove("loading");
+  await runStep("Game data sync", () => loadGameData());
+  if (!STATE.fixtures.length) {
+    await runStep("Fixture fallback", () => loadFixtures());
   }
-}
+  await runStep("Results sync", () => loadResults());
+  await runStep("Leaderboard sync", () => loadLeaderboard());
+  await runStep("Group standings sync", () => loadGroupStandings());
+  await runStep("Prediction sync", () => loadPredictions());
+  await runStep("Account request sync", () => loadAccountRequests());
 
-async function loadAccountRequests() {
+  const safeRender = async (label, fn) => {
+    try {
+      await fn();
+    } catch (error) {
+      hadError = true;
+      console.warn(`${label} render failed.`, error);
+    }
+  };
+
+  await safeRender("Predictions", () => renderPredictions());
+  await safeRender("Group standings", () => renderGroupStandings());
+  await safeRender("Leaderboard", () => renderLeaderboard());
+  await safeRender("Results", () => renderResults());
+  await safeRender("Bracket", () => renderBracket());
+  await safeRender("Admin", () => renderAdmin());
+
+  const hasAnyData =
+    STATE.fixtures.length ||
+    Object.keys(STATE.results).length ||
+    STATE.leaderboard.length ||
+    Object.keys(STATE.groupStandings).length ||
+    Object.keys(STATE.predictions).length ||
+    STATE.accountRequests.length;
+
+  STATE.lastSync = new Date();
+  if (dot) dot.className = hadError && !hasAnyData ? "status-dot" : "status-dot active";
+  if (timeEl) {
+    timeEl.textContent = hadError && !hasAnyData
+      ? "Sync failed"
+      : `Live - ${STATE.lastSync.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Africa/Cairo",
+        })}`;
+  }
+
+  updateAdminBadge();
+  if (syncBtn) syncBtn.classList.remove("loading");
+}async function loadAccountRequests() {
   STATE.accountRequests = [];
 
   // 1. Try Supabase
@@ -1434,19 +1457,29 @@ function renderPredictionCard(match) {
     : "vs";
   const resultScoreHtml = hasRes
     ? `
-      <div class="mc-result-grid">
-        <div class="mc-result-block mc-result-actual">
-          <div class="mc-result-label">Result</div>
-          <div class="mc-result-score">${actualScore}</div>
-          <div class="mc-result-meta">${escapeHtml(String(result.status || "NS"))}</div>
+      <div class="mc-scoreline">
+        <div class="mc-scoreline-row">
+          <span class="mc-scoreline-label">Result</span>
+          <span class="mc-scoreline-actual">${actualScore}</span>
         </div>
-        <div class="mc-result-block mc-result-prediction ${hasPred ? "has-pick" : "no-pick"}">
-          <div class="mc-result-label">Your Pick</div>
-          <div class="mc-result-score mc-result-score--sub">${predictionScore}</div>
-          <div class="mc-result-meta">
-            ${hasPred ? `${points ?? 0} pts` : "No prediction"}
-          </div>
+    
+        <div class="mc-scoreline-divider"></div>
+    
+        <div class="mc-scoreline-row ${hasPred ? "has-pick" : "no-pick"}">
+          <span class="mc-scoreline-label">Your Pick</span>
+          <span class="mc-scoreline-pick">${predictionScore}</span>
         </div>
+    
+        ${hasPred
+      ? `
+            <div class="mc-scoreline-divider"></div>
+            <div class="mc-scoreline-points">
+              <span class="mc-scoreline-pts ${ptsTier}">
+                ${points ?? 0} pts
+              </span>
+            </div>
+          `
+      : ""}
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -1461,42 +1494,38 @@ function renderPredictionCard(match) {
             <span>${escapeHtml(venue.stadium)}</span>
           </a>
         </div>
-        <span class="mc-badge ${status.className}">
-          ${isLive ? '<span class="live-dot"></span>' : ""}${status.label}
-        </span>
       </div>
 
       <div class="mc-body">
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-          ${hasRes
-      ? `<div class="mc-actual-score">${Number.isInteger(result.score1) ? result.score1 : "-"}</div>`
+      ${hasRes
+      ? ``
       : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
-            inputmode="numeric" placeholder="-"
-            value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
-            ${locked ? "disabled" : ""}
-            data-matchid="${match.matchId}" data-team="1"
-            oninput="handleScoreChange('${match.matchId}')">`
+        inputmode="numeric" placeholder="-"
+        value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
+        ${locked ? "disabled" : ""}
+        data-matchid="${match.matchId}" data-team="1"
+        oninput="handleScoreChange('${match.matchId}')">`
     }
         </div>
 
         <div class="mc-middle">
           ${resultScoreHtml}
-          ${points !== null ? `<div class="mc-points ${ptsTier}">${points}<span>pts</span></div>` : ""}
         </div>
 
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-          ${hasRes
-      ? `<div class="mc-actual-score">${Number.isInteger(result.score2) ? result.score2 : "-"}</div>`
+        ${hasRes
+      ? ``
       : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
-            inputmode="numeric" placeholder="-"
-            value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
-            ${locked ? "disabled" : ""}
-            data-matchid="${match.matchId}" data-team="2"
-            oninput="handleScoreChange('${match.matchId}')">`
+        inputmode="numeric" placeholder="-"
+        value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
+        ${locked ? "disabled" : ""}
+        data-matchid="${match.matchId}" data-team="2"
+        oninput="handleScoreChange('${match.matchId}')">`
     }
         </div>
       </div>
@@ -1529,51 +1558,101 @@ function renderGroupStandings() {
       "Official group tables are not synced yet.",
       "",
     );
+    renderThirdPlaceTable();
     return;
   }
 
   container.innerHTML = Object.entries(groups)
     .map(([groupName, standings]) => renderGroupTable(groupName, standings))
     .join("");
+
+  renderThirdPlaceTable();
+}
+function getThirdPlaceStandings() {
+  const groups = STATE.groupStandings || {};
+  return Object.entries(groups)
+    .map(([groupName, standings]) => {
+      const thirdPlace = Array.isArray(standings)
+        ? standings.find((row) => Number(row.position) === 3)
+        : null;
+      if (!thirdPlace) return null;
+      return {
+        groupName,
+        ...thirdPlace,
+      };
+    })
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.points - a.points ||
+        b.goal_difference - a.goal_difference ||
+        b.goals_for - a.goals_for ||
+        String(a.team_name).localeCompare(String(b.team_name)),
+    )
+    .map((row, index) => ({
+      ...row,
+      rank: index + 1,
+      qualifies: index < 8,
+    }));
 }
 
-function renderGroupTable(groupName, standings) {
-  return `
-    <article class="group-table">
-      <div class="group-header">${escapeHtml(groupName)}</div>
-      <table class="group-standings-table">
+function renderThirdPlaceTable() {
+  const container = document.getElementById("third-place-standings");
+  if (!container) return;
+
+  const rows = getThirdPlaceStandings();
+
+  if (!rows.length) {
+    container.innerHTML = emptyState(
+      "Third-place qualifiers will appear here once all group tables are loaded.",
+      "",
+    );
+    return;
+  }
+
+  const cutoffIndex = Math.min(8, rows.length) - 1;
+
+  container.innerHTML = `
+    <article class="third-place-table group-table">
+      <table class="group-standings-table third-place-standings-table">
         <thead>
           <tr>
-            <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
+            <th>#</th>
+            <th>Team</th>
+            <th>Grp</th>
+            <th>P</th>
+            <th>GD</th>
+            <th>GF</th>
+            <th>Pts</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          ${standings
-      .map(
-        (row) => `
-                <tr>
-                  <td class="team-rank" data-label="#"><span class="rank-badge ${rankClass(row.position)}">${row.position}</span></td>
-                  <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
-                  <td data-label="P">${row.played}</td>
-                  <td data-label="W">${row.won}</td>
-                  <td data-label="D">${row.drawn}</td>
-                  <td data-label="L">${row.lost}</td>
-                  <td data-label="GD">${row.goal_difference > 0 ? "+" : ""}${row.goal_difference}</td>
-                  <td data-label="Pts"><strong>${row.points}</strong></td>
-                </tr>
-              `,
-      )
-      .join("")}
+          ${rows
+          .map(
+            (row, index) => `
+              <tr class="${row.qualifies ? "" : "eliminated"} ${index === cutoffIndex ? "cutoff-row" : ""}">
+                <td data-label="#">${row.rank}</td>
+                <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
+                <td data-label="Grp">${escapeHtml(String(row.groupName || "").replace(/^Group\s+/i, ""))}</td>
+                <td data-label="P">${row.played}</td>
+                <td data-label="GD">${row.goal_difference > 0 ? "+" : ""}${row.goal_difference}</td>
+                <td data-label="GF">${row.goals_for}</td>
+                <td data-label="Pts"><strong>${row.points}</strong></td>
+                <td data-label="Status">${row.qualifies ? "Qualifies" : "Out"}</td>
+              </tr>
+            `,
+          )
+          .join("")}
         </tbody>
       </table>
+      <div class="third-place-legend">
+        <span class="legend-dot qualify" aria-hidden="true"></span>
+        <span>Top 8 third-place teams advance to the Round of 32.</span>
+      </div>
     </article>
   `;
 }
-
-// ================================================================
-// 1. renderLeaderboard() – replace the entire function in app.js
-//    Makes rows clickable + adds "Predicted" & "Correct %" columns
-// ================================================================
 function renderLeaderboard() {
   const tbody = document.getElementById("leaderboard-body");
   if (!tbody) return;
@@ -1896,21 +1975,25 @@ function renderBracket() {
                 ? `${result.score1}-${result.score2}`
                 : "vs";
 
-            const t1 = resolveSlot(match.team1);
-            const t2 = resolveSlot(match.team2);
-            const tbd1 = t1 === match.team1 && !result;
-            const tbd2 = t2 === match.team2 && !result;
+            const seed1 = String(match.team1 || "");
+            const seed2 = String(match.team2 || "");
+            const t1 = resolveSlot(seed1);
+            const t2 = resolveSlot(seed2);
+            const tbd1 = t1 === seed1;
+            const tbd2 = t2 === seed2;
+            const display1 = tbd1 ? "TBD" : t1;
+            const display2 = tbd2 ? "TBD" : t2;
 
             return `
                 <div class="bracket-match">
                   <div class="bracket-seed">
-                    <span class="team-code">${escapeHtml(getTeamCode(t1))}</span>
-                    <span class="${tbd1 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t1)}</span>
+                    <span class="team-code">${escapeHtml(getTeamCode(seed1))}</span>
+                    <span class="${tbd1 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(display1)}</span>
                   </div>
                   <strong>${score}</strong>
                   <div class="bracket-seed">
-                    <span class="team-code">${escapeHtml(getTeamCode(t2))}</span>
-                    <span class="${tbd2 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t2)}</span>
+                    <span class="team-code">${escapeHtml(getTeamCode(seed2))}</span>
+                    <span class="${tbd2 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(display2)}</span>
                   </div>
                 </div>
               `;
@@ -1922,17 +2005,41 @@ function renderBracket() {
     })
     .join("");
 }
-
 /**
- * Resolves a bracket slot code to a real team name using STATE.groupStandings.
- * Handles:
+ * Resolves a bracket slot code to a real team name using STATE.groupStandings
+ * and STATE.results (for knockout-round dependencies). Handles:
  *   "1A"        → winner of Group A
  *   "2B"        → runner-up of Group B
  *   "3A/B/C/D" → best 3rd-place from those groups (pts → GD → GF)
- * Returns the original code unchanged if standings are not yet available.
+ *   "W12"       → winner of match with matchId "12"
+ *   "L12"       → loser of match with matchId "12" (used for the bronze match)
+ * Returns the original code unchanged if standings/results are not yet available.
  */
 function resolveSlot(code) {
   if (!code || typeof code !== "string") return code;
+
+  // Winner/loser-of-prior-match slot: "W12" or "L12"
+  const knockoutRef = code.match(/^([WL])(\d+)$/);
+  if (knockoutRef) {
+    const [, side, refMatchId] = knockoutRef;
+    const refFixture = STATE.fixtures.find((f) => f.matchId === refMatchId);
+    const refResult = STATE.results[refMatchId];
+    if (!refFixture || !refResult || !hasResult(refResult)) return code;
+
+    const { score1, score2 } = refResult;
+    let winnerIsTeam1;
+    if (score1 > score2) winnerIsTeam1 = true;
+    else if (score2 > score1) winnerIsTeam1 = false;
+    else if (refResult.penalty_winner === "team1") winnerIsTeam1 = true;
+    else if (refResult.penalty_winner === "team2") winnerIsTeam1 = false;
+    else return code; // tied with no recorded penalty winner — can't resolve yet
+
+    const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
+    const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
+    const resolvedWinner = resolveSlot(winnerTeam);
+    const resolvedLoser = resolveSlot(loserTeam);
+    return side === "W" ? resolvedWinner : resolvedLoser;
+  }
 
   const groups = STATE.groupStandings;
   if (!groups || !Object.keys(groups).length) return code;
@@ -1946,7 +2053,7 @@ function resolveSlot(code) {
     return team?.team_name || code;
   }
 
-  // 3rd-place slot: "3A/B/C/D/F" = best 3rd from those groups
+  // 3rd-place slot: "3A/B/C/D" = best 3rd from those groups
   const thirds = code.match(/^3([A-L](?:\/[A-L])*)$/);
   if (thirds) {
     const letters = thirds[1].split("/");
@@ -2927,3 +3034,7 @@ function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
 }
+
+
+
+
