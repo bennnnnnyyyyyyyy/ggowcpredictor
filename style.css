@@ -2090,33 +2090,6 @@ main {
   padding-bottom: 12px;
 }
 
-.vertical-bracket {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  min-width: 1120px;
-  padding: 20px 8px 28px;
-}
-
-.bracket-round {
-  width: 190px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 0 22px 0 0;
-  position: relative;
-}
-
-.bracket-round h3 {
-  min-height: 44px;
-  font-family: var(--font-ggo-display);
-  font-size: 18px;
-  font-weight: 900;
-  text-transform: uppercase;
-  color: var(--wc-blue);
-  letter-spacing: 0.4px;
-}
-
 .bracket-stack {
   display: grid;
   gap: 18px;
@@ -2124,30 +2097,6 @@ main {
   height: 100%;
 }
 
-.bracket-round-2 .bracket-stack {
-  padding-top: 36px;
-  padding-bottom: 36px;
-}
-
-.bracket-round-3 .bracket-stack {
-  padding-top: 82px;
-  padding-bottom: 82px;
-}
-
-.bracket-round-4 .bracket-stack {
-  padding-top: 134px;
-  padding-bottom: 134px;
-}
-
-.bracket-round-5 .bracket-stack {
-  padding-top: 188px;
-  padding-bottom: 188px;
-}
-
-.bracket-round-6 .bracket-stack {
-  padding-top: 242px;
-  padding-bottom: 242px;
-}
 
 .bracket-match {
   position: relative;
@@ -2314,6 +2263,16 @@ main {
 .player-name-link:hover {
   color: var(--wc-blue);
   text-decoration: underline;
+}
+
+.third-place-standings-table tbody tr:nth-child(1) td,
+.third-place-standings-table tbody tr:nth-child(2) td {
+  background: none;
+}
+
+.third-place-table tr.cutoff-row td {
+  border-bottom: 2px dashed rgba(0, 209, 94, 0.55);
+  background: rgba(0, 209, 94, 0.04);
 }
 
 /* Two-column bracket layout */
@@ -3171,9 +3130,6 @@ main {
     padding-inline: 14px;
   }
 
-  .vertical-bracket {
-    min-width: 960px;
-  }
 
   .modal-overlay {
     padding: 12px;
@@ -3284,10 +3240,6 @@ main {
 
   .modal {
     padding: 20px 16px;
-  }
-
-  .vertical-bracket {
-    min-width: 720px;
   }
 
   .bracket-round {

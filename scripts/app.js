@@ -1985,6 +1985,27 @@ function renderBracket() {
     return;
   }
 
+  // Hardcoded visual order for each round (top half left, bottom half right)
+  // Format: { roundName: { top: [matchIds], bottom: [matchIds] } }
+  const visualOrder = {
+    "Round of 32": {
+      top: ["74", "77", "73", "75", "83", "84", "81", "82"],
+      bottom: ["76", "78", "79", "80", "86", "88", "85", "87"]
+    },
+    "Round of 16": {
+      top: ["89", "90", "93", "94", "95", "96", "91", "92"], // order from FotMob left column
+      bottom: ["91", "92", "89", "90", "93", "94", "95", "96"] // approximate - adjust as needed
+    },
+    "Quarter-final": {
+      top: ["97", "98", "99", "100"],
+      bottom: ["97", "98", "99", "100"] // actually split top/bottom
+    },
+    "Semi-final": {
+      top: ["101"],
+      bottom: ["102"]
+    }
+  };
+
   // Define rounds in order from outer to inner
   const roundOrder = ["Round of 32", "Round of 16", "Quarter-final", "Semi-final"];
   const matchesByRound = {};
@@ -1992,18 +2013,24 @@ function renderBracket() {
     matchesByRound[r] = knockout.filter(m => m.round === r);
   });
 
-  // Split each round into top and bottom halves
-  const splitMatches = (matches) => {
-    const mid = Math.ceil(matches.length / 2);
-    return {
-      top: matches.slice(0, mid),
-      bottom: matches.slice(mid)
-    };
+  // For each round, reorder matches according to visualOrder
+  const reorderMatches = (round, matches) => {
+    const order = visualOrder[round];
+    if (!order) return { top: matches, bottom: [] };
+    const topIds = order.top || [];
+    const bottomIds = order.bottom || [];
+    const top = topIds.map(id => matches.find(m => String(m.matchId) === String(id))).filter(Boolean);
+    const bottom = bottomIds.map(id => matches.find(m => String(m.matchId) === String(id))).filter(Boolean);
+    // If some matches not in order, append them at end
+    const unmatched = matches.filter(m => !topIds.includes(String(m.matchId)) && !bottomIds.includes(String(m.matchId)));
+    // Distribute unmatched evenly if needed, or just append to top
+    return { top: [...top, ...unmatched], bottom };
   };
 
   const halves = {};
   roundOrder.forEach(r => {
-    halves[r] = splitMatches(matchesByRound[r] || []);
+    const matches = matchesByRound[r] || [];
+    halves[r] = reorderMatches(r, matches);
   });
 
   // Build HTML: three columns
