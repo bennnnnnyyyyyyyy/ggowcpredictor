@@ -1845,14 +1845,6 @@ function renderBracket() {
   const bracket = document.getElementById("bracket");
   if (!bracket) return;
 
-  const rounds = [
-    "Round of 32",
-    "Round of 16",
-    "Quarter-final",
-    "Semi-final",
-    "Match for third place",
-    "Final",
-  ];
   const knockout = STATE.fixtures.filter(
     (fixture) => fixture.stage !== "group",
   );
@@ -1862,46 +1854,119 @@ function renderBracket() {
     return;
   }
 
-  bracket.innerHTML = rounds
-    .map((round, roundIndex) => {
-      const matches = knockout.filter((fixture) => fixture.round === round);
+  // Helper to format match dates
+  function formatBracketDate(dateStr) {
+    if (!dateStr) return "";
+    const parsed = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!parsed) return dateStr;
+    const dateObj = new Date(Date.UTC(Number(parsed[1]), Number(parsed[2]) - 1, Number(parsed[3])));
+    return dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  }
+
+  // Helper to render a single match card
+  function renderMatchCard(matchId) {
+    const match = knockout.find((f) => String(f.matchId) === String(matchId));
+    if (!match) return `<div class="bracket-match-placeholder">No match ${matchId}</div>`;
+
+    const result = STATE.results[match.matchId];
+    const score = result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
+    const isPlayed = result && hasResult(result);
+
+    const t1 = resolveSlot(match.team1);
+    const t2 = resolveSlot(match.team2);
+
+    const tbd1 = t1 === match.team1 && !isPlayed;
+    const tbd2 = t2 === match.team2 && !isPlayed;
+
+    function getTeamVisual(teamName) {
+      const code = TEAM_FLAG_CODES[String(teamName).toLowerCase().trim()];
+      if (code) {
+        return `<img class="bracket-flag-img" src="https://flagcdn.com/w80/${code}.png" alt="${escapeHtml(teamName)}">`;
+      }
       return `
-        <section class="bracket-round bracket-round-${roundIndex + 1}">
-          <h3>${escapeHtml(round)}</h3>
-          <div class="bracket-stack">
-          ${matches
-          .map((match) => {
-            const result = STATE.results[match.matchId];
-            const score =
-              result && hasResult(result)
-                ? `${result.score1}-${result.score2}`
-                : "vs";
-
-            const t1 = resolveSlot(match.team1);
-            const t2 = resolveSlot(match.team2);
-            const tbd1 = t1 === match.team1 && !result;
-            const tbd2 = t2 === match.team2 && !result;
-
-            return `
-                <div class="bracket-match">
-                  <div class="bracket-seed">
-                    <span class="team-code">${escapeHtml(getTeamCode(t1))}</span>
-                    <span class="${tbd1 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t1)}</span>
-                  </div>
-                  <strong>${score}</strong>
-                  <div class="bracket-seed">
-                    <span class="team-code">${escapeHtml(getTeamCode(t2))}</span>
-                    <span class="${tbd2 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t2)}</span>
-                  </div>
-                </div>
-              `;
-          })
-          .join("")}
-          </div>
-        </section>
+        <svg class="bracket-shield-svg" viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
       `;
-    })
-    .join("");
+    }
+
+    const t1Code = getTeamCode(t1);
+    const t2Code = getTeamCode(t2);
+    const dateDisplay = formatBracketDate(match.date);
+
+    return `
+      <div class="bracket-match" data-match-id="${match.matchId}">
+        <div class="bracket-team team-left">
+          <div class="bracket-flag-wrapper">${getTeamVisual(t1)}</div>
+          <span class="team-code ${tbd1 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t1Code)}</span>
+        </div>
+        <div class="bracket-middle">
+          <div class="bracket-score-badge ${isPlayed ? 'played' : 'tbd'}">${score}</div>
+          <div class="bracket-date">${escapeHtml(dateDisplay)}</div>
+        </div>
+        <div class="bracket-team team-right">
+          <div class="bracket-flag-wrapper">${getTeamVisual(t2)}</div>
+          <span class="team-code ${tbd2 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(t2Code)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  const cols = [
+    // Left side columns (flow right)
+    { class: "bracket-column left-r32", title: "Round of 32", matches: [74, 77, 73, 75, 83, 84, 81, 82] },
+    { class: "bracket-column left-r16", title: "Round of 16", matches: [89, 90, 93, 94] },
+    { class: "bracket-column left-qf", title: "Quarter-final", matches: [97, 98] },
+    { class: "bracket-column left-sf", title: "Semi-final", matches: [101] },
+    
+    // Center column (Final, Bronze, Trophy)
+    { class: "bracket-column center-column", type: "center" },
+    
+    // Right side columns (flow left)
+    { class: "bracket-column right-sf", title: "Semi-final", matches: [102] },
+    { class: "bracket-column right-qf", title: "Quarter-final", matches: [99, 100] },
+    { class: "bracket-column right-r16", title: "Round of 16", matches: [91, 92, 95, 96] },
+    { class: "bracket-column right-r32", title: "Round of 32", matches: [76, 78, 79, 80, 86, 88, 85, 87] }
+  ];
+
+  bracket.innerHTML = cols.map(col => {
+    if (col.type === "center") {
+      const champ = resolveSlot("W104");
+      const isChampDecided = champ !== "W104";
+      const champDisplay = isChampDecided ? champ : "TBD";
+      
+      return `
+        <div class="${col.class}">
+          <div class="center-trophy-section">
+            <div class="trophy-cup-wrapper">🏆</div>
+            <div class="champion-label">CHAMPION</div>
+            <div class="champion-name ${isChampDecided ? 'resolved' : 'tbd'}">${escapeHtml(champDisplay)}</div>
+          </div>
+          <div class="center-matches">
+            <div class="center-match-wrapper final-wrapper">
+              <span class="center-match-title badge-final">FINAL</span>
+              ${renderMatchCard(104)}
+            </div>
+            <div class="center-match-wrapper bronze-wrapper">
+              <span class="center-match-title badge-bronze">BRONZE-FINAL</span>
+              ${renderMatchCard(103)}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="${col.class}">
+        <div class="column-header">
+          <h3>${col.title}</h3>
+        </div>
+        <div class="column-stack">
+          ${col.matches.map(id => renderMatchCard(id)).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 /**
@@ -1916,11 +1981,10 @@ function resolveSlot(code) {
   if (!code || typeof code !== "string") return code;
 
   const groups = STATE.groupStandings;
-  if (!groups || !Object.keys(groups).length) return code;
-
+  
   // Simple slot: "1A" = winner, "2B" = runner-up
   const simple = code.match(/^([12])([A-L])$/);
-  if (simple) {
+  if (simple && groups && Object.keys(groups).length) {
     const pos = Number(simple[1]) - 1; // 0 = winner, 1 = runner-up
     const groupKey = `Group ${simple[2]}`;
     const team = groups[groupKey]?.[pos];
@@ -1929,7 +1993,7 @@ function resolveSlot(code) {
 
   // 3rd-place slot: "3A/B/C/D/F" = best 3rd from those groups
   const thirds = code.match(/^3([A-L](?:\/[A-L])*)$/);
-  if (thirds) {
+  if (thirds && groups && Object.keys(groups).length) {
     const letters = thirds[1].split("/");
     const candidates = letters
       .map((l) => groups[`Group ${l}`]?.[2]) // index 2 = 3rd-place team
@@ -1941,6 +2005,46 @@ function resolveSlot(code) {
           b.goals_for - a.goals_for,
       );
     return candidates[0]?.team_name || code;
+  }
+
+  // Winner slot: "W74" = winner of Match 74
+  const winnerMatch = code.match(/^W(\d+)$/);
+  if (winnerMatch && STATE.fixtures) {
+    const matchId = winnerMatch[1];
+    const match = STATE.fixtures.find((f) => String(f.matchId) === matchId);
+    if (match) {
+      const result = STATE.results?.[match.matchId];
+      if (result && hasResult(result)) {
+        const t1 = resolveSlot(match.team1);
+        const t2 = resolveSlot(match.team2);
+        if (result.score1 > result.score2) return t1;
+        if (result.score2 > result.score1) return t2;
+        if (result.winner) {
+          return result.winner === "team1" ? t1 : t2;
+        }
+      }
+    }
+    return code;
+  }
+
+  // Loser slot: "L101" = loser of Match 101
+  const loserMatch = code.match(/^L(\d+)$/);
+  if (loserMatch && STATE.fixtures) {
+    const matchId = loserMatch[1];
+    const match = STATE.fixtures.find((f) => String(f.matchId) === matchId);
+    if (match) {
+      const result = STATE.results?.[match.matchId];
+      if (result && hasResult(result)) {
+        const t1 = resolveSlot(match.team1);
+        const t2 = resolveSlot(match.team2);
+        if (result.score1 < result.score2) return t1;
+        if (result.score2 < result.score1) return t2;
+        if (result.winner) {
+          return result.winner === "team1" ? t2 : t1;
+        }
+      }
+    }
+    return code;
   }
 
   return code; // unknown format — pass through unchanged
