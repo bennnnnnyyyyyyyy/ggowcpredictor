@@ -1,6 +1,6 @@
 ---
 name: rag-architect
-description: Designs and implements production-grade RAG systems by chunking documents, generating embeddings, configuring vector stores, building hybrid search pipelines, applying reranking, and evaluating retrieval quality. Use when building RAG systems, vector databases, or knowledge-grounded AI applications requiring semantic search, document retrieval, context augmentation, similarity search, or embedding-based indexing.
+description: Designs and implements production-grade RAG systems by chunking documents, generating embeddings, configuring vector stores, building hybrid search pipelines, applying reranking, and evaluating retrieval quality. Use when building ssssRAG systems, vector databases, or knowledge-grounded AI applications requiring semantic search, document retrieval, context augmentation, similarity search, or embedding-based indexing.
 license: MIT
 metadata:
   author: https://github.com/Jeffallan
@@ -12,7 +12,6 @@ metadata:
   output-format: architecture
   related-skills: python-pro, database-optimizer, monitoring-expert, api-designer
 ---
-
 # RAG Architect
 
 ## Core Workflow
@@ -29,13 +28,14 @@ For each step, validate before moving on (see checkpoints below).
 
 Load detailed guidance based on context:
 
-| Topic | Reference | Load When |
-|-------|-----------|-----------|
-| Vector Databases | `references/vector-databases.md` | Comparing Pinecone, Weaviate, Chroma, pgvector, Qdrant |
-| Embedding Models | `references/embedding-models.md` | Selecting embeddings, fine-tuning, dimension trade-offs |
-| Chunking Strategies | `references/chunking-strategies.md` | Document splitting, overlap, semantic chunking |
-| Retrieval Optimization | `references/retrieval-optimization.md` | Hybrid search, reranking, query expansion, filtering |
-| RAG Evaluation | `references/rag-evaluation.md` | Metrics, evaluation frameworks, debugging retrieval |
+
+| Topic                  | Reference                              | Load When                                               |
+| ------------------------ | ---------------------------------------- | --------------------------------------------------------- |
+| Vector Databases       | `references/vector-databases.md`       | Comparing Pinecone, Weaviate, Chroma, pgvector, Qdrant  |
+| Embedding Models       | `references/embedding-models.md`       | Selecting embeddings, fine-tuning, dimension trade-offs |
+| Chunking Strategies    | `references/chunking-strategies.md`    | Document splitting, overlap, semantic chunking          |
+| Retrieval Optimization | `references/retrieval-optimization.md` | Hybrid search, reranking, query expansion, filtering    |
+| RAG Evaluation         | `references/rag-evaluation.md`         | Metrics, evaluation frameworks, debugging retrieval     |
 
 ## Implementation Examples
 
@@ -165,6 +165,7 @@ print(results)
 ## Constraints
 
 ### MUST DO
+
 - Evaluate multiple embedding models on your domain data before committing
 - Implement hybrid search (vector + keyword) for production systems
 - Add metadata filters for multi-tenant or domain-specific retrieval
@@ -175,6 +176,7 @@ print(results)
 - Version embeddings and plan for model migration
 
 ### MUST NOT DO
+
 - Use default chunk size (512) without evaluation on your domain data
 - Skip metadata enrichment (source, timestamp, section)
 - Ignore retrieval quality metrics in favor of only LLM output quality
@@ -187,6 +189,7 @@ print(results)
 ## Output Templates
 
 When designing RAG architecture, deliver:
+
 1. System architecture diagram (ingestion + retrieval pipelines)
 2. Vector database selection with trade-off analysis
 3. Chunking strategy with examples and rationale
