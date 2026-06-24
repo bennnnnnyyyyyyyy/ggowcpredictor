@@ -856,7 +856,7 @@ async function loadLocalFixtures() {
 }
 
 async function loadResults() {
-  const syncedResults = normalizeResultsPayload(STATE.results);
+  const syncedResults = resultsWithScores(STATE.results);
   STATE.results = {};
 
   const apiResults = Object.keys(syncedResults).length
@@ -916,10 +916,7 @@ async function loadResults() {
   const localResults = readLocalObject(
     `ggo_wc_results_${SESSION.username || "demo"}`,
   );
-  STATE.results = { ...localResults, ...merged };
-  Object.keys(STATE.results).forEach((mid) => {
-    if (!hasResult(STATE.results[mid])) delete STATE.results[mid];
-  });
+  STATE.results = resultsWithScores({ ...localResults, ...merged });
 
   // Inject mock results for local development/testing if no database or API is connected
   if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
@@ -2553,7 +2550,7 @@ async function loadGameData() {
       STATE.fixtures = sortFixtures(data.fixtures.map(normalizeFixture));
     }
     if (data.results) {
-      STATE.results = normalizeResultsPayload(data.results);
+      STATE.results = resultsWithScores(data.results);
     }
     if (Array.isArray(data.leaderboard)) {
       STATE.leaderboard = data.leaderboard;
@@ -2586,7 +2583,7 @@ async function loadResultsFromApi() {
   if (!CONFIG.appsScriptUrl) return {};
   try {
     const data = await fetchGameDataApi(["/sync", "?action=sync"]);
-    return normalizeResultsPayload(data.results);
+    return resultsWithScores(data.results);
   } catch (error) {
     console.warn("Results API unavailable.", error.message);
     return {};
@@ -2640,6 +2637,14 @@ async function loadGroupStandings() {
     console.warn("Could not load Supabase group standings.", error.message);
     STATE.groupStandings = {};
   }
+}
+
+function resultsWithScores(results) {
+  const normalized = normalizeResultsPayload(results);
+  return Object.entries(normalized).reduce((acc, [matchId, result]) => {
+    if (hasResult(result)) acc[matchId] = result;
+    return acc;
+  }, {});
 }
 
 function normalizeResultsPayload(results) {

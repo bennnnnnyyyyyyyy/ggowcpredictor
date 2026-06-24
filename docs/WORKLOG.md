@@ -1,3 +1,16 @@
+## 2026-06-24 - Browser sync endpoint fallback fix
+
+### What changed
+
+- Filtered API and database result payloads through one score-only helper so scheduled placeholder rows do not count as synced results.
+- Documented the existing Worker-style route fallback (`/sync`, `/fixtures`, `/leaderboard`) and legacy Apps Script query actions (`?action=sync`, `?action=fixtures`, `?action=leaderboard`).
+- Preserved only scored results already returned by the full sync pass so refresh does not throw away a good `/sync` payload before loading results.
+- Removed duplicate/conflicting match-card CSS rules for venue detail and scoreline status/points styling.
+
+### Why
+
+- Local Worker URLs such as `127.0.0.1:8787` expose route paths, while older Apps Script deployments use query actions. The docs now match that client behavior.
+- Placeholder result rows can otherwise make the Results tab look synced while no actual score exists yet.
 ## 2026-06-23 - Rules tab first-login onboarding
 
 ### What changed

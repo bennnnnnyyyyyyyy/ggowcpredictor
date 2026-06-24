@@ -1,5 +1,5 @@
 # GGO WC 2026 Predictor — Architecture
-> Last updated: 2026-06-19
+> Last updated: 2026-06-24
 
 ---
 
@@ -24,7 +24,7 @@ graph TD
 
 ### 1. Core Components
 
-*   **Browser Frontend (`index.html` + `scripts/app.js`)**: Direct browser client. Fetches and saves prediction entries directly via Supabase (primary) and Firestore (mirror/fallback). Connects to the Cloudflare Worker to fetch compiled tournament payloads (`/sync`) and leaderboard data.
+*   **Browser Frontend (`index.html` + `scripts/app.js`)**: Direct browser client. Fetches and saves prediction entries directly via Supabase (primary) and Firestore (mirror/fallback). Connects to the Cloudflare Worker to fetch compiled tournament payloads (`/sync`) and leaderboard data. For local or legacy deployments, the client also falls back to Apps Script-style query actions such as `?action=sync`, `?action=fixtures`, and `?action=leaderboard`.
 *   **Cloudflare Worker Backend (`workers/live-results.js`)**: Primary API backend.
     *   Exposes endpoints `/sync`, `/sync-scores`, `/admin/sync-standings`, `/fixtures`, and `/leaderboard`.
     *   Executes every 5 minutes via Cloudflare Cron Triggers to fetch live scores, update results, and recalculate the leaderboard.
@@ -36,7 +36,7 @@ graph TD
 
 ## Data Load Priority (Browser)
 
-Each data type has a resilient fallback hierarchy:
+Each data type has a resilient fallback hierarchy. Worker route URLs are tried first; matching Apps Script query-action URLs are tried before the browser falls back to direct stores:
 
 | Data | Tier 1 (Primary) | Tier 2 (Backup) | Tier 3 (Fallback) |
 | :--- | :--- | :--- | :--- |
