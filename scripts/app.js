@@ -635,6 +635,7 @@ function showApp() {
     setRulesIntroVisible(false);
   }
 
+  showNavChangeBanner();
   requestSync();
 }
 
@@ -662,6 +663,7 @@ function showView(id, btn) {
   if (id === "bracket") renderBracket();
   if (id === "standings") renderGroupStandings();
   if (id === "leaderboard") renderLeaderboard();
+  if (id === "calendar") toggleCalendarModal(true);
   if (id === "admin") renderAdmin();
 }
 
@@ -3175,4 +3177,15 @@ function escapeHtml(value) {
 function cssEscape(value) {
   if (window.CSS && CSS.escape) return CSS.escape(String(value));
   return String(value).replace(/"/g, '\\"');
+}
+function toggleSidebar(open) {
+  document.getElementById('sidebar').classList.toggle('open', open);
+  document.getElementById('sidebar-overlay').classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+function showNavChangeBanner() {
+  if (localStorage.getItem('ggo_nav_banner_seen')) return;
+  const banner = document.getElementById('nav-change-banner');
+  if (banner) banner.style.display = 'flex';
 }

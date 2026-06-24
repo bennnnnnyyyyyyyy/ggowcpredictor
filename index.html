@@ -81,8 +81,10 @@
   <div id="app" style="display: none">
     <!-- HEADER -->
     <header>
-      <!-- Row 1: Brand + User -->
       <div class="header-top">
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar(true)" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
         <div class="logo">
           <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
             class="header-logo" />
@@ -94,61 +96,34 @@
             <p>Prediction Game</p>
           </div>
         </div>
-
-        <!-- User pill (top-right on desktop, stays in row 1 on mobile) -->
         <div class="user-pill" id="user-pill">
           <a id="user-profile-link" href="profile.html" class="user-pill-link" title="View your profile">
             <div class="user-avatar" id="user-avatar">?</div>
             <span id="user-display-name">Loading...</span>
           </a>
-          <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">
-            X
-          </button>
+          <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">X</button>
         </div>
-        <!-- Row 2: Navigation -->
-        <nav id="main-nav">
-          <button class="nav-btn active" onclick="showView('predictions', this)">
-            Predictions
-          </button>
-          <button class="nav-btn" onclick="showView('standings', this)">
-            Standings
-          </button>
-          <button class="nav-btn" onclick="showView('leaderboard', this)">
-            Leaderboard
-          </button>
-          <button class="nav-btn" onclick="showView('results', this)">
-            Results
-          </button>
-          <button class="nav-btn" onclick="showView('bracket', this)">
-            Bracket
-          </button>
-          <button id="rules-nav-btn" class="nav-btn" onclick="showView('rules', this)">
-            Rules
-          </button>
-          <!-- Admin button injected dynamically by showApp() for admins only -->
-        </nav>
-
-        <!-- Row 3: Sync status (desktop inline, mobile below nav) -->
-        <div class="sync-container">
+        <div class="sync-container desktop-sync-only">
           <div class="sync-status">
             <span class="status-dot" id="sync-dot"></span>
             <span id="last-sync-time">Not synced</span>
           </div>
-          <button class="sync-btn" type="button" onclick="requestSync()">
-            Sync
-          </button>
-          <button id="settings-nav-btn" class="sync-btn" type="button" onclick="toggleSettings(true)" style="
-              display: none;
-              background: rgba(255, 255, 255, 0.08);
-              border-color: rgba(255, 255, 255, 0.25);
-            ">
-            Settings
-          </button>
+          <button class="sync-btn" type="button" onclick="requestSync()">Sync</button>
+          <button id="settings-nav-btn" class="sync-btn" type="button" onclick="toggleSettings(true)"
+            style="display:none;background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.25);">Settings</button>
           <button id="calendar-nav-btn" class="sync-btn" type="button" onclick="toggleCalendarModal(true)"
-            style="display: none; background: rgba(30, 224, 40, 0.877); border-color: rgba(255,255,255,0.25);">
-            Add to Calendar
-          </button>
+            style="display:none;animation:exact-glow 2.2s ease-in-out infinite;background:rgba(30,224,40,0.877);border-color:rgba(255,255,255,0.25);">Add
+            to Calendar</button>
         </div>
+      </div>
+      <nav id="main-nav" class="desktop-nav">
+        <button class="nav-btn active" onclick="showView('predictions', this)">Predictions</button>
+        <button class="nav-btn" onclick="showView('standings', this)">Standings</button>
+        <button class="nav-btn" onclick="showView('leaderboard', this)">Leaderboard</button>
+        <button class="nav-btn" onclick="showView('results', this)">Results</button>
+        <button class="nav-btn" onclick="showView('bracket', this)">Bracket</button>
+        <button id="rules-nav-btn" class="nav-btn" onclick="showView('rules', this)">Rules</button>
+      </nav>
     </header>
 
     <!-- MAIN CONTENT -->
@@ -611,7 +586,50 @@
       </div>
     </div>
   </div>
+  <!-- SIDEBAR -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+  <aside id="sidebar" class="sidebar" role="dialog" aria-modal="true">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
+          class="sidebar-logo-img" />
+        <span class="sidebar-title">GGO <span>WC</span> 2026</span>
+      </div>
+      <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round">
+          <path d="M3 3l12 12M15 3L3 15" />
+        </svg>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" onclick="showView('predictions',this);toggleSidebar(false)"><span>🎯</span>
+        Predictions</button>
+      <button class="nav-btn" onclick="showView('standings',this);toggleSidebar(false)"><span>📊</span>
+        Standings</button>
+      <button class="nav-btn" onclick="showView('leaderboard',this);toggleSidebar(false)"><span>🏆</span>
+        Leaderboard</button>
+      <button class="nav-btn" onclick="showView('results',this);toggleSidebar(false)"><span>⚽</span> Results</button>
+      <button class="nav-btn" onclick="showView('bracket',this);toggleSidebar(false)"><span>🗺️</span> Bracket</button>
+      <button id="rules-nav-btn-sidebar" class="nav-btn"
+        onclick="showView('rules',this);toggleSidebar(false)"><span>📋</span> Rules
+      </button>
+      <button class="nav-btn" onclick="showView('calendar',this);toggleSidebar(false)"><span>📅</span> Calendar</button>
+      <button class="nav-btn" onclick="showView('admin',this);toggleSidebar(false)"><span>⚙️</span> Admin</button>
 
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sync-btn" style="width:100%" type="button" onclick="requestSync();toggleSidebar(false)">⟳ Sync
+        Now</button>
+    </div>
+  </aside>
+
+  <!-- NAV CHANGE BANNER -->
+  <div id="nav-change-banner" class="nav-change-banner">
+    <span>✨ New look! Tap <strong>☰</strong> top-left to navigate.</span>
+    <button onclick="this.parentElement.style.display='none';localStorage.setItem('ggo_nav_banner_seen','1')"
+      aria-label="Dismiss">✕</button>
+  </div>
   <!-- ════════════════════════════════════════
        SCAFFOLD JS - wire-up only, no data yet
   ════════════════════════════════════════ -->

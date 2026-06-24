@@ -2153,6 +2153,19 @@ main {
   text-transform: uppercase;
 }
 
+/* Override the old bracket container so the new three-column layout works */
+#bracket.vertical-bracket {
+  display: block !important;
+  min-width: auto !important;
+  padding: 0 !important;
+  overflow-x: auto;
+}
+
+/* Ensure the three-column layout takes full width */
+.bracket-three-column {
+  width: 100%;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -2527,7 +2540,7 @@ main {
 ════════════════════════════════════════ */
 /* Calendar Modal */
 .calendar-modal {
-  max-width: 480px;
+  max-width: 680px;
 }
 
 .calendar-modal-body {
@@ -3753,4 +3766,287 @@ main {
 
 .slot-resolved {
   color: var(--light);
+}
+
+/* ════════════════════════════════════════
+   HAMBURGER BUTTON
+════════════════════════════════════════ */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid rgba(0, 209, 94, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.hamburger-btn span {
+  display: block;
+  height: 2px;
+  background: var(--light);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+/* ════════════════════════════════════════
+   DESKTOP NAV (inside header, hidden on mobile)
+════════════════════════════════════════ */
+.desktop-nav {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.desktop-sync-only {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════ */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 900;
+}
+
+.sidebar-overlay.open {
+  display: block;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background:
+    linear-gradient(160deg, rgba(6, 10, 18, 0.99) 0%, rgba(4, 22, 14, 0.97) 100%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 10px);
+  border-right: 2px solid rgba(0, 209, 94, 0.28);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 901;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--wc-blue), var(--wc-red));
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid rgba(0, 209, 94, 0.15);
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-logo-img {
+  height: 28px;
+  width: auto;
+}
+
+.sidebar-title {
+  font-family: var(--font-ggo-display);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-title span {
+  color: var(--wc-red);
+}
+
+.sidebar-close {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebar-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--danger);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sidebar-nav .nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  text-align: left;
+  border-radius: 8px;
+}
+
+.sidebar-nav .nav-btn:hover {
+  background: rgba(0, 209, 94, 0.1);
+  border-color: rgba(0, 209, 94, 0.3);
+  color: var(--light);
+}
+
+.sidebar-nav .nav-btn.active {
+  background: var(--wc-blue);
+  color: #fff;
+  border-color: var(--wc-blue);
+}
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(0, 209, 94, 0.15);
+  flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════
+   NAV CHANGE BANNER
+════════════════════════════════════════ */
+.nav-change-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(90deg, #0a3d1f, #0d4f28);
+  border: 1px solid rgba(0, 209, 94, 0.4);
+  border-radius: 30px;
+  padding: 10px 18px;
+  font-size: 13px;
+  color: var(--light);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 999;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+}
+
+.nav-change-banner button {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.nav-change-banner button:hover {
+  color: var(--light);
+}
+
+/* ════════════════════════════════════════
+   RESPONSIVE OVERRIDES
+════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .desktop-sync-only {
+    display: none !important;
+  }
+
+  header {
+    padding: 10px 14px;
+    flex-wrap: nowrap;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+
+  .logo {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .logo img.header-logo {
+    height: 30px;
+  }
+
+  .logo img.wc-logo {
+    max-width: 36px;
+  }
+
+  .logo-text h1 {
+    font-size: 14px;
+  }
+
+  .logo-text p {
+    font-size: 10px;
+  }
+
+  .logo-divider {
+    height: 22px;
+  }
+
+  .user-pill {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 4px 8px 4px 4px;
+  }
+
+  #user-display-name {
+    display: none;
+  }
 }
