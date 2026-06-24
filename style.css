@@ -2525,6 +2525,71 @@ main {
 /* ════════════════════════════════════════
    MODAL
 ════════════════════════════════════════ */
+/* Calendar Modal */
+.calendar-modal {
+  max-width: 480px;
+}
+
+.calendar-modal-body {
+  padding: 8px 0 4px;
+}
+
+.calendar-description {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.calendar-button-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.calendar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--light);
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.calendar-btn:hover {
+  background: rgba(0, 209, 94, 0.08);
+  border-color: var(--wc-blue);
+}
+
+.calendar-btn svg {
+  width: 36px;
+  height: 36px;
+}
+
+.calendar-btn span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.calendar-note {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 8px;
+}
+
+@media (max-width: 480px) {
+  .calendar-button-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
 .modal-overlay {
   display: none;

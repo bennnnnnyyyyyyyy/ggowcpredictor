@@ -3115,6 +3115,15 @@ function groupBy(items, getKey) {
     return groups;
   }, {});
 }
+function toggleCalendarModal(show) {
+  const modal = document.getElementById('calendar-modal');
+  if (!modal) return;
+  if (show) {
+    modal.classList.add('show');
+  } else {
+    modal.classList.remove('show');
+  }
+}
 
 function readLocalObject(key) {
   try {
