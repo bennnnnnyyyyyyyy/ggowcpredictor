@@ -8,7 +8,7 @@ Use the latest Claude chat as canonical where it conflicts with older docs: base
 ## Key Changes
 
 - Scoring and recalculation:
-  - Create one shared scoring policy used by `scripts/app.js`, `workers/live-results.js`, profile logic, and any Apps Script fallback still retained.
+  - Create one shared scoring policy used by `scripts/app.js`, `workers/live-results.js`, profile logic, and any Apps Script fallback still retasined.
   - Delete every legacy branch that awards `3` points for close wrong outcomes, including cutoff-based variants.
   - Recalculate from raw `predictions + results + fixtures`, not from hardcoded user deltas.
   - Update `pointsAwarded`, leaderboard `totalPoints`, `exactScores`, `correctOutcomes`, `scored/played`, `win_pct`, and rank from the recomputed rows.
