@@ -1489,10 +1489,15 @@ function renderPredictionCard(match) {
 }
 
 let saveTimeout = null;
+const saveTimeouts = new Map(); // ← Add this
 
 function handleScoreChange(matchId) {
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(() => {
+  // Clear existing timeout for this match
+  if (saveTimeouts.has(matchId)) {
+    clearTimeout(saveTimeouts.get(matchId));
+  }
+
+  const timeout = setTimeout(() => {
     const input1 = document.querySelector(
       `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="1"]`,
     );
@@ -1513,7 +1518,10 @@ function handleScoreChange(matchId) {
     )
       return;
     savePrediction(matchId, num1, num2);
-  }, 400); // 400ms after the last keystroke
+    saveTimeouts.delete(matchId);
+  }, 400);
+
+  saveTimeouts.set(matchId, timeout);
 }
 
 function renderGroupStandings() {
@@ -2911,7 +2919,7 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
       diffGap = Math.abs(predTotal - actualTotal);
       // Off by 0 (exact) or 2 (one goal per team) → 8 pts (if not exact)
       // Off by 4+ → 5 pts
-      return diffGap <= 2 ? 8 : 5;
+      return diffGap <= 1 ? 8 : 5;
     } else {
       // WIN/LOSS: use goal‑difference gap
       diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
@@ -2952,7 +2960,6 @@ function buildLocalLeaderboard() {
       prediction.pred2,
       result.score1,
       result.score2,
-      matchDate,
     );
     totalPoints += points;
     if (points === 15) exactScores += 1;

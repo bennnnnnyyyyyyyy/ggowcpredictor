@@ -60,7 +60,9 @@ async function supabaseSelect(env, table, query) {
     }
     const data = await response.json();
     if (!Array.isArray(data)) {
-      throw new Error(`Expected array from Supabase select, got: ${typeof data}`);
+      throw new Error(
+        `Expected array from Supabase select, got: ${typeof data}`,
+      );
     }
     allRows.push(...data);
     if (data.length < pageSize) {
@@ -277,7 +279,6 @@ async function sendEmailViaGas(env, payload) {
 
 // ─── Leaderboard Calculation Engine ─────────────────────────────────────────
 
-
 function scoreMatch(p1, p2, a1, a2, matchDate) {
   if (p1 === a1 && p2 === a2) return 15;
   const predOutcome = Math.sign(p1 - p2);
@@ -289,7 +290,12 @@ function scoreMatch(p1, p2, a1, a2, matchDate) {
   return 0;
 }
 
-function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []) {
+function buildLeaderboard(
+  resultRows,
+  predictionRows,
+  userRows,
+  fixtureRows = [],
+) {
   const displayNames = {};
   for (const user of userRows) {
     const username = String(user.username || user.id || "").trim();
@@ -339,7 +345,13 @@ function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []
 
     const fixture = fixtureMap[matchId] || {};
     const matchDate = fixture.kickoffUTC || fixture.date || null;
-    const points = scoreMatch(pred1, pred2, result.score1, result.score2, matchDate);
+    const points = scoreMatch(
+      pred1,
+      pred2,
+      result.score1,
+      result.score2,
+      matchDate,
+    );
     userMap[username].totalPoints += points;
     userMap[username].scored++;
     if (points === 15) userMap[username].exactScores++;
@@ -350,7 +362,8 @@ function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []
   const sorted = Object.values(userMap).sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
     if (b.exactScores !== a.exactScores) return b.exactScores - a.exactScores;
-    if (b.correctOutcomes !== a.correctOutcomes) return b.correctOutcomes - a.correctOutcomes;
+    if (b.correctOutcomes !== a.correctOutcomes)
+      return b.correctOutcomes - a.correctOutcomes;
     return a.username.localeCompare(b.username);
   });
 
@@ -377,7 +390,7 @@ function buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows = []
         scored: sorted[k].scored,
       });
     }
-    rank += (j - i); // skip number of tied players
+    rank += j - i; // skip number of tied players
     i = j;
   }
 
@@ -483,14 +496,21 @@ async function syncLiveResults(env) {
 }
 
 async function recalculateLeaderboard(env) {
-  const [resultRows, predictionRows, userRows, fixtureRows] = await Promise.all([
-    loadCollection(env, "results"),
-    loadCollection(env, "predictions"),
-    loadCollection(env, "users"),
-    loadCollection(env, "fixtures"),
-  ]);
+  const [resultRows, predictionRows, userRows, fixtureRows] = await Promise.all(
+    [
+      loadCollection(env, "results"),
+      loadCollection(env, "predictions"),
+      loadCollection(env, "users"),
+      loadCollection(env, "fixtures"),
+    ],
+  );
 
-  const data = buildLeaderboard(resultRows, predictionRows, userRows, fixtureRows);
+  const data = buildLeaderboard(
+    resultRows,
+    predictionRows,
+    userRows,
+    fixtureRows,
+  );
 
   // Persist leaderboard to Supabase
   if (data.leaderboard.length) {
@@ -550,7 +570,9 @@ async function syncGroupStandings(env) {
         index + 1,
       );
       if (position < 1 || position > 4) {
-        warnings.push(`Group ${groupName} team ${teamId} has position ${position}.`);
+        warnings.push(
+          `Group ${groupName} team ${teamId} has position ${position}.`,
+        );
       }
       if (seenTeamIds.has(teamId)) {
         warnings.push(`Group ${groupName} has duplicate team_id ${teamId}.`);
@@ -561,7 +583,10 @@ async function syncGroupStandings(env) {
       seenTeamIds.add(teamId);
       seenPositions.add(position);
 
-      const goalsFor = toRequiredNumber(readFirst(team, ["gf", "goals_for"]), 0);
+      const goalsFor = toRequiredNumber(
+        readFirst(team, ["gf", "goals_for"]),
+        0,
+      );
       const goalsAgainst = toRequiredNumber(
         readFirst(team, ["ga", "goals_against"]),
         0,
@@ -570,7 +595,10 @@ async function syncGroupStandings(env) {
         readFirst(team, ["team_name", "teamName", "name"]) ||
         teamNamesById.get(teamId) ||
         `Team ${teamId}`;
-      if (!teamNamesById.has(teamId) && !readFirst(team, ["team_name", "teamName", "name"])) {
+      if (
+        !teamNamesById.has(teamId) &&
+        !readFirst(team, ["team_name", "teamName", "name"])
+      ) {
         warnings.push(`No team name found for team_id ${teamId}.`);
       }
 
@@ -703,13 +731,13 @@ async function handleRivalryGet(env, username) {
     twin:
       twinEntry.agreement / twinEntry.shared > 0.2
         ? {
-          username: twinEntry.username,
-          displayName: nameMap[twinEntry.username] || twinEntry.username,
-          agreementPct: Math.round(
-            (twinEntry.agreement / twinEntry.shared) * 100,
-          ),
-          sharedMatches: twinEntry.shared,
-        }
+            username: twinEntry.username,
+            displayName: nameMap[twinEntry.username] || twinEntry.username,
+            agreementPct: Math.round(
+              (twinEntry.agreement / twinEntry.shared) * 100,
+            ),
+            sharedMatches: twinEntry.shared,
+          }
         : null,
   };
 }
@@ -830,19 +858,14 @@ async function handleProfileGet(env, username) {
 // ─── Main GET /sync endpoint ────────────────────────────────────────────────
 
 async function handleSyncGet(env) {
-  const [
-    fixtureRows,
-    resultRows,
-    userRows,
-    predictionRows,
-    groupStandingRows,
-  ] = await Promise.all([
-    loadCollection(env, "fixtures"),
-    loadCollection(env, "results"),
-    loadCollection(env, "users"),
-    loadCollection(env, "predictions"),
-    loadCollection(env, "group_standings"),
-  ]);
+  const [fixtureRows, resultRows, userRows, predictionRows, groupStandingRows] =
+    await Promise.all([
+      loadCollection(env, "fixtures"),
+      loadCollection(env, "results"),
+      loadCollection(env, "users"),
+      loadCollection(env, "predictions"),
+      loadCollection(env, "group_standings"),
+    ]);
 
   const fixtures = fixtureRows.map((f) => ({
     matchId: String(f.matchId || f.id || "").replace(/^match_/, ""),
@@ -991,29 +1014,39 @@ export default {
       }
 
       // POST /admin/approve-request — create user in Supabase + send approval email
-      if ((path === "/admin/approve-request" || action === "approve-request") && request.method === "POST") {
+      if (
+        (path === "/admin/approve-request" || action === "approve-request") &&
+        request.method === "POST"
+      ) {
         if (!isAuthorized(request, env)) {
           return corsJson({ success: false, error: "Unauthorized" }, 401);
         }
         const body = await request.json();
         const { username, displayName, email, secretCode } = body;
         if (!username || !email || !secretCode) {
-          return corsJson({ success: false, error: "username, email, secretCode required" }, 400);
+          return corsJson(
+            { success: false, error: "username, email, secretCode required" },
+            400,
+          );
         }
         // Persist user
-        await supabaseUpsert(env, "users", [{
-          username,
-          displayName: displayName || username,
-          secretCode,
-          isAdmin: false,
-          joinedAt: new Date().toISOString(),
-        }]);
-        await supabaseUpsert(env, "accountRequests", [{
-          username,
-          status: "approved",
-          approvedAt: new Date().toISOString(),
-          secretCode,
-        }]);
+        await supabaseUpsert(env, "users", [
+          {
+            username,
+            displayName: displayName || username,
+            secretCode,
+            isAdmin: false,
+            joinedAt: new Date().toISOString(),
+          },
+        ]);
+        await supabaseUpsert(env, "accountRequests", [
+          {
+            username,
+            status: "approved",
+            approvedAt: new Date().toISOString(),
+            secretCode,
+          },
+        ]);
         // Fire email (non-blocking — don't fail the response if email fails)
         await sendEmailViaGas(env, {
           action: "emailApproved",
@@ -1026,20 +1059,28 @@ export default {
       }
 
       // POST /admin/reject-request — mark rejected + send rejection email
-      if ((path === "/admin/reject-request" || action === "reject-request") && request.method === "POST") {
+      if (
+        (path === "/admin/reject-request" || action === "reject-request") &&
+        request.method === "POST"
+      ) {
         if (!isAuthorized(request, env)) {
           return corsJson({ success: false, error: "Unauthorized" }, 401);
         }
         const body = await request.json();
         const { username, displayName, email } = body;
         if (!username || !email) {
-          return corsJson({ success: false, error: "username and email required" }, 400);
+          return corsJson(
+            { success: false, error: "username and email required" },
+            400,
+          );
         }
-        await supabaseUpsert(env, "accountRequests", [{
-          username,
-          status: "rejected",
-          rejectedAt: new Date().toISOString(),
-        }]);
+        await supabaseUpsert(env, "accountRequests", [
+          {
+            username,
+            status: "rejected",
+            rejectedAt: new Date().toISOString(),
+          },
+        ]);
         await sendEmailViaGas(env, {
           action: "emailRejected",
           displayName: displayName || username,
@@ -1064,13 +1105,10 @@ export default {
         message:
           "GGO WC 2026 Predictor API. Use /sync for all data, /sync-scores for scores, and /admin/sync-standings for official group tables.",
       });
-
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Worker error:", error);
       return corsJson({ success: false, error: error.message }, 500);
     }
-
   },
 
   async scheduled(event, env, ctx) {
@@ -1153,7 +1191,9 @@ async function fetchWorldcup26Matches(retries = 3, delay = 1000) {
       if (!response.ok) {
         // Retry only if it's a server error (5xx) and we have attempts left
         if (response.status >= 500 && attempt < retries) {
-          console.warn(`Server error ${response.status}. Retrying attempt ${attempt}...`);
+          console.warn(
+            `Server error ${response.status}. Retrying attempt ${attempt}...`,
+          );
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue; // Skip to the next loop iteration
         }
@@ -1164,7 +1204,6 @@ async function fetchWorldcup26Matches(retries = 3, delay = 1000) {
 
       const data = await response.json();
       return normalizeWorldcup26Games(data);
-
     } catch (error) {
       // If it's a network/connection error and we have attempts left, retry
       if (attempt < retries) {
@@ -1338,21 +1377,21 @@ function readScore(item, side) {
   const keys =
     side === "home"
       ? [
-        "homeScore",
-        "score1",
-        "team1Score",
-        "home_goal",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "homeScore",
+          "score1",
+          "team1Score",
+          "home_goal",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "awayScore",
-        "score2",
-        "team2Score",
-        "away_goal",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "awayScore",
+          "score2",
+          "team2Score",
+          "away_goal",
+          "awayGoals",
+          "goalsAway",
+        ];
   for (const key of keys) {
     if (item[key] !== undefined && item[key] !== null && item[key] !== "")
       return item[key];
@@ -1362,21 +1401,21 @@ function readScore(item, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
     for (const path of paths) {
       let value = nested;
       let found = true;
@@ -1436,7 +1475,9 @@ function buildTeamNameById(payload) {
   const teams = extractArray(payload, ["teams", "data", "items"]);
   const byId = new Map();
   for (const team of teams) {
-    const id = String(readFirst(team, ["team_id", "teamId", "id", "_id"]) || "").trim();
+    const id = String(
+      readFirst(team, ["team_id", "teamId", "id", "_id"]) || "",
+    ).trim();
     const name = readFirst(team, [
       "name",
       "team_name",
@@ -1481,26 +1522,28 @@ function formatGroupStandings(rows) {
   });
 
   return Object.fromEntries(
-    Object.entries(groups).sort(([a], [b]) => String(a).localeCompare(String(b))),
+    Object.entries(groups).sort(([a], [b]) =>
+      String(a).localeCompare(String(b)),
+    ),
   );
 }
 
 function buildLivescoreKey(item) {
   const home = cleanTeamName(
     item.home_name ||
-    item.home ||
-    item.team1 ||
-    item.localteam_name ||
-    item.localteam ||
-    "",
+      item.home ||
+      item.team1 ||
+      item.localteam_name ||
+      item.localteam ||
+      "",
   );
   const away = cleanTeamName(
     item.away_name ||
-    item.away ||
-    item.team2 ||
-    item.visitorteam_name ||
-    item.visitorteam ||
-    "",
+      item.away ||
+      item.team2 ||
+      item.visitorteam_name ||
+      item.visitorteam ||
+      "",
   );
   if (!home || !away) return "";
   return `${home}__${away}`;
@@ -1581,6 +1624,7 @@ function parseScorers(raw) {
 
 function toNullableNumber(value) {
   if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "string" && value.trim() === "") return null;
   const num = Number(value);
   return Number.isFinite(num) ? num : null;
 }
@@ -1695,4 +1739,3 @@ function base64ToArrayBuffer(base64) {
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes.buffer;
 }
-

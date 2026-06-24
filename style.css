@@ -59,9 +59,11 @@ select {
   min-height: 100dvh;
   background:
     linear-gradient(180deg, rgba(6, 8, 15, 0.96) 0%, rgba(6, 8, 15, 0.98) 100%),
-    repeating-linear-gradient(135deg,
+    repeating-linear-gradient(
+      135deg,
       rgba(255, 255, 255, 0.03) 0 1px,
-      transparent 1px 11px);
+      transparent 1px 11px
+    );
   padding: 20px;
 }
 
@@ -71,12 +73,16 @@ select {
 
 .login-card {
   background:
-    linear-gradient(145deg,
+    linear-gradient(
+      145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%),
-    repeating-linear-gradient(135deg,
+      rgba(6, 36, 24, 0.78) 100%
+    ),
+    repeating-linear-gradient(
+      135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px);
+      transparent 1px 9px
+    );
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   padding: 34px;
@@ -231,7 +237,6 @@ select {
   transform: translateY(0);
 }
 
-
 .footer {
   text-align: center;
   margin-top: 20px;
@@ -253,9 +258,11 @@ select {
 ════════════════════════════════════════ */
 
 header {
-  background: linear-gradient(180deg,
-      rgba(6, 8, 15, 0.95) 0%,
-      rgba(6, 8, 15, 0.85) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(6, 8, 15, 0.95) 0%,
+    rgba(6, 8, 15, 0.85) 100%
+  );
   border-bottom: 2px solid var(--wc-blue);
   padding: 12px 30px;
   display: flex;
@@ -503,7 +510,6 @@ header {
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 0.6;
@@ -515,7 +521,6 @@ header {
 }
 
 @keyframes blink {
-
   0%,
   100% {
     opacity: 1;
@@ -636,12 +641,16 @@ main {
 
 .match-card {
   background:
-    linear-gradient(145deg,
+    linear-gradient(
+      145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%),
-    repeating-linear-gradient(135deg,
+      rgba(6, 36, 24, 0.78) 100%
+    ),
+    repeating-linear-gradient(
+      135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px);
+      transparent 1px 9px
+    );
   border: 2px solid rgba(57, 172, 46, 0.925);
   border-radius: 8px;
   overflow: hidden;
@@ -728,7 +737,6 @@ main {
   line-height: 1.25;
   white-space: nowrap;
 }
-
 
 .mc-venue strong {
   color: var(--light);
@@ -916,7 +924,6 @@ main {
   background: rgba(255, 255, 255, 0.02);
 }
 
-
 .mc-scoreline-label {
   font-size: 9px;
   font-weight: 700;
@@ -1049,7 +1056,6 @@ main {
 }
 
 @keyframes exact-glow {
-
   0%,
   100% {
     box-shadow:
@@ -1158,23 +1164,11 @@ main {
 
 /* Profile page prediction indicators (shared with profile.html) */
 .pred-pts.pts-good {
-  background: rgba(245, 158, 11, 0.13);
-  color: var(--warning);
   border: 1px solid rgba(245, 158, 11, 0.28);
 }
 
 .pred-pts.pts-partial {
-  background: rgba(16, 185, 129, 0.13);
-  color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.28);
-}
-
-.pred-stripe.stripe-good {
-  background: var(--warning);
-}
-
-.pred-stripe.stripe-partial {
-  background: var(--success);
 }
 
 /* ────────────────────────────────────────
@@ -1196,7 +1190,11 @@ main {
 }
 
 .group-table h3 {
-  background: linear-gradient(90deg, rgba(0, 209, 94, 0.18) 0%, rgba(0, 179, 89, 0.08) 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(0, 209, 94, 0.18) 0%,
+    rgba(0, 179, 89, 0.08) 100%
+  );
   padding: 10px 14px;
   font-family: var(--font-ggo-display);
   font-size: 13px;
@@ -1493,12 +1491,16 @@ main {
   bottom: 0;
   width: min(480px, 100vw);
   background:
-    linear-gradient(160deg,
+    linear-gradient(
+      160deg,
       rgba(6, 10, 18, 0.99) 0%,
-      rgba(4, 22, 14, 0.97) 100%),
-    repeating-linear-gradient(135deg,
+      rgba(4, 22, 14, 0.97) 100%
+    ),
+    repeating-linear-gradient(
+      135deg,
       rgba(255, 255, 255, 0.03) 0 1px,
-      transparent 1px 10px);
+      transparent 1px 10px
+    );
   border-left: 2px solid rgba(0, 209, 94, 0.28);
   box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5);
   transform: translateX(100%);
@@ -1889,12 +1891,16 @@ main {
 
 .result-card {
   background:
-    linear-gradient(145deg,
+    linear-gradient(
+      145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%),
-    repeating-linear-gradient(135deg,
+      rgba(6, 36, 24, 0.78) 100%
+    ),
+    repeating-linear-gradient(
+      135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px);
+      transparent 1px 9px
+    );
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   padding: 20px;
@@ -2040,9 +2046,11 @@ main {
 
 .champion-section {
   text-align: center;
-  background: linear-gradient(135deg,
-      rgba(0, 209, 94, 0.1) 0%,
-      rgba(0, 179, 89, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(0, 209, 94, 0.1) 0%,
+    rgba(0, 179, 89, 0.05) 100%
+  );
   border: 2px solid var(--wc-red);
   border-radius: 8px;
   padding: 30px;
@@ -2097,12 +2105,13 @@ main {
   height: 100%;
 }
 
-
 .bracket-match {
   position: relative;
-  background: linear-gradient(180deg,
-      rgba(12, 18, 24, 0.98),
-      rgba(7, 33, 22, 0.92));
+  background: linear-gradient(
+    180deg,
+    rgba(12, 18, 24, 0.98),
+    rgba(7, 33, 22, 0.92)
+  );
   border: 2px solid rgba(0, 209, 94, 0.36);
   border-radius: 6px;
   padding: 8px;
@@ -2673,7 +2682,9 @@ main {
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--light);
   text-decoration: none;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 .calendar-btn:hover {
@@ -3128,8 +3139,8 @@ main {
   }
 
   /* Stat cols equal and compact */
-  .group-standings-table th:nth-child(n+3),
-  .group-standings-table td:nth-child(n+3) {
+  .group-standings-table th:nth-child(n + 3),
+  .group-standings-table td:nth-child(n + 3) {
     width: 26px;
     padding: 6px 3px;
     text-align: center;
@@ -3421,7 +3432,6 @@ main {
     padding-inline: 14px;
   }
 
-
   .modal-overlay {
     padding: 12px;
     align-items: flex-start;
@@ -3560,9 +3570,7 @@ main {
   }
 }
 
-@media (hover: none),
-(pointer: coarse) {
-
+@media (hover: none), (pointer: coarse) {
   .match-card.open:hover,
   .result-card:hover,
   .score-rule-card:hover,
@@ -3849,14 +3857,17 @@ main {
   border-bottom: 1px solid rgba(0, 209, 94, 0.25);
 }
 
-
 .rules-intro-banner {
   margin: 0 0 30px;
   padding: 18px 20px;
   border-radius: 18px;
   border: 1px solid rgba(0, 209, 94, 0.28);
   background:
-    radial-gradient(circle at top right, rgba(0, 209, 94, 0.16), transparent 42%),
+    radial-gradient(
+      circle at top right,
+      rgba(0, 209, 94, 0.16),
+      transparent 42%
+    ),
     linear-gradient(135deg, rgba(10, 17, 31, 0.92), rgba(8, 27, 44, 0.88));
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
 }
@@ -3894,7 +3905,10 @@ main {
   border: 1px solid rgba(0, 209, 94, 0.15);
   border-radius: 14px;
   padding: 20px 18px 18px;
-  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .feature-card:hover {
@@ -4047,8 +4061,16 @@ main {
   bottom: 0;
   width: 280px;
   background:
-    linear-gradient(160deg, rgba(6, 10, 18, 0.99) 0%, rgba(4, 22, 14, 0.97) 100%),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 10px);
+    linear-gradient(
+      160deg,
+      rgba(6, 10, 18, 0.99) 0%,
+      rgba(4, 22, 14, 0.97) 100%
+    ),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.03) 0 1px,
+      transparent 1px 10px
+    );
   border-right: 2px solid rgba(0, 209, 94, 0.28);
   box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
   transform: translateX(-100%);
