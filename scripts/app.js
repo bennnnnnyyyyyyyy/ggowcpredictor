@@ -748,15 +748,15 @@ async function requestSync() {
     timeEl.textContent = hadError && !hasAnyData
       ? "Sync failed"
       : `Live - ${STATE.lastSync.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Africa/Cairo",
-        })}`;
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Africa/Cairo",
+      })}`;
   }
 
   updateAdminBadge();
   if (syncBtn) syncBtn.classList.remove("loading");
-}async function loadAccountRequests() {
+} async function loadAccountRequests() {
   STATE.accountRequests = [];
 
   // 1. Try Supabase
@@ -1561,6 +1561,46 @@ function renderGroupStandings() {
 
   renderThirdPlaceTable();
 }
+function renderGroupTable(groupName, standings) {
+  if (!standings || !standings.length) return '';
+
+  // Sort by position (already sorted from DB, but just in case)
+  const sorted = standings.sort((a, b) => a.position - b.position);
+
+  return `
+    <div class="group-table">
+      <h3>${escapeHtml(groupName)}</h3>
+      <table class="group-standings-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Team</th>
+            <th>P</th>
+            <th>W</th>
+            <th>D</th>
+            <th>L</th>
+            <th>GD</th>
+            <th>Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map(row => `
+            <tr>
+              <td class="team-rank">${row.position}</td>
+              <td data-label="Team">${getFlagImg(row.team_name)} ${escapeHtml(row.team_name)}</td>
+              <td>${row.played ?? 0}</td>
+              <td>${row.won ?? 0}</td>
+              <td>${row.drawn ?? 0}</td>
+              <td>${row.lost ?? 0}</td>
+              <td>${(row.goal_difference ?? 0) > 0 ? '+' : ''}${row.goal_difference ?? 0}</td>
+              <td><strong>${row.points ?? 0}</strong></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
 function getThirdPlaceStandings() {
   const groups = STATE.groupStandings || {};
   return Object.entries(groups)
@@ -1622,8 +1662,8 @@ function renderThirdPlaceTable() {
         </thead>
         <tbody>
           ${rows
-          .map(
-            (row, index) => `
+      .map(
+        (row, index) => `
               <tr class="${row.qualifies ? "" : "eliminated"} ${index === cutoffIndex ? "cutoff-row" : ""}">
                 <td data-label="#">${row.rank}</td>
                 <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
@@ -1635,8 +1675,8 @@ function renderThirdPlaceTable() {
                 <td data-label="Status">${row.qualifies ? "Qualifies" : "Out"}</td>
               </tr>
             `,
-          )
-          .join("")}
+      )
+      .join("")}
         </tbody>
       </table>
       <div class="third-place-legend">
@@ -1936,67 +1976,120 @@ function renderBracket() {
   const bracket = document.getElementById("bracket");
   if (!bracket) return;
 
-  const rounds = [
-    "Round of 32",
-    "Round of 16",
-    "Quarter-final",
-    "Semi-final",
-    "Match for third place",
-    "Final",
-  ];
-  const knockout = STATE.fixtures.filter(
-    (fixture) => fixture.stage !== "group",
-  );
+  const knockout = STATE.fixtures
+    .filter(f => f.stage !== "group")
+    .sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
   if (!knockout.length) {
     bracket.innerHTML = emptyState("Knockout fixtures are not loaded yet.", "");
     return;
   }
 
-  bracket.innerHTML = rounds
-    .map((round, roundIndex) => {
-      const matches = knockout.filter((fixture) => fixture.round === round);
-      return `
-        <section class="bracket-round bracket-round-${roundIndex + 1}">
-          <h3>${escapeHtml(round)}</h3>
-          <div class="bracket-stack">
-          ${matches
-          .map((match) => {
-            const result = STATE.results[match.matchId];
-            const score =
-              result && hasResult(result)
-                ? `${result.score1}-${result.score2}`
-                : "vs";
+  // Define rounds in order from outer to inner
+  const roundOrder = ["Round of 32", "Round of 16", "Quarter-final", "Semi-final"];
+  const matchesByRound = {};
+  roundOrder.forEach(r => {
+    matchesByRound[r] = knockout.filter(m => m.round === r);
+  });
 
-            const seed1 = String(match.team1 || "");
-            const seed2 = String(match.team2 || "");
-            const t1 = resolveSlot(seed1);
-            const t2 = resolveSlot(seed2);
-            const tbd1 = t1 === seed1;
-            const tbd2 = t2 === seed2;
-            const display1 = tbd1 ? "TBD" : t1;
-            const display2 = tbd2 ? "TBD" : t2;
+  // Split each round into top and bottom halves
+  const splitMatches = (matches) => {
+    const mid = Math.ceil(matches.length / 2);
+    return {
+      top: matches.slice(0, mid),
+      bottom: matches.slice(mid)
+    };
+  };
 
-            return `
-                <div class="bracket-match">
-                  <div class="bracket-seed">
-                    <span class="team-code">${escapeHtml(getTeamCode(seed1))}</span>
-                    <span class="${tbd1 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(display1)}</span>
-                  </div>
-                  <strong>${score}</strong>
-                  <div class="bracket-seed">
-                    <span class="team-code">${escapeHtml(getTeamCode(seed2))}</span>
-                    <span class="${tbd2 ? 'slot-tbd' : 'slot-resolved'}">${escapeHtml(display2)}</span>
-                  </div>
-                </div>
-              `;
-          })
-          .join("")}
-          </div>
-        </section>
-      `;
-    })
-    .join("");
+  const halves = {};
+  roundOrder.forEach(r => {
+    halves[r] = splitMatches(matchesByRound[r] || []);
+  });
+
+  // Build HTML: three columns
+  let html = '<div class="bracket-three-column">';
+
+  // LEFT COLUMN: top half of each round (outer to inner)
+  html += '<div class="bracket-col bracket-col-left">';
+  roundOrder.forEach(round => {
+    const matches = halves[round].top;
+    if (!matches.length) return;
+    html += `<div class="bracket-round-group">`;
+    html += `<div class="bracket-round-label">${escapeHtml(round)}</div>`;
+    matches.forEach(m => html += renderBracketMatch(m));
+    html += `</div>`;
+  });
+  html += '</div>';
+
+  // CENTER COLUMN: Final + Third Place
+  const finalMatches = knockout.filter(m => m.round === "Final");
+  const thirdMatches = knockout.filter(m => m.round === "Match for third place");
+  html += '<div class="bracket-col bracket-col-center">';
+  if (thirdMatches.length) {
+    html += `<div class="bracket-final-block">`;
+    html += `<div class="bracket-round-label">Third Place</div>`;
+    thirdMatches.forEach(m => html += renderBracketMatch(m));
+    html += `</div>`;
+  }
+  if (finalMatches.length) {
+    html += `<div class="bracket-final-block">`;
+    html += `<div class="bracket-round-label">Final</div>`;
+    finalMatches.forEach(m => html += renderBracketMatch(m));
+    html += `</div>`;
+  }
+  if (!thirdMatches.length && !finalMatches.length) {
+    html += `<div class="bracket-final-placeholder">Champion TBD</div>`;
+  }
+  html += '</div>';
+
+  // RIGHT COLUMN: bottom half of each round (outer to inner)
+  html += '<div class="bracket-col bracket-col-right">';
+  roundOrder.forEach(round => {
+    const matches = halves[round].bottom;
+    if (!matches.length) return;
+    html += `<div class="bracket-round-group">`;
+    html += `<div class="bracket-round-label">${escapeHtml(round)}</div>`;
+    matches.forEach(m => html += renderBracketMatch(m));
+    html += `</div>`;
+  });
+  html += '</div>';
+
+  html += '</div>'; // end bracket-three-column
+  bracket.innerHTML = html;
+}
+
+function renderBracketMatch(match) {
+  const result = STATE.results[match.matchId];
+  const score = result && hasResult(result)
+    ? `${result.score1}-${result.score2}`
+    : "vs";
+
+  const seed1 = String(match.team1 || "");
+  const seed2 = String(match.team2 || "");
+  const t1 = resolveSlot(seed1);
+  const t2 = resolveSlot(seed2);
+  const tbd1 = t1 === seed1;
+  const tbd2 = t2 === seed2;
+  const display1 = tbd1 ? "TBD" : t1;
+  const display2 = tbd2 ? "TBD" : t2;
+
+  return `
+    <div class="bracket-match">
+      <div class="bracket-seed">
+        <span class="team-code">${escapeHtml(getTeamCode(seed1))}</span>
+        <span class="${tbd1 ? 'slot-tbd' : 'slot-resolved'}">
+          ${tbd1 ? 'TBD' : getFlagImg(display1) + ' ' + escapeHtml(display1)}
+        </span>
+      </div>
+      <div class="bracket-score">${escapeHtml(score)}</div>
+      <div class="bracket-seed">
+        <span class="team-code">${escapeHtml(getTeamCode(seed2))}</span>
+        <span class="${tbd2 ? 'slot-tbd' : 'slot-resolved'}">
+          ${tbd2 ? 'TBD' : getFlagImg(display2) + ' ' + escapeHtml(display2)}
+        </span>
+      </div>
+    </div>
+  `;
 }
 /**
  * Resolves a bracket slot code to a real team name using STATE.groupStandings
@@ -2025,7 +2118,7 @@ function resolveSlot(code) {
     else if (score2 > score1) winnerIsTeam1 = false;
     else if (refResult.penalty_winner === "team1") winnerIsTeam1 = true;
     else if (refResult.penalty_winner === "team2") winnerIsTeam1 = false;
-    else return code; // tied with no recorded penalty winner — can't resolve yet
+    else return code;
 
     const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
     const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
@@ -2037,32 +2130,38 @@ function resolveSlot(code) {
   const groups = STATE.groupStandings;
   if (!groups || !Object.keys(groups).length) return code;
 
-  // Simple slot: "1A" = winner, "2B" = runner-up
+  // Simple slot: "1A" or "2B" → winner/runner‑up of that group
   const simple = code.match(/^([12])([A-L])$/);
   if (simple) {
-    const pos = Number(simple[1]) - 1; // 0 = winner, 1 = runner-up
-    const groupKey = `Group ${simple[2]}`;
+    const pos = Number(simple[1]) - 1; // 0 = winner, 1 = runner‑up
+    const groupKey = simple[2];        // "A", not "Group A"
     const team = groups[groupKey]?.[pos];
     return team?.team_name || code;
   }
 
-  // 3rd-place slot: "3A/B/C/D" = best 3rd from those groups
-  const thirds = code.match(/^3([A-L](?:\/[A-L])*)$/);
+  // 3rd‑place slot: "3BC" or "3B/C" → best 3rd from those groups
+  const thirds = code.match(/^3([A-L\/]+)$/);
   if (thirds) {
-    const letters = thirds[1].split("/");
+    let letters = thirds[1].split('/').filter(Boolean);
+    if (letters.length === 1 && !thirds[1].includes('/')) {
+      letters = letters[0].split('');
+    }
     const candidates = letters
-      .map((l) => groups[`Group ${l}`]?.[2]) // index 2 = 3rd-place team
+      .map((l) => {
+        const groupTeams = groups[l];
+        if (!groupTeams) return null;
+        return groupTeams.find(team => team.position === 3) || null;
+      })
       .filter(Boolean)
-      .sort(
-        (a, b) =>
-          b.points - a.points ||
-          b.goal_difference - a.goal_difference ||
-          b.goals_for - a.goals_for,
+      .sort((a, b) =>
+        b.points - a.points ||
+        b.goal_difference - a.goal_difference ||
+        b.goals_for - a.goals_for
       );
     return candidates[0]?.team_name || code;
   }
 
-  return code; // unknown format — pass through unchanged
+  return code;
 }
 
 function renderAdmin() {
