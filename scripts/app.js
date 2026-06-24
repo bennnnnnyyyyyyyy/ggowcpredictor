@@ -856,9 +856,12 @@ async function loadLocalFixtures() {
 }
 
 async function loadResults() {
+  const syncedResults = normalizeResultsPayload(STATE.results);
   STATE.results = {};
 
-  const apiResults = await loadResultsFromApi();
+  const apiResults = Object.keys(syncedResults).length
+    ? syncedResults
+    : await loadResultsFromApi();
   if (Object.keys(apiResults).length) {
     STATE.results = apiResults;
     return;
@@ -895,17 +898,7 @@ async function loadResults() {
     }
   }
 
-  // Merge results from both databases
   const merged = {};
-  // ADD after line 831 (after the localResults merge):
-  // Strip NS placeholder rows — only keep results with actual scores
-  Object.keys(merged).forEach((mid) => {
-    const r = merged[mid];
-    if (!hasResult(r)) delete merged[mid];
-  });
-
-  // NEW:
-  // Supabase is canonical — load it first, Firestore only fills gaps
   supabaseResults.forEach((r) => {
     const matchId = String(r.matchId || r.id || "").replace(/^match_/, "");
     const norm = normalizeResult({ ...r, matchId });
@@ -924,6 +917,9 @@ async function loadResults() {
     `ggo_wc_results_${SESSION.username || "demo"}`,
   );
   STATE.results = { ...localResults, ...merged };
+  Object.keys(STATE.results).forEach((mid) => {
+    if (!hasResult(STATE.results[mid])) delete STATE.results[mid];
+  });
 
   // Inject mock results for local development/testing if no database or API is connected
   if (!db && !CONFIG.appsScriptUrl && Object.keys(STATE.results).length === 0) {
@@ -2551,14 +2547,7 @@ async function loadGameData() {
   if (!CONFIG.appsScriptUrl) return;
 
   try {
-    const response = await fetch(
-      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=sync`,
-      {
-        cache: "no-store",
-      },
-    );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+    const data = await fetchGameDataApi(["/sync", "?action=sync"]);
 
     if (Array.isArray(data.fixtures) && data.fixtures.length) {
       STATE.fixtures = sortFixtures(data.fixtures.map(normalizeFixture));
@@ -2583,14 +2572,7 @@ async function loadGameData() {
 async function loadFixturesFromApi() {
   if (!CONFIG.appsScriptUrl) return [];
   try {
-    const response = await fetch(
-      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}?action=fixtures`,
-      {
-        cache: "no-store",
-      },
-    );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+    const data = await fetchGameDataApi(["/fixtures", "?action=fixtures"]);
     if (Array.isArray(data.fixtures)) {
       return data.fixtures.map(normalizeFixture);
     }
@@ -2602,30 +2584,45 @@ async function loadFixturesFromApi() {
 
 async function loadResultsFromApi() {
   if (!CONFIG.appsScriptUrl) return {};
-  return Object.keys(STATE.results).length
-    ? normalizeResultsPayload(STATE.results)
-    : {};
+  try {
+    const data = await fetchGameDataApi(["/sync", "?action=sync"]);
+    return normalizeResultsPayload(data.results);
+  } catch (error) {
+    console.warn("Results API unavailable.", error.message);
+    return {};
+  }
 }
 async function loadLeaderboardFromApi() {
   try {
-    const response = await fetch(
-      `${CONFIG.appsScriptUrl.replace(/\/$/, "")}/leaderboard`,
-      {
-        cache: "no-store",
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await fetchGameDataApi(["/leaderboard", "?action=leaderboard"]);
 
     return Array.isArray(data.leaderboard) ? data.leaderboard : [];
   } catch (error) {
     console.error("Leaderboard API failed:", error);
     return [];
   }
+}
+
+function buildGameDataApiUrl(endpoint) {
+  const base = CONFIG.appsScriptUrl.replace(/\/$/, "");
+  return endpoint.startsWith("?") ? `${base}${endpoint}` : `${base}${endpoint}`;
+}
+
+async function fetchGameDataApi(endpoints) {
+  let lastError = null;
+
+  for (const endpoint of endpoints) {
+    const url = buildGameDataApiUrl(endpoint);
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`${url} HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("No game data API endpoint configured");
 }
 
 async function loadGroupStandings() {

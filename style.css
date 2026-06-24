@@ -729,9 +729,6 @@ main {
   white-space: nowrap;
 }
 
-.mc-venue span:last-child {
-  display: none;
-}
 
 .mc-venue strong {
   color: var(--light);
@@ -740,7 +737,7 @@ main {
 }
 
 .mc-venue span:last-child {
-  grid-column: 2;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -878,9 +875,7 @@ main {
   text-align: center;
 }
 
-/* REPLACE the whole block with: */
-
-/* scoreline (replaces old mc-result-grid) */
+/* Scoreline */
 .mc-scoreline {
   display: flex;
   flex-direction: column;
@@ -921,15 +916,6 @@ main {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.mc-scoreline-pts {
-  font-family: var(--font-ggo-display);
-  font-size: 16px;
-  font-weight: 900;
-  padding: 4px 12px;
-  border-radius: 6px;
-  border-width: 1.5px;
-  border-style: solid;
-}
 
 .mc-scoreline-label {
   font-size: 9px;
@@ -966,7 +952,6 @@ main {
   letter-spacing: 0.4px;
 }
 
-/* REPLACE WITH: */
 .mc-scoreline-pts {
   font-family: var(--font-ggo-display);
   font-size: 14px;
@@ -1376,13 +1361,6 @@ main {
   text-align: center;
   padding: 40px;
   color: var(--muted);
-}
-
-.mc-scoreline-status {
-  font-size: 9px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
 }
 
 .mc-badge.final {

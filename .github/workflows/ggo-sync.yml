@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "0 * * * *"
   workflow_dispatch:
+  concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   sync:
