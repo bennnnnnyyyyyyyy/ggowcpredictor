@@ -78,6 +78,8 @@ const DEMO_USERS = {
 let db = null;
 let activeMatchFilter = "all";
 let activeResultFilter = "all";
+let savingMatchId = null; // or new Set() if multiple saves are allowed
+
 
 const SESSION = {
   token: localStorage.getItem("ggo_wc_token") || null,
@@ -1259,9 +1261,7 @@ function showToast(message, type = "success") {
 }
 
 async function savePrediction(matchId, pred1, pred2) {
-  const fixture = STATE.fixtures.find(
-    (match) => match.matchId === String(matchId),
-  );
+  const fixture = STATE.fixtures.find(match => match.matchId === String(matchId));
   const score1 = Number(pred1);
   const score2 = Number(pred2);
 
@@ -1273,33 +1273,26 @@ async function savePrediction(matchId, pred1, pred2) {
     return;
   }
 
-  if (
-    !Number.isInteger(score1) ||
-    !Number.isInteger(score2) ||
-    score1 < 0 ||
-    score2 < 0
-  ) {
+  if (!Number.isInteger(score1) || !Number.isInteger(score2) || score1 < 0 || score2 < 0) {
     showToast("Please enter valid scores.", "error");
     return;
   }
 
-  const prediction = {
-    matchId: String(matchId),
-    username: SESSION.username,
-    pred1: score1,
-    pred2: score2,
-    submittedAt: new Date().toISOString(),
-    pointsAwarded: null,
-    scoredAt: null,
-  };
+  // Prevent overlapping saves for the same match
+  const matchIdStr = String(matchId);
+  if (savingMatchId === matchIdStr) return;
 
-  // 1. Save to Supabase FIRST — must succeed
+  // Set loading state and re‑render to show overlay
+  savingMatchId = matchIdStr;
+  renderPredictions();  // shows loading overlay immediately
+
   try {
-    const docId = `${SESSION.username}_${matchId}`;
+    // 1. Save to Supabase FIRST — must succeed
+    const docId = `${SESSION.username}_${matchIdStr}`;
     const row = {
       id: docId,
       username: SESSION.username,
-      matchId: String(matchId),
+      matchId: matchIdStr,
       pred1: score1,
       pred2: score2,
       submittedAt: new Date().toISOString(),
@@ -1307,42 +1300,44 @@ async function savePrediction(matchId, pred1, pred2) {
       scoredAt: null,
     };
     await supabaseUpsert("predictions", [row], "id");
-  } catch (error) {
-    console.error("Failed to save prediction to Supabase:", error);
-    showToast("Save failed – please try again.", "error");
-    return; // Stop here — do NOT save locally or to Firestore
-  }
 
-  // 2. Mirror to Firestore (optional, don't block on failure)
-  if (db) {
-    try {
-      await db
-        .collection("predictions")
-        .doc(`${SESSION.username}_${matchId}`)
-        .set(
-          {
-            ...prediction,
-            submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
-    } catch (error) {
-      console.warn("Could not mirror prediction to Firestore.", error);
-      // Non-critical; Supabase already has the truth.
+    // 2. Mirror to Firestore (optional, don't block)
+    if (db) {
+      try {
+        await db.collection("predictions").doc(docId).set({
+          ...row,
+          submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (error) {
+        console.warn("Firestore mirror failed:", error);
+      }
     }
+
+    // 3. Update local state
+    const prediction = {
+      matchId: matchIdStr,
+      username: SESSION.username,
+      pred1: score1,
+      pred2: score2,
+      submittedAt: new Date().toISOString(),
+      pointsAwarded: null,
+      scoredAt: null,
+    };
+    STATE.predictions[matchIdStr] = prediction;
+    writeLocalObject(`ggo_wc_predictions_${SESSION.username}`, STATE.predictions);
+
+    showToast(`Saved: ${fixture.team1} ${score1}–${score2} ${fixture.team2}`);
+  } catch (error) {
+    console.error("Save failed:", error);
+    showToast("Save failed – please try again.", "error");
+  } finally {
+    savingMatchId = null;
+    // Reload predictions from Supabase to ensure fresh data, then re‑render
+    await loadPredictions();
+    renderPredictions();
+    renderGroupStandings();
+    renderLeaderboard();
   }
-
-  // 3. Update local state only AFTER successful Supabase write
-  STATE.predictions[String(matchId)] = prediction;
-  writeLocalObject(
-    `ggo_wc_predictions_${SESSION.username || "demo"}`,
-    STATE.predictions,
-  );
-  showToast(`Saved: ${fixture.team1} ${score1}-${score2} ${fixture.team2}`);
-
-  renderPredictions();
-  renderGroupStandings();
-  renderLeaderboard();
 }
 
 function renderPredictions() {
@@ -1412,35 +1407,17 @@ function renderPredictionCard(match) {
   const result = STATE.results[match.matchId];
   const locked = isLocked(match);
   const status = getMatchStatus(match, result);
-  const team1Code = getTeamCode(match.team1);
-  const team2Code = getTeamCode(match.team2);
   const venue = getVenueDetails(match);
   const hasPred = hasPrediction(pred);
   const hasRes = result && hasResult(result);
-  const points =
-    hasRes && hasPred
-      ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-      )
-      : null;
+  const isSaving = savingMatchId === match.matchId; // ★ already present
 
-  // Determine points tier for styling
-  const ptsTier =
-    points === null
-      ? ""
-      : points >= 15
-        ? "pts-exact"
-        : points >= 8
-          ? "pts-good"
-          : points > 0
-            ? "pts-partial"
-            : "pts-zero";
+  const points = hasRes && hasPred ? calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2) : null;
+  const ptsTier = points === null ? "" : points >= 15 ? "pts-exact" : points >= 8 ? "pts-good" : points > 0 ? "pts-partial" : "pts-zero";
 
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
+
   const statusLineHtml =
     locked && !hasRes
       ? '<div class="mc-status-line"><span class="status-token">LOCK</span><span>Predictions closed</span></div>'
@@ -1449,10 +1426,10 @@ function renderPredictionCard(match) {
         : !locked && !hasRes
           ? '<div class="mc-status-line"><span class="status-token open-token">OPEN</span><span>Enter prediction</span></div>'
           : "";
+
   const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "—";
-  const actualScore = hasRes
-    ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
-    : "vs";
+  const actualScore = hasRes ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}` : "vs";
+
   const resultScoreHtml = hasRes
     ? `
       <div class="mc-scoreline">
@@ -1460,24 +1437,17 @@ function renderPredictionCard(match) {
           <span class="mc-scoreline-label">Result</span>
           <span class="mc-scoreline-actual">${actualScore}</span>
         </div>
-    
         <div class="mc-scoreline-divider"></div>
-    
         <div class="mc-scoreline-row ${hasPred ? "has-pick" : "no-pick"}">
           <span class="mc-scoreline-label">Your Pick</span>
           <span class="mc-scoreline-pick">${predictionScore}</span>
         </div>
-    
-        ${hasPred
-      ? `
-            <div class="mc-scoreline-divider"></div>
-            <div class="mc-scoreline-points">
-              <span class="mc-scoreline-pts ${ptsTier}">
-                ${points ?? 0} pts
-              </span>
-            </div>
-          `
-      : ""}
+        ${hasPred ? `
+          <div class="mc-scoreline-divider"></div>
+          <div class="mc-scoreline-points">
+            <span class="mc-scoreline-pts ${ptsTier}">${points ?? 0} pts</span>
+          </div>
+        ` : ""}
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -1501,11 +1471,11 @@ function renderPredictionCard(match) {
       ${hasRes
       ? ``
       : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
-        inputmode="numeric" placeholder="-"
-        value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
-        ${locked ? "disabled" : ""}
-        data-matchid="${match.matchId}" data-team="1"
-        oninput="handleScoreChange('${match.matchId}')">`
+            inputmode="numeric" placeholder="-"
+            value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
+            ${locked || isSaving ? "disabled" : ""}
+            data-matchid="${match.matchId}" data-team="1"
+            oninput="handleScoreChange('${match.matchId}')">`
     }
         </div>
 
@@ -1519,30 +1489,48 @@ function renderPredictionCard(match) {
         ${hasRes
       ? ``
       : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
-        inputmode="numeric" placeholder="-"
-        value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
-        ${locked ? "disabled" : ""}
-        data-matchid="${match.matchId}" data-team="2"
-        oninput="handleScoreChange('${match.matchId}')">`
+            inputmode="numeric" placeholder="-"
+            value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
+            ${locked || isSaving ? "disabled" : ""}
+            data-matchid="${match.matchId}" data-team="2"
+            oninput="handleScoreChange('${match.matchId}')">`
     }
         </div>
       </div>
 
       ${statusLineHtml ? `<div class="mc-footer">${statusLineHtml}</div>` : ""}
+
+      <!-- ★ Add loading overlay -->
+      ${isSaving ? `
+        <div class="mc-loading-overlay">
+          <span class="spinner"></span>
+          <span>Saving…</span>
+        </div>
+      ` : ""}
     </article>
   `;
 }
 
-function handleScoreChange(matchId) {
-  const input1 = document.querySelector(
-    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="1"]`,
-  );
-  const input2 = document.querySelector(
-    `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="2"]`,
-  );
+let saveTimeout = null;
 
-  if (!input1 || !input2 || input1.value === "" || input2.value === "") return;
-  savePrediction(matchId, input1.value, input2.value);
+function handleScoreChange(matchId) {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    const input1 = document.querySelector(
+      `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="1"]`
+    );
+    const input2 = document.querySelector(
+      `.score-input[data-matchid="${cssEscape(matchId)}"][data-team="2"]`
+    );
+    if (!input1 || !input2) return;
+    const v1 = input1.value.trim();
+    const v2 = input2.value.trim();
+    if (v1 === '' || v2 === '') return;
+    const num1 = Number(v1);
+    const num2 = Number(v2);
+    if (!Number.isInteger(num1) || !Number.isInteger(num2) || num1 < 0 || num2 < 0) return;
+    savePrediction(matchId, num1, num2);
+  }, 400); // 400ms after the last keystroke
 }
 
 function renderGroupStandings() {
@@ -2144,8 +2132,7 @@ function resolveSlot(code) {
     const [, side, refMatchId] = knockoutRef;
     const refFixture = STATE.fixtures.find((f) => f.matchId === refMatchId);
     const refResult = STATE.results[refMatchId];
-    if (!refFixture || !refResult || !hasResult(refResult)) return code;
-
+    if (!refFixture || !refResult || !isFinalResult(refResult)) return code;
     const { score1, score2 } = refResult;
     let winnerIsTeam1;
     if (score1 > score2) winnerIsTeam1 = true;
@@ -2916,8 +2903,20 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
   const actualOutcome = Math.sign(actual1 - actual2);
 
   if (predOutcome === actualOutcome) {
-    const diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
-    return diffGap <= 1 ? 8 : 5;
+    let diffGap;
+    if (predOutcome === 0) {
+      // DRAW: measure total goals difference
+      const predTotal = pred1 + pred2;
+      const actualTotal = actual1 + actual2;
+      diffGap = Math.abs(predTotal - actualTotal);
+      // Off by 0 (exact) or 2 (one goal per team) → 8 pts (if not exact)
+      // Off by 4+ → 5 pts
+      return diffGap <= 2 ? 8 : 5;
+    } else {
+      // WIN/LOSS: use goal‑difference gap
+      diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
+      return diffGap <= 1 ? 8 : 5;
+    }
   }
   return 0;
 }
@@ -3188,4 +3187,9 @@ function showNavChangeBanner() {
   if (localStorage.getItem('ggo_nav_banner_seen')) return;
   const banner = document.getElementById('nav-change-banner');
   if (banner) banner.style.display = 'flex';
+}
+function isFinalResult(result) {
+  if (!result) return false;
+  const status = String(result.status || '').toUpperCase();
+  return ['FT', 'AET', 'PEN', 'COMPLETED', 'FINAL'].includes(status);
 }
