@@ -8,8 +8,21 @@
   "main": "workers/live-results.js",
 
   "assets": {
-    "directory": "./dist",
-    "binding": "ASSETS"
+    "directory": ".",
+    "binding": "ASSETS",
+    "exclude": [
+    "workers/**",
+    "node_modules/**",
+    ".git/**",
+    "**/*.d.ts",
+    "**/*.tsbuildinfo",
+    "package-lock.json",
+    "npm-debug.log*",
+    "yarn-debug.log*",
+    "yarn-error.log*",
+    "__pycache__/**",
+    ".wrangler/**"
+  ]
   },
 
   "triggers": {
