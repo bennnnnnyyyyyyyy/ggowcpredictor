@@ -1,0 +1,33 @@
+.env
+.env.local
+.dev.vars
+
+#node
+node_modules/
+
+# Secrets & Credentials
+*-adminsdk-*.json
+ggowcpredictor-firebase-adminsdk-fbsvc-76aa1b4e46.json
+user-passwords.csv
+
+
+# Output
+merged-emails/
+.wrangler/
+wrangler-*.log
+live.html
+ggowcpredictor db  (1).xlsx
+
+# Debug & Temp
+*.log
+*.har
+scripts/_check_*.js
+.agents/
+.gemini/
+codexchange scoring.md
+contextforleaderboardissue.md
+
+#temp
+temp/
+
+#context files

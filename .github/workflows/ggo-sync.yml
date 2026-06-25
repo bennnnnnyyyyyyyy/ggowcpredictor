@@ -1,0 +1,21 @@
+name: GGO WC Sync
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sync scores
+        run: |
+          curl -H "Authorization: Bearer ggo-secret-admin-token-123" \
+          https://ggowcpredictor.ben-arthur-wiz.workers.dev/sync-scores
+
+      - name: Refresh data
+        run: |
+          curl -H "Authorization: Bearer ggo-secret-admin-token-123" \
+          https://ggowcpredictor.ben-arthur-wiz.workers.dev/sync
