@@ -17,3 +17,5 @@ All documentation files have been organized into the `docs/` folder to keep the 
 
 
 Special thanks to [Reza Rahiminia](https://github.com/rezarahiminia) and his [worldcup2026 REST API](https://github.com/rezarahiminia/worldcup2026) project for powering our data.
+
+Property of Gulf Global Outsourcing
