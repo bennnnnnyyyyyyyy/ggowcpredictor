@@ -887,17 +887,37 @@ function renderHome() {
           const popularHtml = scoreGroups.length
             ? scoreGroups
                 .slice(0, 4)
-                .map(
-                  (group, index) => `
-                <div class="popular-score ${index === 0 ? "popular-score-top" : ""}">
-                  <div class="popular-score-main">
-                    <span class="score-badge">${escapeHtml(group.score)}</span>
-                    <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
-                  </div>
-                  <div class="popular-score-names">${group.users.map((name) => `<span>${escapeHtml(name)}</span>`).join("")}</div>
-                </div>
-              `,
-                )
+                .map((group, index) => {
+                  // Match has started if result exists OR kickoff time passed
+                  const result = STATE.results?.[fixture.matchId];
+
+                  const hasStarted =
+                    result &&
+                    !["NS", "NOT_STARTED", "TBD"].includes(
+                      String(result.status || "").toUpperCase(),
+                    );
+
+                  return `
+          <div class="popular-score ${index === 0 ? "popular-score-top" : ""}">
+            <div class="popular-score-main">
+              <span class="score-badge">${escapeHtml(group.score)}</span>
+              <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
+            </div>
+
+            ${
+              hasStarted
+                ? `
+              <div class="popular-score-names">
+                ${group.users
+                  .map((name) => `<span>${escapeHtml(name)}</span>`)
+                  .join("")}
+              </div>
+            `
+                : ""
+            }
+          </div>
+        `;
+                })
                 .join("")
             : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
@@ -911,7 +931,6 @@ function renderHome() {
                 <div class="pick-count"><strong>${matchPreds.length}</strong><span>picks</span></div>
               </div>
 
-              <!-- ─── NEW: INJECT COLORS INTO THE SPAN STYLES ─── -->
               <div class="match-percent-bar" aria-label="Prediction percentage split">
                 <span class="match-bar-home" style="width:${homePct}%; background-color:${homeColor};"></span>
                 <span class="match-bar-draw" style="width:${drawPct}%"></span>
@@ -933,7 +952,6 @@ function renderHome() {
         })
         .join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
-
   // Kept the top summary bar as default colors since it aggregates all matches
   winBar.innerHTML = `
     <div class="win-meter-track" aria-hidden="true">
