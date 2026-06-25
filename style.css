@@ -59,11 +59,9 @@ select {
   min-height: 100dvh;
   background:
     linear-gradient(180deg, rgba(6, 8, 15, 0.96) 0%, rgba(6, 8, 15, 0.98) 100%),
-    repeating-linear-gradient(
-      135deg,
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.03) 0 1px,
-      transparent 1px 11px
-    );
+      transparent 1px 11px);
   padding: 20px;
 }
 
@@ -73,16 +71,12 @@ select {
 
 .login-card {
   background:
-    linear-gradient(
-      145deg,
+    linear-gradient(145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(6, 36, 24, 0.78) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px
-    );
+      transparent 1px 9px);
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   padding: 34px;
@@ -258,16 +252,14 @@ select {
 ════════════════════════════════════════ */
 
 header {
-  background: linear-gradient(
-    180deg,
-    rgba(6, 8, 15, 0.95) 0%,
-    rgba(6, 8, 15, 0.85) 100%
-  );
+  background: linear-gradient(180deg,
+      rgba(6, 8, 15, 0.95) 0%,
+      rgba(6, 8, 15, 0.85) 100%);
   border-bottom: 2px solid var(--wc-blue);
   padding: 12px 30px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 50px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -510,6 +502,7 @@ header {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 0.6;
@@ -521,6 +514,7 @@ header {
 }
 
 @keyframes blink {
+
   0%,
   100% {
     opacity: 1;
@@ -641,16 +635,12 @@ main {
 
 .match-card {
   background:
-    linear-gradient(
-      145deg,
+    linear-gradient(145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(6, 36, 24, 0.78) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px
-    );
+      transparent 1px 9px);
   border: 2px solid rgba(57, 172, 46, 0.925);
   border-radius: 8px;
   overflow: hidden;
@@ -1056,6 +1046,7 @@ main {
 }
 
 @keyframes exact-glow {
+
   0%,
   100% {
     box-shadow:
@@ -1190,11 +1181,9 @@ main {
 }
 
 .group-table h3 {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 209, 94, 0.18) 0%,
-    rgba(0, 179, 89, 0.08) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(0, 209, 94, 0.18) 0%,
+      rgba(0, 179, 89, 0.08) 100%);
   padding: 10px 14px;
   font-family: var(--font-ggo-display);
   font-size: 13px;
@@ -1491,16 +1480,12 @@ main {
   bottom: 0;
   width: min(480px, 100vw);
   background:
-    linear-gradient(
-      160deg,
+    linear-gradient(160deg,
       rgba(6, 10, 18, 0.99) 0%,
-      rgba(4, 22, 14, 0.97) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(4, 22, 14, 0.97) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.03) 0 1px,
-      transparent 1px 10px
-    );
+      transparent 1px 10px);
   border-left: 2px solid rgba(0, 209, 94, 0.28);
   box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5);
   transform: translateX(100%);
@@ -1891,16 +1876,12 @@ main {
 
 .result-card {
   background:
-    linear-gradient(
-      145deg,
+    linear-gradient(145deg,
       rgba(12, 17, 24, 0.98) 0%,
-      rgba(6, 36, 24, 0.78) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(6, 36, 24, 0.78) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 9px
-    );
+      transparent 1px 9px);
   border: 2px solid rgba(0, 209, 94, 0.32);
   border-radius: 8px;
   padding: 20px;
@@ -2046,11 +2027,9 @@ main {
 
 .champion-section {
   text-align: center;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 209, 94, 0.1) 0%,
-    rgba(0, 179, 89, 0.05) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(0, 209, 94, 0.1) 0%,
+      rgba(0, 179, 89, 0.05) 100%);
   border: 2px solid var(--wc-red);
   border-radius: 8px;
   padding: 30px;
@@ -2107,11 +2086,9 @@ main {
 
 .bracket-match {
   position: relative;
-  background: linear-gradient(
-    180deg,
-    rgba(12, 18, 24, 0.98),
-    rgba(7, 33, 22, 0.92)
-  );
+  background: linear-gradient(180deg,
+      rgba(12, 18, 24, 0.98),
+      rgba(7, 33, 22, 0.92));
   border: 2px solid rgba(0, 209, 94, 0.36);
   border-radius: 6px;
   padding: 8px;
@@ -3570,7 +3547,9 @@ main {
   }
 }
 
-@media (hover: none), (pointer: coarse) {
+@media (hover: none),
+(pointer: coarse) {
+
   .match-card.open:hover,
   .result-card:hover,
   .score-rule-card:hover,
@@ -3863,11 +3842,9 @@ main {
   border-radius: 18px;
   border: 1px solid rgba(0, 209, 94, 0.28);
   background:
-    radial-gradient(
-      circle at top right,
+    radial-gradient(circle at top right,
       rgba(0, 209, 94, 0.16),
-      transparent 42%
-    ),
+      transparent 42%),
     linear-gradient(135deg, rgba(10, 17, 31, 0.92), rgba(8, 27, 44, 0.88));
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
 }
@@ -4061,16 +4038,12 @@ main {
   bottom: 0;
   width: 280px;
   background:
-    linear-gradient(
-      160deg,
+    linear-gradient(160deg,
       rgba(6, 10, 18, 0.99) 0%,
-      rgba(4, 22, 14, 0.97) 100%
-    ),
-    repeating-linear-gradient(
-      135deg,
+      rgba(4, 22, 14, 0.97) 100%),
+    repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.03) 0 1px,
-      transparent 1px 10px
-    );
+      transparent 1px 10px);
   border-right: 2px solid rgba(0, 209, 94, 0.28);
   box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
   transform: translateX(-100%);
@@ -4304,11 +4277,11 @@ main {
   }
 
   .desktop-nav {
-  display: none !important;
+    display: none !important;
   }
 
   .desktop-sync-only {
-  display: none !important;
+    display: none !important;
   }
 
   header {
@@ -4319,7 +4292,7 @@ main {
   .header-top {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 30px;
     width: 100%;
     flex-wrap: nowrap;
   }
@@ -4404,7 +4377,7 @@ main {
   min-height: 86px;
 }
 
-#bracket .bracket-match + .bracket-match {
+#bracket .bracket-match+.bracket-match {
   margin-top: 12px;
 }
 
@@ -4501,267 +4474,570 @@ main {
   display: block;
 }
 
+
+/* ============================================================
+   HOME PAGE – Complete Redesign
+   ============================================================ */
+
+/* ── Hero Section ─────────────────────────────────────────────── */
+
 .home-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
-  gap: 18px;
-  align-items: stretch;
-  margin-bottom: 18px;
-}
-
-.home-hero-copy,
-.home-hero-stats,
-.home-panel {
-  background: linear-gradient(180deg, rgba(10, 16, 24, 0.92), rgba(8, 12, 18, 0.96));
-  border: 1px solid rgba(0, 209, 94, 0.14);
-  border-radius: 18px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+  margin-bottom: 32px;
 }
 
 .home-hero-copy {
-  padding: 28px;
+  background: linear-gradient(145deg, rgba(10, 18, 28, 0.95), rgba(6, 36, 24, 0.85));
+  border: 1px solid rgba(0, 209, 94, 0.2);
+  border-radius: 20px;
+  padding: 32px 36px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
 }
 
 .home-hero-copy::after {
-  content: "";
+  content: "⚽";
   position: absolute;
-  inset: auto -40px -60px auto;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 209, 94, 0.22), transparent 70%);
+  right: -20px;
+  bottom: -30px;
+  font-size: 140px;
+  opacity: 0.06;
   pointer-events: none;
+  transform: rotate(12deg);
 }
 
-.home-kicker,
-.panel-kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
+.home-kicker {
   font-size: 11px;
-  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--wc-blue);
+  margin-bottom: 12px;
 }
 
 .home-hero-copy h2 {
-  margin-top: 10px;
   font-family: var(--font-ggo-display);
-  font-size: clamp(38px, 4vw, 62px);
-  line-height: 0.94;
+  font-size: clamp(32px, 4.2vw, 56px);
+  font-weight: 900;
+  line-height: 1.0;
   text-transform: uppercase;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+}
+
+.home-hero-copy h2 .title-accent {
+  color: var(--wc-red);
 }
 
 .home-hero-copy p {
-  margin-top: 14px;
-  max-width: 58ch;
-  color: rgba(245, 245, 245, 0.82);
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.75);
+  max-width: 48ch;
+  line-height: 1.6;
+  margin: 0;
 }
 
 .home-hero-stats {
-  padding: 18px;
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
+  align-content: start;
 }
 
 .hero-metric {
-  padding: 16px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 18px 16px;
+  text-align: center;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.hero-metric-label,
-.home-match-meta,
-.home-pick-meta,
-.home-suggestion-card p {
-  color: var(--muted);
-  font-size: 13px;
+.hero-metric:hover {
+  background: rgba(0, 209, 94, 0.06);
+  transform: translateY(-2px);
 }
+
+.hero-metric-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.hero-metric strong {
+  display: block;
+  font-family: var(--font-ggo-display);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--light);
+  line-height: 1.1;
+}
+
+.hero-metric small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Main Grid ─────────────────────────────────────────────────── */
 
 .home-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 24px;
+}
+
+.home-grid-single {
+  grid-template-columns: 1fr;
 }
 
 .home-panel {
-  padding: 18px;
+  background: linear-gradient(145deg, rgba(10, 18, 28, 0.92), rgba(6, 36, 24, 0.80));
+  border: 1px solid rgba(0, 209, 94, 0.15);
+  border-radius: 20px;
+  padding: 24px 28px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.2s ease;
 }
 
-.home-panel-wide {
-  grid-column: span 2;
+.home-panel:hover {
+  border-color: rgba(0, 209, 94, 0.3);
 }
 
 .panel-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.panel-heading div {
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--wc-blue);
 }
 
 .panel-heading h3 {
-  margin-top: 4px;
   font-family: var(--font-ggo-display);
-  font-size: 30px;
+  font-size: 26px;
+  font-weight: 800;
+  margin: 2px 0 0 0;
   text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
 }
 
 .panel-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
+  padding: 8px 16px;
+  border-radius: 40px;
   background: rgba(0, 209, 94, 0.12);
-  border: 1px solid rgba(0, 209, 94, 0.18);
-  color: #dbffe8;
-  font-size: 12px;
+  border: 1px solid rgba(0, 209, 94, 0.2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wc-blue);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.home-match-list,
-.home-common-picks,
-.home-suggestions {
-  display: grid;
-  gap: 12px;
-}
+/* ── Today's Match Cards (Large) ─────────────────────────────── */
 
-.home-match-card,
-.home-pick-card,
-.home-suggestion-card {
-  padding: 14px;
-  border-radius: 14px;
+.home-match-card-large {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.home-match-head,
-.home-match-foot {
+.home-match-card-large:last-child {
+  margin-bottom: 0;
+}
+
+.home-match-card-large:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(0, 209, 94, 0.2);
+}
+
+.home-match-card-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 12px;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
-.home-match-teams,
-.home-pick-score,
-.home-suggestion-card strong {
-  font-weight: 700;
-  color: var(--light);
+.home-match-kickoff {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.home-match-bar,
-.win-meter-track {
+.home-match-card-head h4 {
+  font-family: var(--font-ggo-display);
+  font-size: 20px;
+  font-weight: 800;
+  margin: 2px 0 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.home-match-card-head h4 span {
+  color: var(--muted);
+  font-weight: 400;
+  margin: 0 6px;
+}
+
+.pick-count {
   display: flex;
-  overflow: hidden;
-  border-radius: 999px;
-  height: 12px;
-  margin: 14px 0 10px;
-  background: rgba(255, 255, 255, 0.08);
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0, 209, 94, 0.08);
+  border-radius: 30px;
+  padding: 4px 14px;
+  border: 1px solid rgba(0, 209, 94, 0.12);
+  flex-shrink: 0;
 }
 
-.home-match-bar span,
-.win-meter-track span {
-  display: block;
+.pick-count strong {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--light);
+  line-height: 1.1;
+}
+
+.pick-count span {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* ── Prediction Percentage Bar ────────────────────────────────── */
+
+.match-percent-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 16px 0 8px 0;
+}
+
+.match-bar-home {
+  background: linear-gradient(90deg, #2dff8f, #00b359);
   height: 100%;
 }
 
-.home-bar-home,
+.match-bar-draw {
+  background: linear-gradient(90deg, #f5c46a, #f59e0b);
+  height: 100%;
+}
+
+.match-bar-away {
+  background: linear-gradient(90deg, #67c7ff, #2563eb);
+  height: 100%;
+}
+
+.match-percent-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.match-percent-labels strong {
+  color: var(--light);
+  font-weight: 700;
+}
+
+/* ── Popular Predictions ──────────────────────────────────────── */
+
+.popular-score-section {
+  margin-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 14px;
+}
+
+.popular-score-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.popular-score {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  margin-bottom: 4px;
+  transition: background 0.15s ease;
+}
+
+.popular-score:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.popular-score-top {
+  background: rgba(255, 215, 0, 0.06);
+  border: 1px solid rgba(255, 215, 0, 0.12);
+}
+
+.popular-score-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-badge {
+  font-family: var(--font-ggo-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--light);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  line-height: 1.4;
+}
+
+.popular-score-main strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.popular-score-names {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.popular-score-names span {
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* ── Overall Win Meter ────────────────────────────────────────── */
+
+.win-meter {
+  margin-top: 4px;
+}
+
+.win-meter-track {
+  display: flex;
+  height: 16px;
+  border-radius: 30px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 12px;
+}
+
 .win-home {
   background: linear-gradient(90deg, #2dff8f, #00b359);
+  height: 100%;
 }
 
-.home-bar-draw,
 .win-draw {
   background: linear-gradient(90deg, #f5c46a, #f59e0b);
+  height: 100%;
 }
 
-.home-bar-away,
 .win-away {
   background: linear-gradient(90deg, #67c7ff, #2563eb);
+  height: 100%;
 }
 
-.win-meter-legend,
-.home-pick-people {
+.win-meter-legend {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.home-pick-people span {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 12px;
-}
-
-@media (max-width: 900px) {
-  .home-hero,
-  .home-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .home-panel-wide {
-    grid-column: auto;
-  }
-}
-
-.home-table-wrap {
-  overflow-x: auto;
-}
-
-.home-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 720px;
-}
-
-.home-table thead th {
-  text-align: left;
-  padding: 12px 14px;
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.home-table tbody td {
-  padding: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  vertical-align: top;
-}
-
-.home-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.home-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.025);
-}
-
-.home-row-split {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  color: var(--muted);
+  justify-content: space-around;
   font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
 }
 
-.table-empty {
-  text-align: center;
-  color: var(--muted);
-  padding: 28px 14px !important;
+.win-meter-legend strong {
+  color: var(--light);
+  font-weight: 700;
 }
+
+/* ── Empty States ─────────────────────────────────────────────── */
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+.empty-state .empty-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.empty-state.compact {
+  padding: 20px 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
-  .home-table {
-    min-width: 560px;
+  .home-hero {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .home-hero-copy {
+    padding: 24px 20px;
+  }
+
+  .home-hero-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .panel-heading h3 {
+    font-size: 22px;
+  }
+
+  .home-match-card-head h4 {
+    font-size: 18px;
+  }
+
+  .home-panel {
+    padding: 18px 16px;
   }
 }
 
+@media (max-width: 600px) {
+  .home-hero-copy h2 {
+    font-size: 28px;
+  }
 
+  .home-hero-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
 
+  .hero-metric {
+    padding: 14px 10px;
+  }
 
+  .hero-metric strong {
+    font-size: 24px;
+  }
+
+  .panel-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel-chip {
+    align-self: flex-start;
+  }
+
+  .home-match-card-head {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .pick-count {
+    align-self: flex-start;
+    flex-direction: row;
+    gap: 6px;
+    padding: 2px 12px;
+  }
+
+  .pick-count strong {
+    font-size: 16px;
+  }
+
+  .popular-score {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .popular-score-names {
+    margin-top: 2px;
+  }
+
+  .win-meter-legend {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .home-match-card-large {
+    padding: 14px 16px;
+  }
+}
+
+/* ── Animations ────────────────────────────────────────────────── */
+
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-match-card-large {
+  animation: fadeUp 0.4s ease forwards;
+}
+
+.home-match-card-large:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.home-match-card-large:nth-child(3) {
+  animation-delay: 0.10s;
+}
+
+.home-match-card-large:nth-child(4) {
+  animation-delay: 0.15s;
+}
+
+.home-match-card-large:nth-child(5) {
+  animation-delay: 0.20s;
+}
