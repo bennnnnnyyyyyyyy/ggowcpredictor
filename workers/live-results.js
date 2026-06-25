@@ -290,12 +290,13 @@ const STAGE_MULTIPLIERS = {
 };
 
 function scoreMatch(p1, p2, a1, a2, stage = "group") {
-  const multiplier = STAGE_MULTIPLIERS[String(stage || "group").toLowerCase()] ?? 1;
+  const multiplier =
+    STAGE_MULTIPLIERS[String(stage || "group").toLowerCase()] ?? 1;
   if (p1 === a1 && p2 === a2) return 15 * multiplier;
   const predOutcome = Math.sign(p1 - p2);
   const actualOutcome = Math.sign(a1 - a2);
   if (predOutcome === actualOutcome) {
-    const diffGap = Math.abs((p1 - p2) - (a1 - a2));
+    const diffGap = Math.abs(p1 - p2 - (a1 - a2));
     return (diffGap <= 1 ? 8 : 5) * multiplier;
   }
   return 0;
@@ -364,7 +365,8 @@ function buildLeaderboard(
     );
     userMap[username].totalPoints += points;
     userMap[username].scored++;
-    if (pred1 === result.score1 && pred2 === result.score2) userMap[username].exactScores++;
+    if (pred1 === result.score1 && pred2 === result.score2)
+      userMap[username].exactScores++;
     if (points > 0) userMap[username].correctOutcomes++;
   }
 
@@ -824,7 +826,13 @@ async function handleProfileGet(env, username) {
       }
 
       if (hasPred && actualHome !== null && actualAway !== null) {
-        points = scoreMatch(pred1, pred2, actualHome, actualAway, fixture.stage);
+        points = scoreMatch(
+          pred1,
+          pred2,
+          actualHome,
+          actualAway,
+          fixture.stage,
+        );
       }
 
       return {
@@ -1098,7 +1106,17 @@ export default {
         });
         return corsJson({ success: true, username });
       }
-
+      // Serve frontend assets
+      if (
+        !path.startsWith("/sync") &&
+        !path.startsWith("/admin") &&
+        !path.startsWith("/fixtures") &&
+        !path.startsWith("/leaderboard") &&
+        !path.startsWith("/rivalry") &&
+        !path.startsWith("/profile")
+      ) {
+        return env.ASSETS.fetch(request);
+      }
       // Root — API info
       return corsJson({
         ok: true,
