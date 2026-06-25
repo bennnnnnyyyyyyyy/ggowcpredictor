@@ -8,7 +8,7 @@
   "main": "workers/live-results.js",
 
   "assets": {
-    "directory": ".",
+    "directory": "webpage/",
     "binding": "ASSETS",
     "exclude": [
     "workers/**",
