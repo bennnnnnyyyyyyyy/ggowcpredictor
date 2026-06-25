@@ -79,7 +79,16 @@ let db = null;
 let activeMatchFilter = "all";
 let activeResultFilter = "all";
 let savingMatchId = null; // or new Set() if multiple saves are allowed
-
+const THIRD_PLACE_SLOT_ORDER = [
+  "3A/B/C/D/F",   // best
+  "3C/D/F/G/H",   // 2nd
+  "3C/E/F/H/I",   // 3rd
+  "3E/H/I/J/K",   // 4th
+  "3B/E/F/I/J",   // 5th
+  "3A/E/H/I/J",   // 6th
+  "3E/F/G/I/J",   // 7th
+  "3D/E/I/J/L"    // 8th
+];
 const SESSION = {
   token: localStorage.getItem("ggo_wc_token") || null,
   username: localStorage.getItem("ggo_wc_user") || null,
@@ -204,10 +213,28 @@ const STADIUMS_BY_GROUND = {
 };
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
+
+  const hasSession = SESSION.token && SESSION.username;
+  if (hasSession) {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+
+    const initials = getInitials(SESSION.displayName || SESSION.username || "?");
+    const avatarEl = document.getElementById("user-avatar");
+    if (avatarEl) avatarEl.textContent = initials;
+    const nameEl = document.getElementById("user-display-name");
+    if (nameEl) nameEl.textContent = SESSION.displayName || SESSION.username;
+
+    const profileLink = document.getElementById("user-profile-link");
+    if (profileLink && SESSION.username) {
+      profileLink.href = `profile.html?user=${encodeURIComponent(SESSION.username)}`;
+    }
+  }
+
   await loadTeamMeta();
   await hydrateLoginUsers();
 
-  if (SESSION.token && SESSION.username) {
+  if (hasSession) {
     showApp();
   }
 
@@ -880,6 +907,7 @@ async function requestSync() {
   await runStep("All predictions sync", () => loadAllPredictions());
   await runStep("Prediction sync", () => loadPredictions());
   await runStep("Account request sync", () => loadAccountRequests());
+
 
   const safeRender = async (label, fn) => {
     try {
@@ -2157,8 +2185,15 @@ function renderBracket() {
   const bracket = document.getElementById("bracket");
   if (!bracket) return;
 
+  const groups = STATE.groupStandings;
+  if (!groups || !Object.keys(groups).length) {
+    bracket.innerHTML = emptyState("Group standings not loaded yet.", "Please sync again.");
+    return;
+  }
+
+  // Get all knockout fixtures, sorted by matchId (numerical)
   const knockout = STATE.fixtures
-    .filter((f) => f.stage !== "group")
+    .filter(f => f.stage !== "group" && f.stage !== "group_stage")
     .sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
   if (!knockout.length) {
@@ -2166,133 +2201,152 @@ function renderBracket() {
     return;
   }
 
-  // ─── Correct visual order for each round ───
-  const visualOrder = {
-    "Round of 32": {
-      top: ["74", "77", "73", "75", "83", "84", "81", "82"],
-      bottom: ["76", "78", "79", "80", "86", "88", "85", "87"],
-    },
-    "Round of 16": {
-      top: ["89", "90", "93", "94"],
-      bottom: ["91", "92", "95", "96"],
-    },
-    "Quarter-final": {
-      top: ["97", "98"],
-      bottom: ["99", "100"],
-    },
-    "Semi-final": {
-      top: ["101"],
-      bottom: ["102"],
-    },
+  // Build map of matchId → fixture
+  const matchMap = {};
+  knockout.forEach(m => { matchMap[m.matchId] = m; });
+
+  // ---- Define the correct visual order for each round (top to bottom) ----
+  // Left side (top half)
+  const leftOrders = {
+    "Round of 32": ["74", "77", "73", "75", "83", "84", "81", "82"],
+    "Round of 16": ["89", "90", "93", "94"],
+    "Quarter-final": ["97", "98"],
+    "Semi-final": ["101"]
   };
-
-  const roundOrder = [
-    "Round of 32",
-    "Round of 16",
-    "Quarter-final",
-    "Semi-final",
-  ];
-
-  // Helper: get matches for a round + side in correct visual order
-  const getOrderedMatches = (round, side) => {
-    const ids = visualOrder[round]?.[side] || [];
-    return ids
-      .map((id) => knockout.find((m) => String(m.matchId) === String(id)))
-      .filter(Boolean);
+  // Right side (bottom half)
+  const rightOrders = {
+    "Round of 32": ["76", "78", "79", "80", "86", "88", "85", "87"],
+    "Round of 16": ["91", "92", "95", "96"],
+    "Quarter-final": ["99", "100"],
+    "Semi-final": ["102"]
   };
+  // Final and 3rd Place
+  const finalOrder = ["104"];   // matchId 104 = Final
+  const thirdOrder = ["103"];   // matchId 103 = 3rd Place
 
-  // Build columns: left side (top halves), center (finals), right side (bottom halves)
-  const leftColumns = roundOrder.map((round) => ({
-    label: round,
-    matches: getOrderedMatches(round, "top"),
-  }));
+  // Helper: get fixtures for a given list of matchIds (filter out undefined)
+  const getMatches = (ids) => ids.map(id => matchMap[id]).filter(Boolean);
 
-  const rightColumns = roundOrder.map((round) => ({
-    label: round,
-    matches: getOrderedMatches(round, "bottom"),
-  }));
+  // Build the bracket HTML
+  let html = `<div class="bracket-scroll-wrapper"><div class="bracket-row">`;
 
-  // Center column: Final + Third Place
-  const finalMatches = knockout.filter((m) => m.round === "Final");
-  const thirdMatches = knockout.filter(
-    (m) => m.round === "Match for third place",
-  );
-
-  // ─── Build HTML ───
-  let html = `<div class="bracket-scroll-wrapper">`;
-  html += `<div class="bracket-row">`;
-
-  // Left columns
-  leftColumns.forEach((col) => {
-    if (!col.matches.length) return;
+  // ---- LEFT COLUMNS ----
+  const leftRoundNames = ["Round of 32", "Round of 16", "Quarter-final", "Semi-final"];
+  leftRoundNames.forEach(roundName => {
+    const matches = getMatches(leftOrders[roundName] || []);
+    if (!matches.length) return;
     html += `<div class="bracket-col">`;
-    html += `<div class="bracket-round-label">${escapeHtml(col.label)}</div>`;
-    col.matches.forEach((m) => (html += renderBracketMatch(m)));
+    html += `<div class="bracket-round-label">${escapeHtml(roundName)}</div>`;
+    matches.forEach(m => html += renderBracketMatch(m));
     html += `</div>`;
   });
 
-  // Center column
+  // ---- CENTER COLUMN ----
   html += `<div class="bracket-col bracket-col-center">`;
-  if (thirdMatches.length) {
-    html += `<div class="bracket-final-block">`;
-    html += `<div class="bracket-round-label">Third Place</div>`;
-    thirdMatches.forEach((m) => (html += renderBracketMatch(m)));
-    html += `</div>`;
-  }
+  // Final
+  const finalMatches = getMatches(finalOrder);
   if (finalMatches.length) {
     html += `<div class="bracket-final-block">`;
     html += `<div class="bracket-round-label">Final</div>`;
-    finalMatches.forEach((m) => (html += renderBracketMatch(m)));
+    finalMatches.forEach(m => html += renderBracketMatch(m));
     html += `</div>`;
   }
-  if (!thirdMatches.length && !finalMatches.length) {
+  // 3rd Place
+  const thirdMatches = getMatches(thirdOrder);
+  if (thirdMatches.length) {
+    html += `<div class="bracket-final-block">`;
+    html += `<div class="bracket-round-label">3rd Place</div>`;
+    thirdMatches.forEach(m => html += renderBracketMatch(m));
+    html += `</div>`;
+  }
+  if (!finalMatches.length && !thirdMatches.length) {
     html += `<div class="bracket-final-placeholder">Champion TBD</div>`;
   }
   html += `</div>`;
 
-  // Right columns (bottom halves)
-  rightColumns.forEach((col) => {
-    if (!col.matches.length) return;
+  // ---- RIGHT COLUMNS (reversed order: Semi-final → Round of 32) ----
+  const rightRoundNames = ["Semi-final", "Quarter-final", "Round of 16", "Round of 32"];
+  rightRoundNames.forEach(roundName => {
+    const matches = getMatches(rightOrders[roundName] || []);
+    if (!matches.length) return;
     html += `<div class="bracket-col">`;
-    html += `<div class="bracket-round-label">${escapeHtml(col.label)}</div>`;
-    col.matches.forEach((m) => (html += renderBracketMatch(m)));
+    html += `<div class="bracket-round-label">${escapeHtml(roundName)}</div>`;
+    matches.forEach(m => html += renderBracketMatch(m));
     html += `</div>`;
   });
 
-  html += `</div>`; // bracket-row
-  html += `</div>`; // bracket-scroll-wrapper
-
+  html += `</div></div>`;
   bracket.innerHTML = html;
+  renderBracketTabs();
 }
 
+function renderBracketTabs() {
+  const tabsEl = document.getElementById("bracket-tabs");
+  const row = document.querySelector("#bracket .bracket-row");
+  if (!tabsEl || !row) return;
+
+  const cols = Array.from(row.querySelectorAll(".bracket-col"));
+  const labels = cols.map((col, i) => {
+    const labelEl = col.querySelector(".bracket-round-label");
+    return labelEl ? labelEl.textContent.trim() : `Round ${i + 1}`;
+  });
+
+  // De-dupe consecutive duplicate round names (left R32 + right R32 etc.)
+  const uniqueLabels = [...new Set(labels)];
+
+  tabsEl.innerHTML = uniqueLabels
+    .map((label, i) => `<button class="bracket-tab${i === 0 ? " active" : ""}" data-round="${escapeHtml(label)}">${escapeHtml(label)}</button>`)
+    .join("");
+
+  row.setAttribute("data-tabbed", "true");
+  cols.forEach((col, i) => {
+    const labelEl = col.querySelector(".bracket-round-label");
+    const label = labelEl ? labelEl.textContent.trim() : "";
+    col.dataset.round = label;
+    col.dataset.active = label === uniqueLabels[0] ? "true" : "false";
+  });
+
+  tabsEl.querySelectorAll(".bracket-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const round = btn.dataset.round;
+      tabsEl.querySelectorAll(".bracket-tab").forEach(b => b.classList.toggle("active", b === btn));
+      cols.forEach(col => {
+        col.dataset.active = col.dataset.round === round ? "true" : "false";
+      });
+    });
+  });
+}
 function renderBracketMatch(match) {
   const result = STATE.results[match.matchId];
-  const score =
-    result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
+  const score = result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
 
   const seed1 = String(match.team1 || "");
   const seed2 = String(match.team2 || "");
   const t1 = resolveSlot(seed1);
   const t2 = resolveSlot(seed2);
-  const tbd1 = t1 === seed1;
-  const tbd2 = t2 === seed2;
+  const tbd1 = t1 === seed1 || !t1;
+  const tbd2 = t2 === seed2 || !t2;
   const display1 = tbd1 ? "TBD" : t1;
   const display2 = tbd2 ? "TBD" : t2;
+
+  // Get 3‑letter code
+  const code1 = !tbd1 ? getTeamCode(display1) : "TBD";
+  const code2 = !tbd2 ? getTeamCode(display2) : "TBD";
+
+  // Flag (alt="" so no duplicate text)
+  const flag1 = !tbd1 ? getFlagImg(display1) : "";
+  const flag2 = !tbd2 ? getFlagImg(display2) : "";
 
   return `
     <div class="bracket-match">
       <div class="bracket-seed">
-        <span class="team-code">${escapeHtml(getTeamCode(seed1))}</span>
-        <span class="${tbd1 ? "slot-tbd" : "slot-resolved"}">
-          ${tbd1 ? "TBD" : getFlagImg(display1) + " " + escapeHtml(display1)}
-        </span>
+        <span class="team-code">${escapeHtml(code1)}</span>
+        <span class="team-flag">${flag1}</span>
       </div>
       <div class="bracket-score">${escapeHtml(score)}</div>
       <div class="bracket-seed">
-        <span class="team-code">${escapeHtml(getTeamCode(seed2))}</span>
-        <span class="${tbd2 ? "slot-tbd" : "slot-resolved"}">
-          ${tbd2 ? "TBD" : getFlagImg(display2) + " " + escapeHtml(display2)}
-        </span>
+        <span class="team-code">${escapeHtml(code2)}</span>
+        <span class="team-flag">${flag2}</span>
       </div>
     </div>
   `;
@@ -2309,22 +2363,23 @@ function renderBracketMatch(match) {
  */
 function resolveSlot(code) {
   if (!code || typeof code !== "string") return code;
+  const trimmed = code.trim();
+  if (!trimmed || trimmed === "TBD") return trimmed;
 
-  // Winner/loser-of-prior-match slot: "W12" or "L12"
-  const knockoutRef = code.match(/^([WL])(\d+)$/);
+  // --- Winner/loser of a prior match: W12, L12 ---
+  const knockoutRef = trimmed.match(/^([WL])(\d+)$/);
   if (knockoutRef) {
     const [, side, refMatchId] = knockoutRef;
-    const refFixture = STATE.fixtures.find((f) => f.matchId === refMatchId);
+    const refFixture = STATE.fixtures.find(f => String(f.matchId) === refMatchId);
     const refResult = STATE.results[refMatchId];
-    if (!refFixture || !refResult || !isFinalResult(refResult)) return code;
+    if (!refFixture || !refResult || !isFinalResult(refResult)) return trimmed;
     const { score1, score2 } = refResult;
     let winnerIsTeam1;
     if (score1 > score2) winnerIsTeam1 = true;
     else if (score2 > score1) winnerIsTeam1 = false;
     else if (refResult.penalty_winner === "team1") winnerIsTeam1 = true;
     else if (refResult.penalty_winner === "team2") winnerIsTeam1 = false;
-    else return code;
-
+    else return trimmed;
     const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
     const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
     const resolvedWinner = resolveSlot(winnerTeam);
@@ -2332,44 +2387,84 @@ function resolveSlot(code) {
     return side === "W" ? resolvedWinner : resolvedLoser;
   }
 
-  const groups = STATE.groupStandings;
-  if (!groups || !Object.keys(groups).length) return code;
-
-  // Simple slot: "1A" or "2B" → winner/runner‑up of that group
-  const simple = code.match(/^([12])([A-L])$/);
-  if (simple) {
-    const pos = Number(simple[1]) - 1; // 0 = winner, 1 = runner‑up
-    const groupKey = simple[2]; // "A", not "Group A"
-    const team = groups[groupKey]?.[pos];
-    return team?.team_name || code;
+  // --- Simple group slot: 1A, 2B ---
+  const groupMatch = trimmed.match(/^([12])([A-L])$/);
+  if (groupMatch) {
+    const pos = Number(groupMatch[1]) - 1;
+    const groupKey = groupMatch[2];
+    const groups = STATE.groupStandings || {};
+    const groupData = groups[groupKey] || groups[`Group ${groupKey}`];
+    if (!groupData || !groupData[pos]) return trimmed;
+    return groupData[pos].team_name || trimmed;
   }
 
-  // 3rd‑place slot: "3BC" or "3B/C" → best 3rd from those groups
-  const thirds = code.match(/^3([A-L\/]+)$/);
-  if (thirds) {
-    let letters = thirds[1].split("/").filter(Boolean);
-    if (letters.length === 1 && !thirds[1].includes("/")) {
+  // --- Third‑place slot: "3A/B/C/D/F", "3B/E/F/I/J", etc. ---
+  // First check if we have a global ranking computed
+  if (!STATE.thirdPlaceRanking) {
+    // Compute it once and cache
+    STATE.thirdPlaceRanking = computeThirdPlaceRanking();
+  }
+
+  // Try to match this slot to one of the predefined slots
+  const slotIndex = THIRD_PLACE_SLOT_ORDER.indexOf(trimmed);
+  if (slotIndex !== -1 && slotIndex < STATE.thirdPlaceRanking.length) {
+    // The ranking is already sorted, so the slot index gives us the team
+    return STATE.thirdPlaceRanking[slotIndex].team_name;
+  }
+
+  // Fallback: if the slot is not in our list (shouldn't happen), use the old logic
+  const clean = trimmed.replace(/^3RD\s*/i, "").replace(/\s/g, "");
+  const thirdMatch = clean.match(/^3([A-L\/]+)$/i);
+  if (thirdMatch) {
+    let letters = thirdMatch[1].split("/").filter(Boolean);
+    if (letters.length === 1 && !thirdMatch[1].includes("/")) {
       letters = letters[0].split("");
     }
-    const candidates = letters
-      .map((l) => {
-        const groupTeams = groups[l];
-        if (!groupTeams) return null;
-        return groupTeams.find((team) => team.position === 3) || null;
-      })
-      .filter(Boolean)
-      .sort(
-        (a, b) =>
-          b.points - a.points ||
-          b.goal_difference - a.goal_difference ||
-          b.goals_for - a.goals_for,
-      );
-    return candidates[0]?.team_name || code;
+    if (!letters.length) return trimmed;
+    const candidates = [];
+    letters.forEach(l => {
+      const groupData = STATE.groupStandings[l] || STATE.groupStandings[`Group ${l}`];
+      if (groupData) {
+        const third = groupData.find(t => t.position === 3);
+        if (third) candidates.push(third);
+      }
+    });
+    candidates.sort((a, b) =>
+      (b.points || 0) - (a.points || 0) ||
+      (b.goal_difference || 0) - (a.goal_difference || 0) ||
+      (b.goals_for || 0) - (a.goals_for || 0)
+    );
+    return candidates.length ? candidates[0].team_name : trimmed;
   }
 
-  return code;
+  return trimmed;
 }
+function computeThirdPlaceRanking() {
+  const groups = STATE.groupStandings || {};
+  const thirdPlaceTeams = [];
 
+  for (const [groupName, standings] of Object.entries(groups)) {
+    const third = standings.find(t => t.position === 3);
+    if (third) {
+      thirdPlaceTeams.push({
+        group: groupName,
+        team_name: third.team_name,
+        points: third.points || 0,
+        goal_difference: third.goal_difference || 0,
+        goals_for: third.goals_for || 0,
+      });
+    }
+  }
+
+  // Sort by points desc, GD desc, GF desc
+  thirdPlaceTeams.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference;
+    return b.goals_for - a.goals_for;
+  });
+
+  return thirdPlaceTeams;
+}
 function renderAdmin() {
   const container = document.getElementById("admin-content");
   if (!container || !SESSION.isAdmin) return;
@@ -2800,7 +2895,7 @@ const TEAM_FLAG_CODES = {
 function getFlagImg(teamName) {
   const code = TEAM_FLAG_CODES[String(teamName).toLowerCase().trim()];
   if (!code)
-    return `<span class="team-code">${escapeHtml(getTeamCode(teamName))}</span>`;
+    return "";
   return `<img class="inline-flag-img" src="https://flagcdn.com/w80/${code}.png" alt="${escapeHtml(teamName)}" width="40" height="27">`;
 }
 async function loadTeamMeta() {
@@ -2933,6 +3028,7 @@ async function fetchGameDataApi(endpoints) {
 }
 
 async function loadGroupStandings() {
+  STATE.thirdPlaceRanking = null; // clear cache
   STATE.groupStandings = normalizeGroupStandingsPayload(STATE.groupStandings);
   if (Object.keys(STATE.groupStandings).length) return;
 
@@ -3276,8 +3372,12 @@ function normalizeText(value) {
 }
 
 function getTeamCode(teamName) {
+  if (!teamName || teamName === "TBD") return "TBD";
   const key = normalizeTeamKey(teamName);
-  return STATE.teams[key] || shortTeamCode(teamName);
+  const code = STATE.teams[key];
+  if (code) return code;
+  // Fallback: short code from name
+  return shortTeamCode(teamName);
 }
 
 function shortTeamCode(teamName) {
