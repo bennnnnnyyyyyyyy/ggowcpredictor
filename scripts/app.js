@@ -677,16 +677,28 @@ function handleLogout() {
 }
 
 function showView(id, btn) {
-  document.querySelectorAll(".view").forEach((view) => {
-    view.classList.remove("active");
-  });
+  const currentView = document.querySelector(".view.active");
+  const nextView = document.getElementById(`view-${id}`);
+
+  if (!nextView || currentView === nextView) return;
+
   document.querySelectorAll(".nav-btn").forEach((navBtn) => {
     navBtn.classList.remove("active");
   });
 
-  const view = document.getElementById(`view-${id}`);
-  if (view) view.classList.add("active");
   if (btn) btn.classList.add("active");
+
+  if (currentView) {
+    currentView.classList.remove("active");
+  }
+
+  nextView.classList.add("active");
+  nextView.classList.remove("animating-in");
+
+  // Restart animation
+  void nextView.offsetWidth;
+
+  nextView.classList.add("animating-in");
 
   if (id === "home") renderHome();
   if (id === "results") renderResults();
@@ -2276,8 +2288,8 @@ function renderBracket() {
   });
 
   html += `</div></div>`;
+  bracket.className = "vertical-bracket";
   bracket.innerHTML = html;
-  renderBracketTabs();
 }
 
 function renderBracketTabs() {
