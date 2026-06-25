@@ -3199,6 +3199,23 @@ main {
   padding-bottom: 5px;
 }
 
+.scoring-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.score-rule-card {
+  min-height: 135px;
+  display: flex;
+  flex-direction: column;
+}
+
+.score-rule-card p {
+  margin-top: 6px;
+  flex: 1;
+}
+
 .rules-list {
   list-style: none;
   margin-bottom: 20px;
@@ -3327,6 +3344,54 @@ main {
 .score-rule-card.pts-zero strong {
   color: var(--danger);
 }
+
+.scoring-example-box {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(0, 255, 150, .25);
+  border-radius: 12px;
+  background: rgba(0, 255, 150, .04);
+}
+
+.scoring-example-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.scoring-example {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #d7d7d7;
+}
+
+.scoring-example+.scoring-example {
+  margin-top: 8px;
+}
+
+.rules-card {
+  padding: 20px;
+  border: 1px solid rgba(0, 255, 150, .2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .02);
+}
+
+.rules-card h4 {
+  margin: 0 0 12px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.rules-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, .08);
+  margin: 20px 0;
+}
+
+
+
 
 /* Cutoff note under the scoring grid */
 .scoring-cutoff-note {

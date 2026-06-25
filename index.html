@@ -394,64 +394,94 @@
             </div>
           </div>
         </div>
-
-        <!-- Rules & Guidelines -->
+        <!-- Rules & Scoring -->
         <div class="rules-page-section">
-          <div class="rules-page-section-title">Rules &amp; Guidelines</div>
-          <ul class="rules-list rules-list-page">
-            <li>
-              Go to the <strong>Predictions</strong> tab to enter your score
-              predictions for upcoming matches.
-            </li>
-            <li>
-              Matches <strong>lock automatically</strong> as soon as kickoff
-              begins — no late entries.
-            </li>
-            <li>
-              Standings and the leaderboard update automatically as results
-              come in.
-            </li>
-            <li>
-              You can update a prediction any time before the match locks.
-            </li>
-            <li>
-              All times are displayed in
-              <strong>Cairo time (EET/EEST)</strong>.
-            </li>
-          </ul>
-        </div>
+          <div class="rules-page-section-title">Rules & Scoring</div>
 
-        <!-- Scoring System -->
-        <div class="rules-page-section">
-          <div class="rules-page-section-title">Points Allocation</div>
-          <div class="scoring-grid scoring-grid-page">
-            <div class="score-rule-card pts-exact">
-              <span class="pts-val">15 pts</span>
-              <strong>Exact Score</strong>
-              <p>Your prediction matches the final score exactly.</p>
+          <div class="rules-card">
+
+            <h4>Rules & Guidelines</h4>
+
+            <ul class="rules-list rules-list-page">
+              <li>
+                Go to the <strong>Predictions</strong> tab to enter your score
+                predictions for upcoming matches.
+              </li>
+              <li>
+                Matches <strong>lock automatically</strong> as soon as kickoff
+                begins — no late entries.
+              </li>
+              <li>
+                Standings and the leaderboard update automatically as results
+                come in.
+              </li>
+              <li>
+                You can update a prediction any time before the match locks.
+              </li>
+              <li>
+                All times are displayed in
+                <strong>Cairo time (EET/EEST)</strong>.
+              </li>
+            </ul>
+
+            <div class="rules-divider"></div>
+
+            <h4>Points Allocation</h4>
+
+            <div class="scoring-grid scoring-grid-page">
+
+              <div class="score-rule-card pts-exact">
+                <span class="pts-val">15 pts</span>
+                <strong>Exact Score</strong>
+                <p>Your prediction matches the final score exactly.</p>
+              </div>
+
+              <div class="score-rule-card pts-good">
+                <span class="pts-val">8 pts</span>
+                <strong>Correct Result + Goal Difference</strong>
+                <p>
+                  Correct winner or draw, and your predicted goal difference
+                  is within 1 of the actual goal difference.
+                </p>
+              </div>
+
+              <div class="score-rule-card pts-partial">
+                <span class="pts-val">5 pts</span>
+                <strong>Correct Result</strong>
+                <p>
+                  Correct winner or draw, but your predicted goal difference
+                  was more than 1 away.
+                </p>
+              </div>
+
+              <div class="score-rule-card pts-zero">
+                <span class="pts-val">0 pts</span>
+                <strong>Wrong Result</strong>
+                <p>No points awarded.</p>
+              </div>
+
             </div>
-            <div class="score-rule-card pts-good">
-              <span class="pts-val">8 pts</span>
-              <strong>Correct Result + Close Difference</strong>
-              <p>
-                You picked the right winner or draw, and the goal difference
-                is within 1.
-              </p>
-            </div>
-            <div class="score-rule-card pts-partial">
-              <span class="pts-val">5 pts</span>
-              <strong>Correct Result</strong>
-              <p>
-                You picked the right winner or draw, but the goal difference
-                was not close.
-              </p>
-            </div>
-            <div class="score-rule-card pts-zero">
-              <span class="pts-val">0 pts</span>
-              <strong>Wrong Result</strong>
-              <p>You picked the wrong winner or draw. No points awarded.</p>
+
+            <div class="scoring-example-box">
+              <div class="scoring-example-title">
+                Goal Difference Examples
+              </div>
+
+              <div class="scoring-example">
+                <strong>8 pts:</strong>
+                Prediction 2-0 • Actual 4-2
+                → Goal Difference +2 vs +2
+              </div>
+
+              <div class="scoring-example">
+                <strong>5 pts:</strong>
+                Prediction 1-2 • Actual 0-3
+                → Goal Difference -1 vs -3
+              </div>
             </div>
           </div>
+
+
         </div>
       </div>
     </main>
