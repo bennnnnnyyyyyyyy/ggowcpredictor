@@ -270,23 +270,30 @@ header {
 .header-top {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  position: relative;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
-  overflow: hidden;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: auto;
 }
 
 .logo img {
   height: 40px;
   width: auto;
 }
+
+.user-pill {
+  margin-left: auto;
+}
+
 
 .logo-next {
   font-family: var(--font-ggo-display);

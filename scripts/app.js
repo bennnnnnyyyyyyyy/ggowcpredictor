@@ -2130,7 +2130,7 @@ function renderResults() {
             pred.pred2,
             result.score1,
             result.score2,
-            match.stage,
+            fixture.stage,
           )
           : null;
 
