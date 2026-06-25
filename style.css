@@ -3954,6 +3954,40 @@ main {
   padding: 10px 0;
 }
 
+.rules-top-layout {
+  display: grid;
+  grid-template-columns: 1.4fr .8fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.rules-points {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rules-points .score-rule-card {
+  min-height: auto;
+  padding: 12px 14px;
+}
+
+.rules-points .score-rule-card p {
+  display: none;
+}
+
+.rules-points .pts-val {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@media (max-width: 900px) {
+  .rules-top-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 /* On very small screens, allow wrapping */
 @media (max-width: 600px) {
   .bracket-col {
