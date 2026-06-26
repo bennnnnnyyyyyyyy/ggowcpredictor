@@ -2495,6 +2495,27 @@ function renderBracket() {
 
   bracket.className = "vertical-bracket";
   bracket.innerHTML = html;
+
+  const wrapper = bracket.querySelector(".bracket-scroll-wrapper");
+  const layout = bracket.querySelector(".bracket-layout");
+  if (!wrapper || !layout) return;
+
+  const containerWidth =
+    Math.max(
+      bracket.clientWidth,
+      bracket.parentElement?.clientWidth || 0,
+      window.innerWidth || 0,
+    ) - 40;
+  const DESIGN_WIDTH = 1760;
+  const scale = Math.min(1, containerWidth / DESIGN_WIDTH);
+
+  layout.style.transform = `scale(${scale})`;
+  layout.style.transformOrigin = "center top";
+
+  wrapper.style.display = "flex";
+  wrapper.style.justifyContent = "center";
+  wrapper.style.overflow = "hidden";
+  wrapper.scrollLeft = 0;
 }
 function renderBracketTabs() {
   const tabsEl = document.getElementById("bracket-tabs");

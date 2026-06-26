@@ -4131,7 +4131,10 @@ main {
 }
 
 .vertical-bracket .bracket-scroll-wrapper {
-  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 20px 20px 40px;
 }
@@ -4143,6 +4146,7 @@ main {
   gap: 0;
   min-width: 1760px;
   align-items: start;
+  transform-origin: center top;
 }
 
 /* ---------- SIDES ----------
