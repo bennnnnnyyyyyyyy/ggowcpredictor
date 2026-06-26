@@ -2911,21 +2911,10 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2) {
   const actualOutcome = Math.sign(actual1 - actual2);
 
   if (predOutcome === actualOutcome) {
-    let diffGap;
-    if (predOutcome === 0) {
-      // DRAW: measure total goals difference
-      const predTotal = pred1 + pred2;
-      const actualTotal = actual1 + actual2;
-      diffGap = Math.abs(predTotal - actualTotal);
-      // Off by 0 (exact) or 2 (one goal per team) → 8 pts (if not exact)
-      // Off by 4+ → 5 pts
-      return diffGap <= 1 ? 8 : 5;
-    } else {
-      // WIN/LOSS: use goal‑difference gap
-      diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
-      return diffGap <= 1 ? 8 : 5;
-    }
+    const diffGap = Math.abs((pred1 - pred2) - (actual1 - actual2));
+    return diffGap <= 1 ? 8 : 5;
   }
+
   return 0;
 }
 
