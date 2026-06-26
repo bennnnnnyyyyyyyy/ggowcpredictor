@@ -590,8 +590,8 @@ header {
 
 /* ════════════════════════════════════════MAIN CONTENT════════════════════════════════════════ */
 main {
-  max-width: 1200px;
-  margin: 40px auto;
+  max-width: 2150px;
+  margin: 15px auto;
   padding: 0 20px;
 }
 
@@ -4676,8 +4676,8 @@ main {
   padding-top: calc((7.5 * var(--brow)) + 40px);
 }
 
-.bracket-center > .bracket-final > .bracket-round-label,
-.bracket-center > .bracket-third > .bracket-round-label {
+.bracket-center>.bracket-final>.bracket-round-label,
+.bracket-center>.bracket-third>.bracket-round-label {
   width: 220px;
 }
 
@@ -4754,6 +4754,25 @@ main {
     font-size: 8px;
   }
 }
+
+.vertical-bracket.bracket-mobile-tabs .bracket-layout {
+  transform: none !important;
+  min-width: max-content;
+}
+
+.vertical-bracket.bracket-mobile-tabs .bracket-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.vertical-bracket.bracket-mobile-tabs .bracket-round[data-active="false"] {
+  display: none !important;
+}
+
+.vertical-bracket.bracket-mobile-tabs .bracket-round[data-active="true"] {
+  display: flex !important;
+}
+
 /* HOME TAB */
 .home-hero {
   background: linear-gradient(135deg,

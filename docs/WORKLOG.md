@@ -519,3 +519,18 @@ where p.username = 'ben_arthur';
 ### Notes
 
 - The bracket now resolves confirmed participants at render time instead of requiring a separate UI autofill step.
+## 2026-06-26 - Bracket mobile tabs and round visibility fix
+
+### What changed
+
+- Reworked the bracket tab handler so one round group is active at a time on mobile.
+- Switched the mobile bracket wrapper to a scrollable layout instead of a centered scaled board.
+- Kept the default tab order anchored on Round of 32 so the opening knockout round is visible first.
+
+### Verification
+
+- Ran `node --check webpage/scripts/app.js`.
+
+### Notes
+
+- This is meant to make the round tabs behave like a mobile view switcher rather than a clipped static tree.

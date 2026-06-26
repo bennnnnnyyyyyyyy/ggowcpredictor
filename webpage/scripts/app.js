@@ -2496,11 +2496,13 @@ function renderBracket() {
   bracket.className = "vertical-bracket";
   bracket.innerHTML = html;
   renderBracketTabs();
+  syncBracketLayoutMode();
 
   const wrapper = bracket.querySelector(".bracket-scroll-wrapper");
   const layout = bracket.querySelector(".bracket-layout");
   if (!wrapper || !layout) return;
 
+  const isMobileTabs = window.innerWidth < 1000;
   const containerWidth =
     Math.max(
       bracket.clientWidth,
@@ -2510,12 +2512,14 @@ function renderBracket() {
   const DESIGN_WIDTH = 1640;
   const scale = Math.min(1, containerWidth / DESIGN_WIDTH);
 
-  layout.style.transform = `scale(${scale})`;
-  layout.style.transformOrigin = "center top";
+  if (!isMobileTabs) {
+    layout.style.transform = `scale(${scale})`;
+    layout.style.transformOrigin = "center top";
 
-  wrapper.style.display = "flex";
-  wrapper.style.justifyContent = "center";
-  wrapper.style.overflow = "hidden";
+    wrapper.style.display = "flex";
+    wrapper.style.justifyContent = "center";
+    wrapper.style.overflow = "hidden";
+  }
   wrapper.scrollLeft = 0;
 }
 function renderBracketTabs() {
@@ -2557,13 +2561,16 @@ function renderBracketTabs() {
     )
     .join("");
 
-  rounds.forEach((round, i) => {
-    const label =
-      round.querySelector(".bracket-round-label")?.textContent.trim() || "";
+  const setActiveRound = (roundName) => {
+    rounds.forEach((round) => {
+      const isActive = round.dataset.round === roundName;
+      round.dataset.active = isActive ? "true" : "false";
+      round.classList.toggle("is-active", isActive);
+    });
+  };
 
-    round.dataset.round = label;
-    round.dataset.active = i === 0 ? "true" : "false";
-  });
+  setActiveRound(labels[0]);
+  syncBracketLayoutMode(labels[0]);
 
   tabsEl.querySelectorAll(".bracket-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -2573,12 +2580,45 @@ function renderBracketTabs() {
         b.classList.toggle("active", b === btn);
       });
 
-      rounds.forEach((r) => {
-        r.dataset.active =
-          r.dataset.round === round ? "true" : "false";
-      });
+      setActiveRound(round);
+      syncBracketLayoutMode(round);
     });
   });
+}
+
+function syncBracketLayoutMode(activeRound = "") {
+  const bracket = document.getElementById("bracket");
+  const wrapper = bracket?.querySelector(".bracket-scroll-wrapper");
+  const layout = bracket?.querySelector(".bracket-layout");
+  if (!bracket || !wrapper || !layout) return;
+
+  const isMobileTabs = window.innerWidth < 1000;
+  bracket.classList.toggle("bracket-mobile-tabs", isMobileTabs);
+
+  if (isMobileTabs) {
+    wrapper.style.display = "flex";
+    wrapper.style.justifyContent = "flex-start";
+    wrapper.style.overflowX = "auto";
+    wrapper.style.overflowY = "hidden";
+    layout.style.transform = "none";
+    layout.style.transformOrigin = "left top";
+
+    if (activeRound) {
+      const activeEl = bracket.querySelector(
+        `.bracket-round[data-round="${cssEscape(activeRound)}"]`,
+      );
+      activeEl?.scrollIntoView({
+        behavior: "auto",
+        block: "nearest",
+        inline: "start",
+      });
+    }
+    return;
+  }
+
+  wrapper.style.display = "flex";
+  wrapper.style.justifyContent = "center";
+  wrapper.style.overflow = "hidden";
 }
 function renderBracketMatch(match) {
   const result = STATE.results[match.matchId];
