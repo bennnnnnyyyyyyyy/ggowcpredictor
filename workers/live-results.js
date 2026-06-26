@@ -948,7 +948,7 @@ async function sendMailjetEmail(env, { to, subject, html, text }) {
   const payload = {
     Messages: [{
       From: {
-        Email: 'noreply@your-verified-domain.com', // Replace with your verified sender
+        Email: 'abdelrazieg.mohamed@gulfglobaloutsourcing.com', // Replace with your verified sender
         Name: 'GGO Predictor',
       },
       To: [{ Email: to }],
@@ -1173,7 +1173,7 @@ export default {
           return corsJson({ success: false, error: "username and email required" }, 400);
         }
 
-        const adminEmail = 'admin@gulfglobaloutsourcing.com'; // Change to your admin email
+        const adminEmail = 'abdelrazieg.mohamed@gulfglobaloutsourcing.com'; // Change to your admin email
 
         const subject = `New Account Request: ${displayName || username} (@${username})`;
         const html = `

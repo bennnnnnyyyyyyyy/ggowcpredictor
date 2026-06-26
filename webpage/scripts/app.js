@@ -690,7 +690,22 @@ function showLoginError(message) {
   errEl.textContent = message;
   errEl.classList.add("show");
 }
+function showToast(message, type = "info") {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
 
+  toast.textContent = message;
+  toast.className = "toast";
+  if (type) toast.classList.add(type); // 'success', 'error', 'warning'
+  toast.style.display = "block";
+  toast.style.opacity = "1";
+
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => { toast.style.display = "none"; }, 300);
+  }, 4000);
+}
 function setRulesIntroVisible(show, message) {
   const banner = document.getElementById("rules-intro-banner");
   const messageEl = document.getElementById("rules-intro-message");
