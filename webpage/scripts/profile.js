@@ -29,6 +29,7 @@ function sbHeaders(extra = {}) {
   );
 }
 
+
 async function sbSelect(table, selectQ = "*", filterQ = "") {
   let qs = `select=${encodeURIComponent(selectQ)}`;
   if (filterQ) qs += `&${filterQ}`;
@@ -216,7 +217,8 @@ function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
         else if (isLiveStatus(status)) statusType = "live";
       }
 
-      if (hasPred && actualHome !== null && actualAway !== null) {        points = calcPoints(pred1, pred2, actualHome, actualAway, fixture.stage);
+      if (hasPred && actualHome !== null && actualAway !== null) {
+        points = calcPoints(pred1, pred2, actualHome, actualAway, fixture.stage);
         totalPoints += points;
         if (pred1 === actualHome && pred2 === actualAway) exactScores++;
         if (points > 0) correctOutcomes++;
@@ -421,7 +423,7 @@ function renderProfile(data) {
       groups[dateKey].push(p);
     });
 
-        return Object.entries(groups)
+    return Object.entries(groups)
       .sort(([a], [b]) => {
         if (a === "Unknown Date") return 1;
         if (b === "Unknown Date") return -1;
@@ -493,8 +495,7 @@ function renderProfile(data) {
     });
   }
   const html = `
-    <a href="index.html" class="profile-back">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<a href="#" class="profile-back" onclick="history.back(); return false;">      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 3L5 8l5 5"/>
       </svg>
       Back to Predictor
@@ -540,9 +541,8 @@ function renderProfile(data) {
     </div>
 
     <!-- Accuracy bar -->
-    ${
-      scored > 0
-        ? `
+    ${scored > 0
+      ? `
     <div class="accuracy-bar-wrap" style="margin-bottom:28px">
       <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Scoring accuracy</span>
       <div class="accuracy-bar-track">
@@ -550,7 +550,7 @@ function renderProfile(data) {
       </div>
       <span class="accuracy-label">${accuracy}%</span>
     </div>`
-        : ""
+      : ""
     }
 
     
@@ -664,6 +664,7 @@ function renderError(message) {
     );
   }
 })();
+
 
 
 
