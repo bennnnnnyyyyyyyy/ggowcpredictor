@@ -948,7 +948,7 @@ async function sendMailjetEmail(env, { to, subject, html, text }) {
   const payload = {
     Messages: [{
       From: {
-        Email: 'abdelrazieg.mohamed@gulfglobaloutsourcing.com', // Replace with your verified sender
+        Email: 'ben.arthur.wiz@gmail.com', // Replace with your verified sender
         Name: 'GGO Predictor',
       },
       To: [{ Email: to }],
