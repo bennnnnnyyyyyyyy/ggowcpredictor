@@ -252,30 +252,6 @@ async function loadCollection(env, table) {
 //
 // Set these as Cloudflare Worker secrets:
 //   wrangler secret put GAS_WEB_APP_URL   ← your deployed GAS web app URL
-//   wrangler secret put GAS_EMAIL_TOKEN   ← shared secret matching EMAIL_TOKEN in GAS Script Properties
-
-async function sendEmailViaGas(env, payload) {
-  const gasUrl = env.GAS_WEB_APP_URL;
-  const token = env.GAS_EMAIL_TOKEN;
-  if (!gasUrl || !token) {
-    console.warn("Email skipped: GAS_WEB_APP_URL or GAS_EMAIL_TOKEN not set.");
-    return;
-  }
-  try {
-    const resp = await fetch(gasUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, token }),
-      redirect: "follow",
-    });
-    if (!resp.ok) {
-      const text = await resp.text();
-      console.warn(`GAS email failed (${resp.status}): ${text}`);
-    }
-  } catch (err) {
-    console.warn("GAS email network error:", err.message);
-  }
-}
 
 // ─── Leaderboard Calculation Engine ─────────────────────────────────────────
 
@@ -743,13 +719,13 @@ async function handleRivalryGet(env, username) {
     twin:
       twinEntry.agreement / twinEntry.shared > 0.2
         ? {
-          username: twinEntry.username,
-          displayName: nameMap[twinEntry.username] || twinEntry.username,
-          agreementPct: Math.round(
-            (twinEntry.agreement / twinEntry.shared) * 100,
-          ),
-          sharedMatches: twinEntry.shared,
-        }
+            username: twinEntry.username,
+            displayName: nameMap[twinEntry.username] || twinEntry.username,
+            agreementPct: Math.round(
+              (twinEntry.agreement / twinEntry.shared) * 100,
+            ),
+            sharedMatches: twinEntry.shared,
+          }
         : null,
   };
 }
@@ -942,26 +918,28 @@ async function sendMailjetEmail(env, { to, subject, html, text }) {
 
   // Validate keys are present
   if (!publicKey || !privateKey) {
-    throw new Error('Mailjet API keys are not set in environment variables');
+    throw new Error("Mailjet API keys are not set in environment variables");
   }
 
   const payload = {
-    Messages: [{
-      From: {
-        Email: 'ben.arthur.wiz@gmail.com', // Replace with your verified sender
-        Name: 'GGO Predictor',
+    Messages: [
+      {
+        From: {
+          Email: "ben.arthur.wiz@gmail.com", // Replace with your verified sender
+          Name: "GGO Predictor",
+        },
+        To: [{ Email: to }],
+        Subject: subject,
+        TextPart: text || html.replace(/<[^>]+>/g, ""), // fallback plain text
+        HTMLPart: html,
       },
-      To: [{ Email: to }],
-      Subject: subject,
-      TextPart: text || html.replace(/<[^>]+>/g, ''), // fallback plain text
-      HTMLPart: html,
-    }],
+    ],
   };
 
-  const resp = await fetch('https://api.mailjet.com/v3.1/send', {
-    method: 'POST',
+  const resp = await fetch("https://api.mailjet.com/v3.1/send", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Basic ${btoa(`${publicKey}:${privateKey}`)}`,
     },
     body: JSON.stringify(payload),
@@ -1105,7 +1083,7 @@ export default {
         ]);
 
         // Send approval email to the user
-        const subject = 'Your GGO WC 2026 Predictor Account is Approved!';
+        const subject = "Your GGO WC 2026 Predictor Account is Approved!";
         const html = `
     <p>Hi ${displayName || username},</p>
     <p>Your account request has been <strong>approved</strong>.</p>
@@ -1120,7 +1098,7 @@ export default {
         try {
           await sendMailjetEmail(env, { to: email, subject, html });
         } catch (e) {
-          console.error('Approval email failed (non-critical):', e.message);
+          console.error("Approval email failed (non-critical):", e.message);
           // Don't fail the request if email fails
         }
 
@@ -1151,7 +1129,7 @@ export default {
         ]);
 
         // Send rejection email to the user
-        const subject = 'Your GGO WC 2026 Predictor Account Request';
+        const subject = "Your GGO WC 2026 Predictor Account Request";
         const html = `
     <p>Hi ${displayName || username},</p>
     <p>We’re sorry, but your account request has been <strong>rejected</strong>.</p>
@@ -1160,26 +1138,29 @@ export default {
         try {
           await sendMailjetEmail(env, { to: email, subject, html });
         } catch (e) {
-          console.error('Rejection email failed (non-critical):', e.message);
+          console.error("Rejection email failed (non-critical):", e.message);
         }
 
         return corsJson({ success: true, username });
       }
       // POST /admin/new-request — notify admin when a new request is submitted
-      if (path === '/admin/new-request' && request.method === 'POST') {
+      if (path === "/admin/new-request" && request.method === "POST") {
         const body = await request.json();
         const { username, displayName, email, note } = body;
         if (!username || !email) {
-          return corsJson({ success: false, error: "username and email required" }, 400);
+          return corsJson(
+            { success: false, error: "username and email required" },
+            400,
+          );
         }
 
-        const adminEmail = 'abdelrazieg.mohamed@gulfglobaloutsourcing.com'; // Change to your admin email
+        const adminEmail = "abdelrazieg.mohamed@gulfglobaloutsourcing.com"; // Change to your admin email
 
         const subject = `New Account Request: ${displayName || username} (@${username})`;
         const html = `
     <p><strong>${displayName || username}</strong> (${email}) has requested an account.</p>
     <p>Username: @${username}</p>
-    ${note ? `<p>Note: ${note}</p>` : ''}
+    ${note ? `<p>Note: ${note}</p>` : ""}
     <p><a href="https://your-app.com/admin">Go to Admin Panel</a> to approve or reject.</p>
   `;
 
@@ -1187,7 +1168,7 @@ export default {
           await sendMailjetEmail(env, { to: adminEmail, subject, html });
           return corsJson({ success: true });
         } catch (err) {
-          console.error('Admin notification email failed:', err.message);
+          console.error("Admin notification email failed:", err.message);
           return corsJson({ success: false, error: err.message }, 500);
         }
       }
@@ -1489,21 +1470,21 @@ function readScore(item, side) {
   const keys =
     side === "home"
       ? [
-        "homeScore",
-        "score1",
-        "team1Score",
-        "home_goal",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "homeScore",
+          "score1",
+          "team1Score",
+          "home_goal",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "awayScore",
-        "score2",
-        "team2Score",
-        "away_goal",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "awayScore",
+          "score2",
+          "team2Score",
+          "away_goal",
+          "awayGoals",
+          "goalsAway",
+        ];
   for (const key of keys) {
     if (item[key] !== undefined && item[key] !== null && item[key] !== "")
       return item[key];
@@ -1513,21 +1494,21 @@ function readScore(item, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
     for (const path of paths) {
       let value = nested;
       let found = true;
@@ -1643,19 +1624,19 @@ function formatGroupStandings(rows) {
 function buildLivescoreKey(item) {
   const home = cleanTeamName(
     item.home_name ||
-    item.home ||
-    item.team1 ||
-    item.localteam_name ||
-    item.localteam ||
-    "",
+      item.home ||
+      item.team1 ||
+      item.localteam_name ||
+      item.localteam ||
+      "",
   );
   const away = cleanTeamName(
     item.away_name ||
-    item.away ||
-    item.team2 ||
-    item.visitorteam_name ||
-    item.visitorteam ||
-    "",
+      item.away ||
+      item.team2 ||
+      item.visitorteam_name ||
+      item.visitorteam ||
+      "",
   );
   if (!home || !away) return "";
   return `${home}__${away}`;
