@@ -4794,22 +4794,101 @@ main {
   }
 }
 
-.vertical-bracket.bracket-mobile-tabs .bracket-layout {
-  transform: none !important;
-  min-width: max-content;
-}
+/* ── MOBILE BRACKET: single-round view ── */
+@media (max-width: 999px) {
+  .vertical-bracket .bracket-scroll-wrapper {
+    overflow: visible !important;
+    padding: 0 0 24px !important;
+    display: block !important;
+    height: auto !important;
+  }
 
-.vertical-bracket.bracket-mobile-tabs .bracket-scroll-wrapper {
-  overflow-x: auto;
-  overflow-y: hidden;
-}
+  .vertical-bracket .bracket-layout {
+    display: block !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    transform: none !important;
+  }
 
-.vertical-bracket.bracket-mobile-tabs .bracket-round[data-active="false"] {
-  display: none !important;
-}
+  /* sides become stacking contexts, not flex rows */
+  .bracket-side {
+    display: contents !important;
+  }
 
-.vertical-bracket.bracket-mobile-tabs .bracket-round[data-active="true"] {
-  display: flex !important;
+  /* center column resets */
+  .bracket-center {
+    display: none;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding-top: 0 !important;
+    gap: 16px !important;
+    width: 100% !important;
+  }
+
+  .bracket-center>.bracket-final,
+  .bracket-center>.bracket-third {
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .bracket-center>.bracket-final>.bracket-round-label,
+  .bracket-center>.bracket-third>.bracket-round-label {
+    width: 100% !important;
+  }
+
+  /* each round becomes a full-width card list */
+  .bracket-round {
+    display: none;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0 !important;
+  }
+
+  .bracket-round[data-active="true"] {
+    display: flex !important;
+  }
+
+  .bracket-round>.bracket-round-label {
+    position: static !important;
+    width: 100% !important;
+    margin-bottom: 10px;
+  }
+
+  /* kill the CSS grid — just stack matches */
+  .bracket-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .bracket-slot {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .bracket-slot-inner {
+    width: 100% !important;
+  }
+
+  /* match cards fill the viewport width */
+  .vertical-bracket .bracket-match {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* kill connector lines on mobile */
+  .bracket-side.left .bracket-slot-inner::after,
+  .bracket-side.right .bracket-slot-inner::before,
+  .bracket-slot::after {
+    display: none !important;
+  }
+
+  /* final match card full-width */
+  .bracket-final .bracket-match {
+    width: 100% !important;
+    transform: none !important;
+  }
 }
 
 /* HOME TAB */
