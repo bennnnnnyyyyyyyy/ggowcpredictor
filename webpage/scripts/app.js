@@ -2404,7 +2404,7 @@ function renderBracket() {
 
   const renderRound = (round, side) => {
     let html = `
-      <div class="bracket-round ${side}">
+      <div class="bracket-round ${side}" data-round="${escapeHtml(round.label)}">
         <div class="bracket-round-label">${escapeHtml(round.label)}</div>
         <div class="bracket-grid">
     `;
@@ -2503,22 +2503,18 @@ function renderBracket() {
   if (!wrapper || !layout) return;
 
   const isMobileTabs = window.innerWidth < 1000;
-  const containerWidth =
-    Math.max(
-      bracket.clientWidth,
-      bracket.parentElement?.clientWidth || 0,
-      window.innerWidth || 0,
-    ) - 40;
-  const DESIGN_WIDTH = 1640;
-  const scale = Math.min(1, containerWidth / DESIGN_WIDTH);
 
   if (!isMobileTabs) {
+    const containerWidth = (bracket.parentElement?.clientWidth || window.innerWidth) - 40;
+    const DESIGN_WIDTH = 1760;
+    const scale = Math.min(1, containerWidth / DESIGN_WIDTH);
     layout.style.transform = `scale(${scale})`;
-    layout.style.transformOrigin = "center top";
-
-    wrapper.style.display = "flex";
-    wrapper.style.justifyContent = "center";
-    wrapper.style.overflow = "hidden";
+    layout.style.transformOrigin = "left top";
+    wrapper.style.height = `${Math.round(1350 * scale + 120)}px`;
+  } else {
+    layout.style.transform = "";
+    layout.style.transformOrigin = "";
+    wrapper.style.height = "";
   }
   wrapper.scrollLeft = 0;
 }
@@ -2562,10 +2558,16 @@ function renderBracketTabs() {
     .join("");
 
   const setActiveRound = (roundName) => {
+    const isMobile = window.innerWidth < 1000;
     rounds.forEach((round) => {
       const isActive = round.dataset.round === roundName;
       round.dataset.active = isActive ? "true" : "false";
       round.classList.toggle("is-active", isActive);
+      if (isMobile) {
+        round.style.display = isActive ? "flex" : "none";
+      } else {
+        round.style.display = "";
+      }
     });
   };
 
@@ -2615,6 +2617,10 @@ function syncBracketLayoutMode(activeRound = "") {
     }
     return;
   }
+
+  // On desktop restore all rounds (they were possibly hidden by mobile tabs)
+  const allRounds = bracket.querySelectorAll(".bracket-round");
+  allRounds.forEach((r) => { r.style.display = ""; });
 
   wrapper.style.display = "flex";
   wrapper.style.justifyContent = "center";

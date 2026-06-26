@@ -590,7 +590,7 @@ header {
 
 /* ════════════════════════════════════════MAIN CONTENT════════════════════════════════════════ */
 main {
-  max-width: 1450px;
+  max-width: 1970px;
   margin: 15px auto;
   padding: 0 20px;
 }
@@ -4134,7 +4134,8 @@ main {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 20px 20px 40px;
 }
@@ -4146,7 +4147,45 @@ main {
   gap: 0;
   min-width: 1760px;
   align-items: start;
-  transform-origin: center top;
+  transform-origin: left top;
+}
+
+/* On mobile: show only the active round, no horizontal mega-layout */
+@media (max-width: 999px) {
+  .vertical-bracket .bracket-layout {
+    display: flex;
+    flex-direction: row;
+    min-width: unset;
+    width: 100%;
+  }
+
+  .vertical-bracket .bracket-scroll-wrapper {
+    overflow: visible;
+    padding: 0 12px 32px;
+  }
+
+  .bracket-side {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .bracket-center {
+    padding-top: 0;
+    width: 100%;
+  }
+
+  .bracket-round {
+    width: 100%;
+  }
+
+  .bracket-slot-inner {
+    width: 100%;
+  }
+
+  .vertical-bracket .bracket-match {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 /* ---------- SIDES ----------
