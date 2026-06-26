@@ -91,7 +91,7 @@ select {
   display: block;
   width: min(240px, 72vw);
   max-width: 100%;
-  margin: 0 auto 15px;
+  margin: 0 auto 13px;
   overflow: hidden;
 }
 
@@ -133,7 +133,7 @@ select {
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.28);
   color: #fecaca;
-  padding: 12px 15px;
+  padding: 12px 13px;
   border-radius: 6px;
   font-size: 13px;
   margin-bottom: 20px;
@@ -159,7 +159,7 @@ select {
 
 .form-group input {
   width: 100%;
-  padding: 12px 15px;
+  padding: 12px 13px;
   border: 1px solid rgba(0, 209, 94, 0.3);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.38);
@@ -210,7 +210,7 @@ select {
   border: none;
   border-radius: 8px;
   font-family: var(--font-ggo-display);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.5px;
   cursor: pointer;
@@ -698,7 +698,7 @@ main {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--light);
   letter-spacing: 0.3px;
@@ -2013,7 +2013,7 @@ main {
   height: 82px;
   display: grid;
   place-items: center;
-  margin: 0 auto 15px;
+  margin: 0 auto 13px;
   border-radius: 50%;
   background: #f8fff9;
   color: #06120c;
@@ -2097,7 +2097,7 @@ main {
 
 .request-card strong {
   display: block;
-  font-size: 15px;
+  font-size: 13px;
   margin-bottom: 2px;
 }
 
@@ -3177,7 +3177,7 @@ main {
   }
 
   .bracket-match strong {
-    font-size: 15px;
+    font-size: 13px;
     margin: 3px 0;
   }
 
@@ -3282,13 +3282,13 @@ main {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-bottom: 25px;
+  margin-bottom: 13px;
 }
 
 .score-rule-card {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 10px;
-  padding: 12px 15px;
+  padding: 12px 13px;
   position: relative;
   transition: all 0.3s ease;
 }
@@ -3508,9 +3508,9 @@ main {
 
 .start-playing-btn {
   display: block;
-  margin: 15px auto 0 auto;
+  margin: 13px auto 0 auto;
   max-width: 200px;
-  box-shadow: 0 4px 15px rgba(0, 209, 94, 0.2);
+  box-shadow: 0 4px 13px rgba(0, 209, 94, 0.2);
 }
 
 .start-playing-btn:hover {
@@ -3823,7 +3823,7 @@ main {
   gap: 12px;
   width: 100%;
   padding: 12px 16px;
-  font-size: 15px;
+  font-size: 13px;
   text-align: left;
   border-radius: 8px;
 }
@@ -4113,61 +4113,112 @@ main {
   display: flex !important;
 }
 
-/* Spider-web knockout bracket */
+/* ===========================
+   GRID BRACKET
+=========================== */
+
+/* The bracket uses a 15-row × 1-column CSS Grid per round.
+   Each match slot is placed on the correct row via grid-row,
+   so spacing is automatic — no padding-top hacks, no gap magic numbers. */
+
+/* Row height: 90px — match card (~68px) + breathing room */
+:root {
+  --brow: 90px;
+}
+
+.vertical-bracket {
+  width: 100%;
+}
+
 .vertical-bracket .bracket-scroll-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0 12px 32px;
+  padding: 20px 20px 40px;
 }
 
-.vertical-bracket .bracket-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
+/* Outer 3-column grid: left-side | center | right-side */
+.vertical-bracket .bracket-layout {
+  display: grid;
+  grid-template-columns: max-content 220px max-content;
   gap: 0;
-  min-width: 1800px;
-  padding-top: 0;
+  min-width: 1760px;
+  align-items: start;
 }
 
-/* All columns: fixed width, column layout, labels stay at top */
-.vertical-bracket .bracket-col {
+/* ---------- SIDES ----------
+   Each side is a row of rounds laid out horizontally.
+   We use display:flex so rounds sit side-by-side. */
+.bracket-side {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+/* Each round column is a fixed width */
+.bracket-round {
   display: flex;
   flex-direction: column;
-  position: relative;
   width: 200px;
   flex-shrink: 0;
 }
 
-/* Labels always at top, pinned */
-.vertical-bracket .bracket-round-label {
+/* Round label pinned at top */
+.bracket-round>.bracket-round-label {
   height: 40px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  position: sticky;
-  top: 0;
-  z-index: 3;
+  align-items: center;
   background: #060e14;
   border-bottom: 2px solid rgba(0, 209, 94, 0.2);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: var(--wc-blue);
   text-transform: uppercase;
+  color: var(--wc-blue);
   white-space: nowrap;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
-/* Match cards wrapper — this is what creates the spiderweb spacing */
-.vertical-bracket .bracket-col .bracket-match {
-  width: 180px;
-  margin: 0 auto;
+/* The grid that holds bracket slots for each round.
+   15 rows × 90px each = 1350px total height.
+   Slots are placed on specific rows via inline grid-row style. */
+.bracket-grid {
+  display: grid;
+  grid-template-rows: repeat(15, var(--brow));
   position: relative;
+  flex: 1;
+}
+
+/* Each slot is centered in its grid row */
+.bracket-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Inner wrapper for the match card — connectors attach to this */
+.bracket-slot-inner {
+  position: relative;
+  width: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ---------- MATCH CARD ---------- */
+.vertical-bracket .bracket-match {
+  width: 176px;
   background: rgba(6, 14, 20, 0.98);
-  border: 1px solid rgba(0, 209, 94, 0.25);
-  border-radius: 6px;
+  border: 1px solid rgba(0, 209, 94, 0.28);
+  border-radius: 8px;
   padding: 8px 10px;
-  min-height: 64px;
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
 }
 
 .vertical-bracket .bracket-seed {
@@ -4175,132 +4226,276 @@ main {
   align-items: center;
   gap: 6px;
   min-height: 22px;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .vertical-bracket .bracket-seed .team-code {
-  font-size: 12px;
-  font-weight: 800;
-  color: #fff;
-  background: rgba(0, 209, 94, 0.15);
-  padding: 1px 5px;
-  border-radius: 3px;
-  min-width: 32px;
+  min-width: 34px;
   text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(0, 209, 94, 0.15);
+  color: #fff;
 }
 
 .vertical-bracket .bracket-seed .team-flag .inline-flag-img {
   width: 22px;
-  height: 15px;
-  object-fit: cover;
+  height: 14px;
   border-radius: 2px;
+  object-fit: cover;
+  display: block;
 }
 
 .vertical-bracket .bracket-score {
   text-align: center;
-  font-size: 15px;
   font-weight: 900;
+  font-size: 13px;
+  margin: 4px 0;
   color: var(--wc-blue);
-  padding: 3px 0;
 }
 
-/* ── R32: 8 matches ── */
-.vertical-bracket .bracket-col:nth-child(1),
-.vertical-bracket .bracket-col:nth-child(10) {
-  gap: 4px;
-  padding-top: 40px;
-}
-
-/* ── R16: 4 matches ── */
-.vertical-bracket .bracket-col:nth-child(2),
-.vertical-bracket .bracket-col:nth-child(9) {
-  gap: 84px;
-  padding-top: 72px;
-}
-
-/* ── QF: 2 matches ── */
-.vertical-bracket .bracket-col:nth-child(3),
-.vertical-bracket .bracket-col:nth-child(8) {
-  gap: 256px;
-  padding-top: 180px;
-}
-
-/* ── SF: 1 match ── */
-.vertical-bracket .bracket-col:nth-child(4),
-.vertical-bracket .bracket-col:nth-child(7) {
-  padding-top: 388px;
-}
-
-/* ── Final center ── */
-.vertical-bracket .bracket-col-center {
+/* ---------- CENTER COLUMN ---------- */
+.bracket-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 220px;
-  flex-shrink: 0;
+  /* Align final vertically: label (40px) + 7.5 rows to reach center of row 8 = 40 + 7.5×90 = 715px */
+  padding-top: 715px;
+  gap: 60px;
 }
 
-.vertical-bracket .bracket-final-block {
+.bracket-final,
+.bracket-third {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding-top: 40px;
+  gap: 10px;
 }
 
-.vertical-bracket .bracket-final-block:first-child {
-  padding-top: 520px;
+.bracket-center>.bracket-final>.bracket-round-label,
+.bracket-center>.bracket-third>.bracket-round-label {
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #060e14;
+  border-bottom: 2px solid rgba(0, 209, 94, 0.2);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wc-blue);
+  white-space: nowrap;
+  width: 200px;
+  text-align: center;
 }
 
-.vertical-bracket .bracket-col-center .bracket-match {
-  width: 190px;
+.bracket-final .bracket-match {
+  width: 200px;
   transform: scale(1.05);
+  border-color: rgba(0, 209, 94, 0.6);
   box-shadow: 0 0 24px rgba(0, 209, 94, 0.3);
-  border-color: rgba(0, 209, 94, 0.5);
 }
 
-/* ── LEFT connectors (→ right) ── */
-.vertical-bracket .bracket-col:nth-child(1) .bracket-match::after,
-.vertical-bracket .bracket-col:nth-child(2) .bracket-match::after,
-.vertical-bracket .bracket-col:nth-child(3) .bracket-match::after {
+.bracket-placeholder {
+  width: 176px;
+  height: 68px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px dashed rgba(0, 209, 94, 0.25);
+  border-radius: 8px;
+  color: #999;
+  font-size: 13px;
+}
+
+/* ===========================
+   CONNECTORS (L-shaped lines)
+
+   Strategy:
+   - Horizontal stub: .bracket-slot-inner ::after (left) / ::before (right)
+   - Vertical bar joining pairs: drawn on ODD slots (top of each pair)
+     using ::after on the .bracket-slot itself
+
+   Row spacing is var(--brow) = 90px.
+   Pairs span 2 rows, so vertical bar = 90px (from center of slot to
+   center of next slot = 1 full row).
+   R16 pairs span 4 rows → 2×90 = 180px.
+   QF pairs span 8 rows → 4×90 = 360px.
+   SF to Final: longer stub handled by padding.
+=========================== */
+
+/* ---------- LEFT SIDE: horizontal stubs point RIGHT ---------- */
+.bracket-side.left .bracket-slot-inner::after {
   content: "";
   position: absolute;
   right: -20px;
   top: 50%;
   width: 20px;
-  border-top: 2px solid rgba(0, 209, 94, 0.3);
+  border-top: 2px solid rgba(0, 209, 94, 0.35);
 }
 
-.vertical-bracket .bracket-col:nth-child(4) .bracket-match::after {
+/* Hide stub on last round (SF→center handled by center padding) */
+.bracket-side.left .bracket-round:last-child .bracket-slot-inner::after {
+  width: 40px;
+  right: -40px;
+}
+
+/* NOTE: nth-child selectors target .bracket-grid > .bracket-slot,
+   so they count only slot elements (the grid only contains slots). */
+
+/* R32: 8 slots on rows 1,3,5,7,9,11,13,15 — pairs are (1,3),(5,7),(9,11),(13,15)
+   Odd slots (1st,3rd…) draw bar downward; even slots draw upward. */
+.bracket-side.left .bracket-round:nth-child(1) .bracket-grid>.bracket-slot:nth-child(odd)::after {
   content: "";
   position: absolute;
   right: -20px;
   top: 50%;
-  width: 20px;
-  border-top: 2px solid rgba(0, 209, 94, 0.5);
+  height: calc(2 * var(--brow));
+  border-right: 2px solid rgba(0, 209, 94, 0.35);
 }
 
-/* ── RIGHT connectors (← left) ── */
-.vertical-bracket .bracket-col:nth-child(8) .bracket-match::before,
-.vertical-bracket .bracket-col:nth-child(9) .bracket-match::before,
-.vertical-bracket .bracket-col:nth-child(10) .bracket-match::before {
+.bracket-side.left .bracket-round:nth-child(1) .bracket-grid>.bracket-slot:nth-child(even)::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  bottom: 50%;
+  height: calc(2 * var(--brow));
+  border-right: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+/* R16: 4 slots on rows 2,6,10,14 — pairs span 4 rows apart (4×90px) */
+.bracket-side.left .bracket-round:nth-child(2) .bracket-grid>.bracket-slot:nth-child(odd)::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  top: 50%;
+  height: calc(4 * var(--brow));
+  border-right: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+.bracket-side.left .bracket-round:nth-child(2) .bracket-grid>.bracket-slot:nth-child(even)::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  bottom: 50%;
+  height: calc(4 * var(--brow));
+  border-right: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+/* QF: 2 slots on rows 4,12 — 8 rows apart (8×90px) */
+.bracket-side.left .bracket-round:nth-child(3) .bracket-grid>.bracket-slot:nth-child(odd)::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  top: 50%;
+  height: calc(8 * var(--brow));
+  border-right: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+.bracket-side.left .bracket-round:nth-child(3) .bracket-grid>.bracket-slot:nth-child(even)::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  bottom: 50%;
+  height: calc(8 * var(--brow));
+  border-right: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+/* ---------- RIGHT SIDE: horizontal stubs point LEFT ---------- */
+.bracket-side.right .bracket-slot-inner::before {
   content: "";
   position: absolute;
   left: -20px;
   top: 50%;
   width: 20px;
-  border-top: 2px solid rgba(0, 209, 94, 0.3);
+  border-top: 2px solid rgba(0, 209, 94, 0.35);
 }
 
-.vertical-bracket .bracket-col:nth-child(7) .bracket-match::before {
+/* Longer stub from SF to center */
+.bracket-side.right .bracket-round:first-child .bracket-slot-inner::before {
+  width: 40px;
+  left: -40px;
+}
+
+/* Right side: R32 is nth-child(4), R16 is nth-child(3), QF is nth-child(2), SF is nth-child(1) */
+
+/* R32 vertical bars */
+.bracket-side.right .bracket-round:nth-child(4) .bracket-grid>.bracket-slot:nth-child(odd)::after {
   content: "";
   position: absolute;
   left: -20px;
   top: 50%;
-  width: 20px;
-  border-top: 2px solid rgba(0, 209, 94, 0.5);
+  height: calc(2 * var(--brow));
+  border-left: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+.bracket-side.right .bracket-round:nth-child(4) .bracket-grid>.bracket-slot:nth-child(even)::after {
+  content: "";
+  position: absolute;
+  left: -20px;
+  bottom: 50%;
+  height: calc(2 * var(--brow));
+  border-left: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+/* R16 vertical bars */
+.bracket-side.right .bracket-round:nth-child(3) .bracket-grid>.bracket-slot:nth-child(odd)::after {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  height: calc(4 * var(--brow));
+  border-left: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+.bracket-side.right .bracket-round:nth-child(3) .bracket-grid>.bracket-slot:nth-child(even)::after {
+  content: "";
+  position: absolute;
+  left: -20px;
+  bottom: 50%;
+  height: calc(4 * var(--brow));
+  border-left: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+/* QF vertical bars */
+.bracket-side.right .bracket-round:nth-child(2) .bracket-grid>.bracket-slot:nth-child(odd)::after {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  height: calc(8 * var(--brow));
+  border-left: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+.bracket-side.right .bracket-round:nth-child(2) .bracket-grid>.bracket-slot:nth-child(even)::after {
+  content: "";
+  position: absolute;
+  left: -20px;
+  bottom: 50%;
+  height: calc(8 * var(--brow));
+  border-left: 2px solid rgba(0, 209, 94, 0.35);
+}
+
+/* ===========================
+   MOBILE TABS
+   On small screens, show one round at a time via tabs.
+   On large screens, always show all rounds.
+=========================== */
+
+.bracket-round[data-active="false"] {
+  display: none;
+}
+
+.bracket-round[data-active="true"] {
+  display: flex;
+}
+
+@media (min-width: 1000px) {
+  .bracket-round {
+    display: flex !important;
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -4653,7 +4848,7 @@ main {
   }
 
   .score-badge {
-    font-size: 15px;
+    font-size: 13px;
   }
 }
 
@@ -5164,7 +5359,7 @@ main {
 
 .pred-team {
   font-family: var(--font-ggo-display);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -5525,4 +5720,23 @@ main {
 
 .profile-page #hamburger-btn {
   display: none !important;
+}
+
+/* Add to style.css */
+@media (min-width: 1200px) {
+  html {
+    font-size: 18px;
+  }
+
+  .mc-name {
+    font-size: 16px;
+  }
+
+  .section-title {
+    font-size: 32px;
+  }
+
+  .match-card {
+    padding: 20px;
+  }
 }

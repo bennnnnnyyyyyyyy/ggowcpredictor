@@ -2323,7 +2323,6 @@ function renderResults() {
     })
     .join("");
 }
-
 function renderBracket() {
   const bracket = document.getElementById("bracket");
   if (!bracket) return;
@@ -2337,144 +2336,224 @@ function renderBracket() {
     return;
   }
 
-  // Get all knockout fixtures, sorted by matchId (numerical)
   const knockout = STATE.fixtures
     .filter((f) => f.stage !== "group" && f.stage !== "group_stage")
     .sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
   if (!knockout.length) {
-    bracket.innerHTML = emptyState("Knockout fixtures are not loaded yet.", "");
+    bracket.innerHTML = emptyState(
+      "Knockout fixtures are not loaded yet.",
+      "",
+    );
     return;
   }
 
-  // Build map of matchId → fixture
   const matchMap = {};
   knockout.forEach((m) => {
-    matchMap[m.matchId] = m;
+    matchMap[String(m.matchId)] = m;
   });
 
-  // ---- Define the correct visual order for each round (top to bottom) ----
-  // Left side (top half)
-  const leftOrders = {
-    "Round of 32": ["74", "77", "73", "75", "83", "84", "81", "82"],
-    "Round of 16": ["89", "90", "93", "94"],
-    "Quarter-final": ["97", "98"],
-    "Semi-final": ["101"],
-  };
-  // Right side (bottom half)
-  const rightOrders = {
-    "Round of 32": ["76", "78", "79", "80", "86", "88", "85", "87"],
-    "Round of 16": ["91", "92", "95", "96"],
-    "Quarter-final": ["99", "100"],
-    "Semi-final": ["102"],
-  };
-  // Final and 3rd Place
-  const finalOrder = ["104"]; // matchId 104 = Final
-  const thirdOrder = ["103"]; // matchId 103 = 3rd Place
-
-  // Helper: get fixtures for a given list of matchIds (filter out undefined)
-  const getMatches = (ids) => ids.map((id) => matchMap[id]).filter(Boolean);
-
-  // Build the bracket HTML
-  let html = `<div class="bracket-scroll-wrapper"><div class="bracket-row">`;
-
-  // ---- LEFT COLUMNS ----
-  const leftRoundNames = [
-    "Round of 32",
-    "Round of 16",
-    "Quarter-final",
-    "Semi-final",
+  const leftRounds = [
+    {
+      label: "Round of 32",
+      rows: [1, 3, 5, 7, 9, 11, 13, 15],
+      ids: ["74", "77", "73", "75", "83", "84", "81", "82"]
+    },
+    {
+      label: "Round of 16",
+      rows: [2, 6, 10, 14],
+      ids: ["89", "90", "93", "94"]
+    },
+    {
+      label: "Quarter-final",
+      rows: [4, 12],
+      ids: ["97", "98"]
+    },
+    {
+      label: "Semi-final",
+      rows: [8],
+      ids: ["101"]
+    }
   ];
-  leftRoundNames.forEach((roundName) => {
-    const matches = getMatches(leftOrders[roundName] || []);
-    if (!matches.length) return;
-    html += `<div class="bracket-col">`;
-    html += `<div class="bracket-round-label">${escapeHtml(roundName)}</div>`;
-    matches.forEach((m) => (html += renderBracketMatch(m)));
-    html += `</div>`;
-  });
 
-  // ---- CENTER COLUMN ----
-  html += `<div class="bracket-col bracket-col-center">`;
-  // Final
-  const finalMatches = getMatches(finalOrder);
-  if (finalMatches.length) {
-    html += `<div class="bracket-final-block">`;
-    html += `<div class="bracket-round-label">Final</div>`;
-    finalMatches.forEach((m) => (html += renderBracketMatch(m)));
-    html += `</div>`;
-  }
-  // 3rd Place
-  const thirdMatches = getMatches(thirdOrder);
-  if (thirdMatches.length) {
-    html += `<div class="bracket-final-block">`;
-    html += `<div class="bracket-round-label">3rd Place</div>`;
-    thirdMatches.forEach((m) => (html += renderBracketMatch(m)));
-    html += `</div>`;
-  }
-  if (!finalMatches.length && !thirdMatches.length) {
-    html += `<div class="bracket-final-placeholder">Champion TBD</div>`;
-  }
-  html += `</div>`;
-
-  // ---- RIGHT COLUMNS (reversed order: Semi-final → Round of 32) ----
-  const rightRoundNames = [
-    "Semi-final",
-    "Quarter-final",
-    "Round of 16",
-    "Round of 32",
+  const rightRounds = [
+    {
+      label: "Semi-final",
+      rows: [8],
+      ids: ["102"]
+    },
+    {
+      label: "Quarter-final",
+      rows: [4, 12],
+      ids: ["99", "100"]
+    },
+    {
+      label: "Round of 16",
+      rows: [2, 6, 10, 14],
+      ids: ["91", "92", "95", "96"]
+    },
+    {
+      label: "Round of 32",
+      rows: [1, 3, 5, 7, 9, 11, 13, 15],
+      ids: ["76", "78", "79", "80", "86", "88", "85", "87"]
+    }
   ];
-  rightRoundNames.forEach((roundName) => {
-    const matches = getMatches(rightOrders[roundName] || []);
-    if (!matches.length) return;
-    html += `<div class="bracket-col">`;
-    html += `<div class="bracket-round-label">${escapeHtml(roundName)}</div>`;
-    matches.forEach((m) => (html += renderBracketMatch(m)));
-    html += `</div>`;
+
+  const finalMatch = matchMap["104"];
+  const thirdMatch = matchMap["103"];
+
+  const renderRound = (round, side) => {
+    let html = `
+      <div class="bracket-round ${side}">
+        <div class="bracket-round-label">${escapeHtml(round.label)}</div>
+        <div class="bracket-grid">
+    `;
+
+    round.ids.forEach((id, i) => {
+      const match = matchMap[id];
+      if (!match) return;
+
+
+      html += `
+        <div
+          class="bracket-slot"
+          style="grid-row:${round.rows[i]}"
+          data-row="${round.rows[i]}"
+        >
+          <div class="bracket-slot-inner">
+            ${renderBracketMatch(match)}
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    return html;
+  };
+
+  let html = `
+    <div class="bracket-scroll-wrapper">
+      <div class="bracket-layout">
+
+        <div class="bracket-side left">
+  `;
+
+  leftRounds.forEach((r) => {
+    html += renderRound(r, "left");
   });
 
-  html += `</div></div>`;
+  html += `
+        </div>
+
+        <div class="bracket-center">
+
+          <div class="bracket-final">
+
+            <div class="bracket-round-label">
+              Final
+            </div>
+
+            ${finalMatch
+      ? renderBracketMatch(finalMatch)
+      : `<div class="bracket-placeholder">TBD</div>`
+    }
+
+          </div>
+
+          <div class="bracket-third">
+
+            <div class="bracket-round-label">
+              3rd Place
+            </div>
+
+            ${thirdMatch
+      ? renderBracketMatch(thirdMatch)
+      : `<div class="bracket-placeholder">TBD</div>`
+    }
+
+          </div>
+
+        </div>
+
+        <div class="bracket-side right">
+  `;
+
+  rightRounds.forEach((r) => {
+    html += renderRound(r, "right");
+  });
+
+  html += `
+        </div>
+
+      </div>
+    </div>
+  `;
+
   bracket.className = "vertical-bracket";
   bracket.innerHTML = html;
 }
-
 function renderBracketTabs() {
   const tabsEl = document.getElementById("bracket-tabs");
-  const row = document.querySelector("#bracket .bracket-row");
-  if (!tabsEl || !row) return;
+  if (!tabsEl) return;
 
-  const cols = Array.from(row.querySelectorAll(".bracket-col"));
-  const labels = cols.map((col, i) => {
-    const labelEl = col.querySelector(".bracket-round-label");
-    return labelEl ? labelEl.textContent.trim() : `Round ${i + 1}`;
+  const rounds = Array.from(
+    document.querySelectorAll("#bracket .bracket-round")
+  );
+
+  if (!rounds.length) {
+    tabsEl.innerHTML = "";
+    return;
+  }
+
+  const labels = [];
+  const seen = new Set();
+
+  rounds.forEach((round) => {
+    const label =
+      round.querySelector(".bracket-round-label")?.textContent.trim() || "";
+
+    if (label && !seen.has(label)) {
+      seen.add(label);
+      labels.push(label);
+    }
   });
 
-  // De-dupe consecutive duplicate round names (left R32 + right R32 etc.)
-  const uniqueLabels = [...new Set(labels)];
-
-  tabsEl.innerHTML = uniqueLabels
+  tabsEl.innerHTML = labels
     .map(
-      (label, i) =>
-        `<button class="bracket-tab${i === 0 ? " active" : ""}" data-round="${escapeHtml(label)}">${escapeHtml(label)}</button>`,
+      (label, i) => `
+        <button
+          class="bracket-tab ${i === 0 ? "active" : ""}"
+          data-round="${escapeHtml(label)}"
+        >
+          ${escapeHtml(label)}
+        </button>
+      `
     )
     .join("");
 
-  row.setAttribute("data-tabbed", "true");
-  cols.forEach((col, i) => {
-    const labelEl = col.querySelector(".bracket-round-label");
-    const label = labelEl ? labelEl.textContent.trim() : "";
-    col.dataset.round = label;
-    col.dataset.active = label === uniqueLabels[0] ? "true" : "false";
+  rounds.forEach((round, i) => {
+    const label =
+      round.querySelector(".bracket-round-label")?.textContent.trim() || "";
+
+    round.dataset.round = label;
+    round.dataset.active = i === 0 ? "true" : "false";
   });
 
   tabsEl.querySelectorAll(".bracket-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       const round = btn.dataset.round;
-      tabsEl
-        .querySelectorAll(".bracket-tab")
-        .forEach((b) => b.classList.toggle("active", b === btn));
-      cols.forEach((col) => {
-        col.dataset.active = col.dataset.round === round ? "true" : "false";
+
+      tabsEl.querySelectorAll(".bracket-tab").forEach((b) => {
+        b.classList.toggle("active", b === btn);
+      });
+
+      rounds.forEach((r) => {
+        r.dataset.active =
+          r.dataset.round === round ? "true" : "false";
       });
     });
   });
