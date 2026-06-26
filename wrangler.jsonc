@@ -1,59 +1,49 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-
   "name": "ggowcpredictor",
-
   "compatibility_date": "2026-06-11",
-
   "main": "workers/live-results.js",
-
   "assets": {
-    "directory": "webpage/",
+    "directory": "docs/",
     "binding": "ASSETS",
     "exclude": [
-    "workers/**",
-    "node_modules/**",
-    ".git/**",
-    "**/*.d.ts",
-    "**/*.tsbuildinfo",
-    "package-lock.json",
-    "npm-debug.log*",
-    "yarn-debug.log*",
-    "yarn-error.log*",
-    "__pycache__/**",
-    ".wrangler/**"
-  ]
+      "workers/**",
+      "node_modules/**",
+      ".git/**",
+      "**/*.d.ts",
+      "**/*.tsbuildinfo",
+      "package-lock.json",
+      "npm-debug.log*",
+      "yarn-debug.log*",
+      "yarn-error.log*",
+      "__pycache__/**",
+      ".wrangler/**"
+    ]
   },
-
   "triggers": {
     "crons": [
       "*/5 * * * *",
       "*/15 * * * *"
     ]
   },
-
   "vars": {
     "ENVIRONMENT": "production"
   },
-
   "observability": {
     "enabled": false,
     "head_sampling_rate": 1,
-
     "logs": {
       "enabled": true,
       "head_sampling_rate": 1,
       "persist": true,
       "invocation_logs": true
     },
-
     "traces": {
       "enabled": false,
       "persist": true,
       "head_sampling_rate": 1
     }
   },
-
   "rules": [
     {
       "type": "Text",
