@@ -743,13 +743,13 @@ async function handleRivalryGet(env, username) {
     twin:
       twinEntry.agreement / twinEntry.shared > 0.2
         ? {
-            username: twinEntry.username,
-            displayName: nameMap[twinEntry.username] || twinEntry.username,
-            agreementPct: Math.round(
-              (twinEntry.agreement / twinEntry.shared) * 100,
-            ),
-            sharedMatches: twinEntry.shared,
-          }
+          username: twinEntry.username,
+          displayName: nameMap[twinEntry.username] || twinEntry.username,
+          agreementPct: Math.round(
+            (twinEntry.agreement / twinEntry.shared) * 100,
+          ),
+          sharedMatches: twinEntry.shared,
+        }
         : null,
   };
 }
@@ -934,7 +934,45 @@ async function handleSyncGet(env) {
     timestamp: new Date().toISOString(),
   };
 }
+// --- Helper: Send email via Mailjet v3.1 ---
+// --- Helper: Send email via Mailjet v3.1 ---
+async function sendMailjetEmail(env, { to, subject, html, text }) {
+  const publicKey = env.MJ_APIKEY_PUBLIC;
+  const privateKey = env.MJ_APIKEY_PRIVATE;
 
+  // Validate keys are present
+  if (!publicKey || !privateKey) {
+    throw new Error('Mailjet API keys are not set in environment variables');
+  }
+
+  const payload = {
+    Messages: [{
+      From: {
+        Email: 'noreply@your-verified-domain.com', // Replace with your verified sender
+        Name: 'GGO Predictor',
+      },
+      To: [{ Email: to }],
+      Subject: subject,
+      TextPart: text || html.replace(/<[^>]+>/g, ''), // fallback plain text
+      HTMLPart: html,
+    }],
+  };
+
+  const resp = await fetch('https://api.mailjet.com/v3.1/send', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${btoa(`${publicKey}:${privateKey}`)}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await resp.json();
+  if (!resp.ok) {
+    throw new Error(`Mailjet error: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
 // ─── Endpoint Router ────────────────────────────────────────────────────────
 
 export default {
@@ -1031,6 +1069,7 @@ export default {
       }
 
       // POST /admin/approve-request — create user in Supabase + send approval email
+      // POST /admin/approve-request
       if (
         (path === "/admin/approve-request" || action === "approve-request") &&
         request.method === "POST"
@@ -1064,18 +1103,30 @@ export default {
             secretCode,
           },
         ]);
-        // Fire email (non-blocking — don't fail the response if email fails)
-        await sendEmailViaGas(env, {
-          action: "emailApproved",
-          displayName: displayName || username,
-          username,
-          email,
-          secretCode,
-        });
+
+        // Send approval email to the user
+        const subject = 'Your GGO WC 2026 Predictor Account is Approved!';
+        const html = `
+    <p>Hi ${displayName || username},</p>
+    <p>Your account request has been <strong>approved</strong>.</p>
+    <p>Your login details:</p>
+    <ul>
+      <li><strong>Username:</strong> ${username}</li>
+      <li><strong>Secret Code:</strong> ${secretCode}</li>
+    </ul>
+    <p><a href="https://your-app.com">Log in here</a></p>
+    <p>Good luck with your predictions! 🏆</p>
+  `;
+        try {
+          await sendMailjetEmail(env, { to: email, subject, html });
+        } catch (e) {
+          console.error('Approval email failed (non-critical):', e.message);
+          // Don't fail the request if email fails
+        }
+
         return corsJson({ success: true, username });
       }
-
-      // POST /admin/reject-request — mark rejected + send rejection email
+      // POST /admin/reject-request
       if (
         (path === "/admin/reject-request" || action === "reject-request") &&
         request.method === "POST"
@@ -1098,13 +1149,47 @@ export default {
             rejectedAt: new Date().toISOString(),
           },
         ]);
-        await sendEmailViaGas(env, {
-          action: "emailRejected",
-          displayName: displayName || username,
-          username,
-          email,
-        });
+
+        // Send rejection email to the user
+        const subject = 'Your GGO WC 2026 Predictor Account Request';
+        const html = `
+    <p>Hi ${displayName || username},</p>
+    <p>We’re sorry, but your account request has been <strong>rejected</strong>.</p>
+    <p>If you think this is a mistake, please contact the admin team.</p>
+  `;
+        try {
+          await sendMailjetEmail(env, { to: email, subject, html });
+        } catch (e) {
+          console.error('Rejection email failed (non-critical):', e.message);
+        }
+
         return corsJson({ success: true, username });
+      }
+      // POST /admin/new-request — notify admin when a new request is submitted
+      if (path === '/admin/new-request' && request.method === 'POST') {
+        const body = await request.json();
+        const { username, displayName, email, note } = body;
+        if (!username || !email) {
+          return corsJson({ success: false, error: "username and email required" }, 400);
+        }
+
+        const adminEmail = 'admin@gulfglobaloutsourcing.com'; // Change to your admin email
+
+        const subject = `New Account Request: ${displayName || username} (@${username})`;
+        const html = `
+    <p><strong>${displayName || username}</strong> (${email}) has requested an account.</p>
+    <p>Username: @${username}</p>
+    ${note ? `<p>Note: ${note}</p>` : ''}
+    <p><a href="https://your-app.com/admin">Go to Admin Panel</a> to approve or reject.</p>
+  `;
+
+        try {
+          await sendMailjetEmail(env, { to: adminEmail, subject, html });
+          return corsJson({ success: true });
+        } catch (err) {
+          console.error('Admin notification email failed:', err.message);
+          return corsJson({ success: false, error: err.message }, 500);
+        }
       }
       // Serve frontend assets
       if (
@@ -1404,21 +1489,21 @@ function readScore(item, side) {
   const keys =
     side === "home"
       ? [
-          "homeScore",
-          "score1",
-          "team1Score",
-          "home_goal",
-          "homeGoals",
-          "goalsHome",
-        ]
+        "homeScore",
+        "score1",
+        "team1Score",
+        "home_goal",
+        "homeGoals",
+        "goalsHome",
+      ]
       : [
-          "awayScore",
-          "score2",
-          "team2Score",
-          "away_goal",
-          "awayGoals",
-          "goalsAway",
-        ];
+        "awayScore",
+        "score2",
+        "team2Score",
+        "away_goal",
+        "awayGoals",
+        "goalsAway",
+      ];
   for (const key of keys) {
     if (item[key] !== undefined && item[key] !== null && item[key] !== "")
       return item[key];
@@ -1428,21 +1513,21 @@ function readScore(item, side) {
     const paths =
       side === "home"
         ? [
-            ["home"],
-            ["local"],
-            ["team1"],
-            ["fulltime", "home"],
-            ["ft", "home"],
-            ["final", "home"],
-          ]
+          ["home"],
+          ["local"],
+          ["team1"],
+          ["fulltime", "home"],
+          ["ft", "home"],
+          ["final", "home"],
+        ]
         : [
-            ["away"],
-            ["visitor"],
-            ["team2"],
-            ["fulltime", "away"],
-            ["ft", "away"],
-            ["final", "away"],
-          ];
+          ["away"],
+          ["visitor"],
+          ["team2"],
+          ["fulltime", "away"],
+          ["ft", "away"],
+          ["final", "away"],
+        ];
     for (const path of paths) {
       let value = nested;
       let found = true;
@@ -1558,19 +1643,19 @@ function formatGroupStandings(rows) {
 function buildLivescoreKey(item) {
   const home = cleanTeamName(
     item.home_name ||
-      item.home ||
-      item.team1 ||
-      item.localteam_name ||
-      item.localteam ||
-      "",
+    item.home ||
+    item.team1 ||
+    item.localteam_name ||
+    item.localteam ||
+    "",
   );
   const away = cleanTeamName(
     item.away_name ||
-      item.away ||
-      item.team2 ||
-      item.visitorteam_name ||
-      item.visitorteam ||
-      "",
+    item.away ||
+    item.team2 ||
+    item.visitorteam_name ||
+    item.visitorteam ||
+    "",
   );
   if (!home || !away) return "";
   return `${home}__${away}`;
