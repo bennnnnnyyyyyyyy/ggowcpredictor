@@ -1,5 +1,8 @@
 # Progress
 
-- Initialized planning artifacts for knockout scoring and bracket autofill.
-- Reviewed the current bracket/scoring docs to locate the main implementation path.
-- Identified a mismatch between the requested knockout multipliers and the older docs.
+## Session Log
+- Re-read the current bracket implementation plan.
+- Identified the requested UX changes for the bracket view.
+- Prepared to update the plan doc before making implementation changes.
+
+- Updated the bracket implementation plan with the requested UX and autofill requirements.

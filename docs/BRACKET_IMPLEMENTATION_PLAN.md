@@ -263,6 +263,7 @@ Before calling the bracket done:
 - confirm `1A`, `2A`, `1B`, `2B` resolve correctly
 - confirm bracket updates when positions change
 - confirm `TBD` appears for unresolved slots
+- confirm confirmed knockout participants auto-fill after the group stage ends
 - confirm knockout round multipliers display correctly
 - confirm scoring uses the same multiplier table in all paths
 - confirm mobile layout still fits the bracket without overlap
