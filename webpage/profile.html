@@ -910,121 +910,119 @@
   <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
 
-  <!-- ════════════════════════════════════════
+  <body class="profile-page">
+
+    <!-- ════════════════════════════════════════
          HEADER  (mirrors app header, no nav)
     ════════════════════════════════════════ -->
-  <header>
-    <div class="header-top">
-      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar(true)" aria-label="Open menu">
-        <span></span><span></span><span></span>
-      </button>
-      <div class="logo">
-        <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
-          class="header-logo" />
-        <div class="logo-divider"></div>
-        <img src="assets/images/fifa-world-cup-2026-logo-white.png" alt="FIFA World Cup 2026"
-          class="header-logo wc-logo" />
-        <div class="logo-text">
-          <h1>GGO <span>WC</span> 2026</h1>
-          <p>Prediction Game</p>
-        </div>
-      </div>
-      <div class="user-pill" id="user-pill">
-        <a id="user-profile-link" href="profile.html" class="user-pill-link" title="View your profile">
-          <div class="user-avatar" id="user-avatar">?</div>
-          <span id="user-display-name">Loading...</span>
-        </a>
-        <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">
-          X
+    <header>
+      <div class="header-top">
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar(true)" aria-label="Open menu">
+          <span></span><span></span><span></span>
         </button>
-      </div>
-      <div class="sync-container desktop-sync-only">
-        <div class="sync-status">
-          <span class="status-dot" id="sync-dot"></span>
-          <span id="last-sync-time">Not synced</span>
+        <div class="logo">
+          <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
+            class="header-logo" />
+          <div class="logo-divider"></div>
+          <img src="assets/images/fifa-world-cup-2026-logo-white.png" alt="FIFA World Cup 2026"
+            class="header-logo wc-logo" />
+          <div class="logo-text">
+            <h1>GGO <span>WC</span> 2026</h1>
+            <p>Prediction Game</p>
+          </div>
         </div>
-        <button class="sync-btn" type="button" onclick="requestSync()">
-          Sync
-        </button>
-        <button id="settings-nav-btn" class="sync-btn" type="button" onclick="toggleSettings(true)" style="
+        <div class="user-pill" id="user-pill">
+          <button class="logout-btn" onclick="handleLogout()" aria-label="Log out">
+            X
+          </button>
+        </div>
+        <div class="sync-container desktop-sync-only">
+          <div class="sync-status">
+            <span class="status-dot" id="sync-dot"></span>
+            <span id="last-sync-time">Not synced</span>
+          </div>
+          <button class="sync-btn" type="button" onclick="requestSync()">
+            Sync
+          </button>
+          <button id="settings-nav-btn" class="sync-btn" type="button" onclick="toggleSettings(true)" style="
                 display: none;
                 background: rgba(255, 255, 255, 0.08);
                 border-color: rgba(255, 255, 255, 0.25);
               ">
-          Settings
-        </button>
-        <button id="calendar-nav-btn" class="sync-btn" type="button" onclick="toggleCalendarModal(true)" style="
+            Settings
+          </button>
+          <button id="calendar-nav-btn" class="sync-btn" type="button" onclick="toggleCalendarModal(true)" style="
                 display: none;
                 animation: exact-glow 2.2s ease-in-out infinite;
                 background: rgba(30, 224, 40, 0.877);
                 border-color: rgba(255, 255, 255, 0.25);
               ">
-          Add to Calendar
-        </button>
+            Add to Calendar
+          </button>
+        </div>
       </div>
-    </div>
-    <nav id="main-nav" class="desktop-nav">
-      <button class="nav-btn active" onclick="showView('home', this)">
-        Home
-      </button>
-      <button class="nav-btn" onclick="showView('predictions', this)">
-        Predictions
-      </button>
-      <button class="nav-btn" onclick="showView('standings', this)">
-        Standings
-      </button>
-      <button class="nav-btn" onclick="showView('leaderboard', this)">
-        Leaderboard
-      </button>
-      <button class="nav-btn" onclick="showView('results', this)">
-        Results
-      </button>
-      <button class="nav-btn" onclick="showView('bracket', this)">
-        Bracket
-      </button>
-      <button id="rules-nav-btn" class="nav-btn" onclick="showView('rules', this)">
-        Rules
-      </button>
-    </nav>
-  </header>
+      <nav id="main-nav" class="desktop-nav">
+        <button class="nav-btn active" onclick="showView('home', this)">
+          Home
+        </button>
+        <button class="nav-btn" onclick="showView('predictions', this)">
+          Predictions
+        </button>
+        <button class="nav-btn" onclick="showView('standings', this)">
+          Standings
+        </button>
+        <button class="nav-btn" onclick="showView('leaderboard', this)">
+          Leaderboard
+        </button>
+        <button class="nav-btn" onclick="showView('results', this)">
+          Results
+        </button>
+        <button class="nav-btn" onclick="showView('bracket', this)">
+          Bracket
+        </button>
+        <button id="rules-nav-btn" class="nav-btn" onclick="showView('rules', this)">
+          Rules
+        </button>
+      </nav>
+    </header>
 
-  <!-- ════════════════════════════════════════
+    <!-- ════════════════════════════════════════
          MAIN CONTENT
     ════════════════════════════════════════ -->
-  <main id="profile-main" style="max-width: 860px">
-    <!-- Skeleton shown while loading -->
-    <div id="profile-loading">
-      <a href="index.html" class="profile-back">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 3L5 8l5 5" />
-        </svg>
-        Back to Predictor
-      </a>
-      <div class="skel skel-hero"></div>
-      <div class="profile-stats-grid">
-        <div class="skel skel-stats"></div>
-        <div class="skel skel-stats"></div>
-        <div class="skel skel-stats"></div>
-        <div class="skel skel-stats"></div>
+    <main id="profile-main" style="max-width: 860px">
+      <!-- Skeleton shown while loading -->
+      <div id="profile-loading">
+        <a href="index.html" class="profile-back">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3L5 8l5 5" />
+          </svg>
+          Back to Predictor
+        </a>
+        <div class="skel skel-hero"></div>
+        <div class="profile-stats-grid">
+          <div class="skel skel-stats"></div>
+          <div class="skel skel-stats"></div>
+          <div class="skel skel-stats"></div>
+          <div class="skel skel-stats"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div class="skel skel-card"></div>
+          <div class="skel skel-card"></div>
+          <div class="skel skel-card"></div>
+          <div class="skel skel-card"></div>
+          <div class="skel skel-card"></div>
+        </div>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 10px">
-        <div class="skel skel-card"></div>
-        <div class="skel skel-card"></div>
-        <div class="skel skel-card"></div>
-        <div class="skel skel-card"></div>
-        <div class="skel skel-card"></div>
-      </div>
-    </div>
 
-    <!-- Rendered after data loads -->
-    <div id="profile-content" style="display: none"></div>
-  </main>
+      <!-- Rendered after data loads -->
+      <div id="profile-content" style="display: none"></div>
+    </main>
 
-  <!-- Toast (reuse app toast style) -->
-  <div id="toast" class="toast"></div>
+    <!-- Toast (reuse app toast style) -->
+    <div id="toast" class="toast"></div>
 
-  <script src="scripts/profile.js"></script>
-</body>
+    <script src="scripts/profile.js"></script>
+  </body>
 
 </html>

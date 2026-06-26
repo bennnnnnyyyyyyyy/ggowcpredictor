@@ -4320,7 +4320,7 @@ main {
 }
 
 .home-hero-copy .home-kicker {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4330,8 +4330,8 @@ main {
 
 .home-hero-copy h2 {
   font-family: var(--font-ggo-display);
-  font-size: 26px;
-  font-weight: 900;
+  font-size: 29px;
+  font-weight: 800;
   line-height: 1.1;
   margin: 0 0 8px;
   color: #fff;
@@ -4662,7 +4662,6 @@ main {
          PROFILE PAGE — scoped additions only
          All base tokens come from style.css
       ════════════════════════════════════════ */
-/* ════════════════════════════════════════HEADER════════════════════════════════════════ */
 
 .logo {
   display: flex;
@@ -5522,4 +5521,8 @@ main {
   .stat-value {
     font-size: 28px;
   }
+}
+
+.profile-page #hamburger-btn {
+  display: none !important;
 }

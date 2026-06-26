@@ -95,6 +95,7 @@ const SESSION = {
   displayName: localStorage.getItem("ggo_wc_displayname") || null,
   isAdmin: localStorage.getItem("ggo_wc_admin") === "true",
 };
+window.SESSION = SESSION;
 const CONFIG = {
   appsScriptUrl:
     localStorage.getItem("ggo_wc_url") ||
