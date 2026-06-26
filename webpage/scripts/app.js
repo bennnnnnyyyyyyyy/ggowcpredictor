@@ -2329,7 +2329,10 @@ function renderBracket() {
 
   const groups = STATE.groupStandings;
   if (!groups || !Object.keys(groups).length) {
-    bracket.innerHTML = emptyState("Group standings not loaded yet.", "Please sync again.");
+    bracket.innerHTML = emptyState(
+      "Group standings not loaded yet.",
+      "Please sync again.",
+    );
     return;
   }
 
@@ -2338,30 +2341,186 @@ function renderBracket() {
     .sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
   if (!knockout.length) {
-    bracket.innerHTML = emptyState("Knockout fixtures are not loaded yet.", "");
+    bracket.innerHTML = emptyState(
+      "Knockout fixtures are not loaded yet.",
+      "",
+    );
     return;
   }
 
   const matchMap = {};
-  knockout.forEach((m) => { matchMap[String(m.matchId)] = m; });
+  knockout.forEach((m) => {
+    matchMap[String(m.matchId)] = m;
+  });
 
-  // Define rounds (left and right) – same as before
-  const leftRounds = [ /* ... */];
-  const rightRounds = [ /* ... */];
+  const leftRounds = [
+    {
+      label: "Round of 32",
+      rows: [1, 3, 5, 7, 9, 11, 13, 15],
+      ids: ["74", "77", "73", "75", "83", "84", "81", "82"]
+    },
+    {
+      label: "Round of 16",
+      rows: [2, 6, 10, 14],
+      ids: ["89", "90", "93", "94"]
+    },
+    {
+      label: "Quarter-final",
+      rows: [4, 12],
+      ids: ["97", "98"]
+    },
+    {
+      label: "Semi-final",
+      rows: [8],
+      ids: ["101"]
+    }
+  ];
 
-  // Build HTML – same as before
-  let html = `<div class="bracket-scroll-wrapper"><div class="bracket-layout">...`; // (keep your existing HTML generation)
+  const rightRounds = [
+    {
+      label: "Semi-final",
+      rows: [8],
+      ids: ["102"]
+    },
+    {
+      label: "Quarter-final",
+      rows: [4, 12],
+      ids: ["99", "100"]
+    },
+    {
+      label: "Round of 16",
+      rows: [2, 6, 10, 14],
+      ids: ["91", "92", "95", "96"]
+    },
+    {
+      label: "Round of 32",
+      rows: [1, 3, 5, 7, 9, 11, 13, 15],
+      ids: ["76", "78", "79", "80", "86", "88", "85", "87"]
+    }
+  ];
+
+  const finalMatch = matchMap["104"];
+  const thirdMatch = matchMap["103"];
+
+  const renderRound = (round, side) => {
+    let html = `
+      <div class="bracket-round ${side}">
+        <div class="bracket-round-label">${escapeHtml(round.label)}</div>
+        <div class="bracket-grid">
+    `;
+
+    round.ids.forEach((id, i) => {
+      const match = matchMap[id];
+      if (!match) return;
+
+
+      html += `
+        <div
+          class="bracket-slot"
+          style="grid-row:${round.rows[i]}"
+          data-row="${round.rows[i]}"
+        >
+          <div class="bracket-slot-inner">
+            ${renderBracketMatch(match)}
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    return html;
+  };
+
+  let html = `
+    <div class="bracket-scroll-wrapper">
+      <div class="bracket-layout">
+
+        <div class="bracket-side left">
+  `;
+
+  leftRounds.forEach((r) => {
+    html += renderRound(r, "left");
+  });
+
+  html += `
+        </div>
+
+        <div class="bracket-center">
+
+          <div class="bracket-final">
+
+            <div class="bracket-round-label">
+              Final
+            </div>
+
+            ${finalMatch
+      ? renderBracketMatch(finalMatch)
+      : `<div class="bracket-placeholder">TBD</div>`
+    }
+
+          </div>
+
+          <div class="bracket-third">
+
+            <div class="bracket-round-label">
+              3rd Place
+            </div>
+
+            ${thirdMatch
+      ? renderBracketMatch(thirdMatch)
+      : `<div class="bracket-placeholder">TBD</div>`
+    }
+
+          </div>
+
+        </div>
+
+        <div class="bracket-side right">
+  `;
+
+  rightRounds.forEach((r) => {
+    html += renderRound(r, "right");
+  });
+
+  html += `
+        </div>
+
+      </div>
+    </div>
+  `;
 
   bracket.className = "vertical-bracket";
   bracket.innerHTML = html;
-
-  // Render tabs and sync layout
   renderBracketTabs();
+  syncBracketLayoutMode();
 
-  // Get the first active round (the first tab)
-  const firstTab = document.querySelector("#bracket-tabs .bracket-tab.active");
-  const activeRound = firstTab ? firstTab.dataset.round : "";
-  syncBracketLayoutMode(activeRound);
+  const wrapper = bracket.querySelector(".bracket-scroll-wrapper");
+  const layout = bracket.querySelector(".bracket-layout");
+  if (!wrapper || !layout) return;
+
+  const isMobileTabs = window.innerWidth < 1000;
+  const containerWidth =
+    Math.max(
+      bracket.clientWidth,
+      bracket.parentElement?.clientWidth || 0,
+      window.innerWidth || 0,
+    ) - 40;
+  const DESIGN_WIDTH = 1640;
+  const scale = Math.min(1, containerWidth / DESIGN_WIDTH);
+
+  if (!isMobileTabs) {
+    layout.style.transform = `scale(${scale})`;
+    layout.style.transformOrigin = "center top";
+
+    wrapper.style.display = "flex";
+    wrapper.style.justifyContent = "center";
+    wrapper.style.overflow = "hidden";
+  }
+  wrapper.scrollLeft = 0;
 }
 function renderBracketTabs() {
   const tabsEl = document.getElementById("bracket-tabs");
