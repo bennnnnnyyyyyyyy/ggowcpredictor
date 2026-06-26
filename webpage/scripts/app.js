@@ -2495,6 +2495,7 @@ function renderBracket() {
 
   bracket.className = "vertical-bracket";
   bracket.innerHTML = html;
+  renderBracketTabs();
 
   const wrapper = bracket.querySelector(".bracket-scroll-wrapper");
   const layout = bracket.querySelector(".bracket-layout");
@@ -2506,7 +2507,7 @@ function renderBracket() {
       bracket.parentElement?.clientWidth || 0,
       window.innerWidth || 0,
     ) - 40;
-  const DESIGN_WIDTH = 1760;
+  const DESIGN_WIDTH = 1640;
   const scale = Math.min(1, containerWidth / DESIGN_WIDTH);
 
   layout.style.transform = `scale(${scale})`;
@@ -2581,39 +2582,96 @@ function renderBracketTabs() {
 }
 function renderBracketMatch(match) {
   const result = STATE.results[match.matchId];
+  const venue = getVenueDetails(match);
+  const kickoff = formatKickoff(match);
+  const status = result ? normalizeResultStatus(result.status) : "SCHEDULED";
   const score =
-    result && hasResult(result) ? `${result.score1}-${result.score2}` : "vs";
+    result && hasResult(result)
+      ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
+      : "VS";
 
-  const seed1 = String(match.team1 || "");
-  const seed2 = String(match.team2 || "");
-  const t1 = resolveSlot(seed1);
-  const t2 = resolveSlot(seed2);
-  const tbd1 = t1 === seed1 || !t1;
-  const tbd2 = t2 === seed2 || !t2;
-  const display1 = tbd1 ? "TBD" : t1;
-  const display2 = tbd2 ? "TBD" : t2;
-
-  // Get 3‑letter code
-  const code1 = !tbd1 ? getTeamCode(display1) : "TBD";
-  const code2 = !tbd2 ? getTeamCode(display2) : "TBD";
-
-  // Flag (alt="" so no duplicate text)
-  const flag1 = !tbd1 ? getFlagImg(display1) : "";
-  const flag2 = !tbd2 ? getFlagImg(display2) : "";
+  const team1 = getBracketTeamDisplay(match.team1, result, "team1");
+  const team2 = getBracketTeamDisplay(match.team2, result, "team2");
 
   return `
-    <div class="bracket-match">
-      <div class="bracket-seed">
-        <span class="team-code">${escapeHtml(code1)}</span>
-        <span class="team-flag">${flag1}</span>
+    <article class="bracket-match ${getBracketMatchStateClass(result)}">
+      <div class="bracket-match-meta">
+        <span class="bracket-match-kickoff">${escapeHtml(kickoff)}</span>
+        <a class="bracket-match-venue" href="${venue.mapsUrl}" target="_blank" rel="noopener noreferrer">
+          <strong>${escapeHtml(venue.stadium)}</strong>
+          <span>${escapeHtml(venue.city)}</span>
+        </a>
       </div>
-      <div class="bracket-score">${escapeHtml(score)}</div>
-      <div class="bracket-seed">
-        <span class="team-code">${escapeHtml(code2)}</span>
-        <span class="team-flag">${flag2}</span>
+
+      <div class="bracket-match-body">
+        <div class="bracket-seed ${team1.stateClass}">
+          <span class="team-code">${escapeHtml(team1.code)}</span>
+          <span class="team-flag">${team1.flag}</span>
+          <span class="team-name">${escapeHtml(team1.name)}</span>
+        </div>
+
+        <div class="bracket-score">${escapeHtml(score)}</div>
+
+        <div class="bracket-seed ${team2.stateClass}">
+          <span class="team-code">${escapeHtml(team2.code)}</span>
+          <span class="team-flag">${team2.flag}</span>
+          <span class="team-name">${escapeHtml(team2.name)}</span>
+        </div>
       </div>
-    </div>
+
+      <div class="bracket-match-footer">
+        <span class="bracket-status-token">${escapeHtml(status)}</span>
+      </div>
+    </article>
   `;
+}
+
+function getBracketTeamDisplay(seed, result, side) {
+  const raw = String(seed || "").trim();
+  const isReference = isBracketReference(raw);
+  const resolved = isReference ? resolveSlot(raw) : raw;
+  const isResolved = !isReference || (resolved && resolved !== raw && resolved !== "TBD");
+  const name = isResolved ? resolved : "TBD";
+  const team = {
+    name,
+    code: isResolved ? getTeamCode(name) : "TBD",
+    flag: isResolved ? getFlagImg(name) : "",
+    stateClass: isResolved ? "" : "is-tbd",
+  };
+
+  const winnerSide = getBracketWinnerSide(result);
+  if (winnerSide && isFinalStatus(result?.status)) {
+    if (winnerSide === side) team.stateClass = "is-winner";
+    else team.stateClass = "is-loser";
+  }
+
+  return team;
+}
+
+function getBracketWinnerSide(result) {
+  if (!result || !hasResult(result)) return "";
+  const score1 = Number(result.score1);
+  const score2 = Number(result.score2);
+  if (Number.isFinite(score1) && Number.isFinite(score2)) {
+    if (score1 > score2) return "team1";
+    if (score2 > score1) return "team2";
+  }
+  if (String(result.penalty_winner || "").toLowerCase() === "team1") return "team1";
+  if (String(result.penalty_winner || "").toLowerCase() === "team2") return "team2";
+  return "";
+}
+
+function getBracketMatchStateClass(result) {
+  if (!result) return "scheduled";
+  if (isFinalStatus(result.status)) return "final";
+  if (isLiveStatus(result.status)) return "live";
+  return "scheduled";
+}
+
+function isBracketReference(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || trimmed === "TBD") return false;
+  return /^([12][A-L]|[WL]\d+|3[A-L\/]+)$/i.test(trimmed);
 }
 /**
  * Resolves a bracket slot code to a real team name using STATE.groupStandings

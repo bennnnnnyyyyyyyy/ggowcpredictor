@@ -175,15 +175,15 @@
 - Ben Arthur showed **35 pts / 14 scored** instead of **~74 pts** because **9 predictions had no matching `results` row**, not because the scoring formula was wrong.
 - Supabase audit confirmed: `predictions = 23`, `matched_results = 14` for `ben_arthur`.
 - Four finished matches (**49, 50, 55, 56**) were matched from `worldcup26.ir` but never persisted in `results` (DB had 16 rows; sync simulation would write 20).
-- Adding those four rows alone restores Ben to **74 points** (including a **15-pt exact** on Austria 3–1 Jordan).
+- Adding those four rows alone restores Ben to **74 points** (including a **15-pt exact** on Austria 3â€“1 Jordan).
 - `fixtures.apiFixtureId` was **null for all rows**, so API `game.id` could not be used as a stable bridge.
-- `/sync-scores` reported `"updated": 69` while only **live/finished rows with scores** are written — a misleading count.
+- `/sync-scores` reported `"updated": 69` while only **live/finished rows with scores** are written â€” a misleading count.
 - Team alias gap: `"Democratic Republic of the Congo"` did not normalize to `drcongo`, breaking future sync for Portugal vs DR Congo (match 61).
 
 ### What changed
 
-- **`workers/live-results.js`**: Resolve API games → `fixtures.matchId` via `apiFixtureId` first, team names second; backfill `apiFixtureId` during sync; fix DR Congo alias; return `updated` = rows actually written.
-- **`scripts/repair-matchids.js`**: One-shot repair — backfill `apiFixtureId`, upsert missing results with internal `matchId`, delete orphan API-id results.
+- **`workers/live-results.js`**: Resolve API games â†’ `fixtures.matchId` via `apiFixtureId` first, team names second; backfill `apiFixtureId` during sync; fix DR Congo alias; return `updated` = rows actually written.
+- **`scripts/repair-matchids.js`**: One-shot repair â€” backfill `apiFixtureId`, upsert missing results with internal `matchId`, delete orphan API-id results.
 - **`scripts/liveResultsCron.js`**, **`src/fixtures.js`**: Same DR Congo alias fix.
 - **`supabase/migrations/20260617000000_matchid_mapping_notes.sql`**: Documents the mapping contract.
 
@@ -210,7 +210,7 @@ select count(*) as predictions, count(r."matchId") as matched_results
 from predictions p
 left join results r on p."matchId" = r."matchId"
 where p.username = 'ben_arthur';
--- Expect matched_results ≈ number of finished matches Ben predicted
+-- Expect matched_results â‰ˆ number of finished matches Ben predicted
 ```
 
 ---
@@ -449,16 +449,16 @@ where p.username = 'ben_arthur';
 
 - Ran a deep technical audit across all source files (`app.js`, `style.css`, `src/main.js`, `src/leaderboard.js`, `src/fixtures.js`, `src/firebase.js`).
 - Identified 1 P0 bug, 6 P1 bugs, 6 P2 issues, 2 P3 polish items.
-- Created `docs/SCORING.md` — canonical scoring system (15/8/5/0 + round multipliers + mini tourney ¼-point variant).
-- Created `docs/ARCHITECTURE.md` — full system diagram, Firestore schema, backend file status.
-- Created `docs/SETUP.md` — step-by-step admin setup guide.
-- Created `docs/project-tracker.html` — self-contained interactive project dashboard (open in browser).
-- Locked the scoring system: 15 exact / 8 correct+GD≤1 / 5 correct outcome / 0 miss × round multipliers.
-- Confirmed game flow: players predict ALL 104 matches (group + knockout); predicted bracket auto-advances. Mini tourney activates post-group-stage with ¼ points.
+- Created `docs/SCORING.md` â€” canonical scoring system (15/8/5/0 + round multipliers + mini tourney Â¼-point variant).
+- Created `docs/ARCHITECTURE.md` â€” full system diagram, Firestore schema, backend file status.
+- Created `docs/SETUP.md` â€” step-by-step admin setup guide.
+- Created `docs/project-tracker.html` â€” self-contained interactive project dashboard (open in browser).
+- Locked the scoring system: 15 exact / 8 correct+GDâ‰¤1 / 5 correct outcome / 0 miss Ã— round multipliers.
+- Confirmed game flow: players predict ALL 104 matches (group + knockout); predicted bracket auto-advances. Mini tourney activates post-group-stage with Â¼ points.
 
 ### Key decisions logged
 
-- Scoring: app.js variant (15/8/5/0) confirmed as canonical, plus stage multipliers (×1/1/2/3/4/5).
+- Scoring: app.js variant (15/8/5/0) confirmed as canonical, plus stage multipliers (Ã—1/1/2/3/4/5).
 - Mini tourney: separate leaderboard, knockout only, activates after 2026-06-27.
 - matchId: must be a consistent string throughout all layers.
 
@@ -502,3 +502,20 @@ where p.username = 'ben_arthur';
 
 
 
+
+## 2026-06-26 - Bracket card refresh and resolver display
+
+### What changed
+
+- Updated the knockout bracket cards to show kickoff date, venue/stadium, score, and winner/loser state.
+- Tightened the bracket spacing and widened the cards so the tree is less zoomed out on desktop.
+- Wired `renderBracketTabs()` into the bracket render path so the mobile round tabs initialize again.
+- Kept slot resolution driven by `group_standings`; unresolved bracket slots still render as `TBD`.
+
+### Verification
+
+- Ran `node --check webpage/scripts/app.js`.
+
+### Notes
+
+- The bracket now resolves confirmed participants at render time instead of requiring a separate UI autofill step.

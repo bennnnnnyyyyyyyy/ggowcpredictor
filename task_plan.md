@@ -22,5 +22,8 @@ Fix the knockout bracket so it is readable at desktop scale, shows the same matc
 - [x] Capture user request
 - [x] Read current bracket plan
 - [x] Update plan documentation
-- [ ] Implement bracket UX changes
-- [ ] Implement post-group autofill behavior
+- [x] Implement bracket UX changes
+- [x] Implement post-group autofill behavior
+
+## Update
+- Bracket code pass completed: richer match cards, tighter density, live resolver display, and mobile tabs are wired up.
