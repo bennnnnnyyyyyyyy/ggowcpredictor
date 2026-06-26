@@ -658,7 +658,23 @@
         min-width: 36px;
         text-align: right;
       }
-
+      .profile-back.new {
+        display: inline-flex;
+        align-items: right;
+        gap: 8px;
+        padding: 8px 0;
+        margin-bottom: 28px;
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-family: var(--font-ggo-body);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: color 0.2s;
+        letter-spacing: 0.3px;
+      }
       /* ── Responsive ── */
       @media (max-width: 640px) {
         .profile-stats-grid {
@@ -706,6 +722,14 @@
     ════════════════════════════════════════ -->
     <header>
       <div class="header-top">
+        <button
+          class="hamburger-btn"
+          id="hamburger-btn"
+          onclick="toggleSidebar(true)"
+          aria-label="Open menu"
+        >
+          <span></span><span></span><span></span>
+        </button>
         <div class="logo">
           <img
             src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png"
@@ -720,10 +744,72 @@
           />
           <div class="logo-text">
             <h1>GGO <span>WC</span> 2026</h1>
-            <p>Player Profile</p>
+            <p>Prediction Game</p>
           </div>
+        <div class="sync-container desktop-sync-only">
+          <div class="sync-status">
+            <span class="status-dot" id="sync-dot"></span>
+            <span id="last-sync-time">Not synced</span>
+          </div>
+          <button class="sync-btn" type="button" onclick="requestSync()">
+            Sync
+          </button>
+          <button
+            id="settings-nav-btn"
+            class="sync-btn"
+            type="button"
+            onclick="toggleSettings(true)"
+            style="
+              display: none;
+              background: rgba(255, 255, 255, 0.08);
+              border-color: rgba(255, 255, 255, 0.25);
+            "
+          >
+            Settings
+          </button>
+          <button
+            id="calendar-nav-btn"
+            class="sync-btn"
+            type="button"
+            onclick="toggleCalendarModal(true)"
+            style="
+              display: none;
+              animation: exact-glow 2.2s ease-in-out infinite;
+              background: rgba(30, 224, 40, 0.877);
+              border-color: rgba(255, 255, 255, 0.25);
+            "
+          >
+            Add to Calendar
+          </button>
         </div>
       </div>
+      <nav id="main-nav" class="desktop-nav">
+        <button class="nav-btn active" onclick="showView('home', this)">
+          Home
+        </button>
+        <button class="nav-btn" onclick="showView('predictions', this)">
+          Predictions
+        </button>
+        <button class="nav-btn" onclick="showView('standings', this)">
+          Standings
+        </button>
+        <button class="nav-btn" onclick="showView('leaderboard', this)">
+          Leaderboard
+        </button>
+        <button class="nav-btn" onclick="showView('results', this)">
+          Results
+        </button>
+        <button class="nav-btn" onclick="showView('bracket', this)">
+          Bracket
+        </button>
+        <button
+          id="rules-nav-btn"
+          class="nav-btn"
+          onclick="showView('rules', this)"
+        >
+          Rules
+        </button>
+      </nav>
     </header>
 
     <!-- ════════════════════════════════════════
