@@ -1145,16 +1145,38 @@ export default {
       }
       // POST /admin/new-request — notify admin when a new request is submitted
       if (path === "/admin/new-request" && request.method === "POST") {
-        const body = await request.json();
+        console.log("🔵 /admin/new-request POST received");
+
+        // Read the raw body first
+        const rawBody = await request.text();
+        console.log("🔵 Raw body:", rawBody);
+
+        let body;
+        try {
+          body = JSON.parse(rawBody);
+        } catch (parseError) {
+          console.error("❌ JSON parse error:", parseError.message);
+          return corsJson(
+            {
+              success: false,
+              error: `Invalid JSON: ${parseError.message}`,
+            },
+            400,
+          );
+        }
+
         const { username, displayName, email, note } = body;
+        console.log("🔵 Parsed body:", { username, displayName, email, note });
+
         if (!username || !email) {
+          console.log("🔴 Missing username or email");
           return corsJson(
             { success: false, error: "username and email required" },
             400,
           );
         }
 
-        const adminEmail = "abdelrazieg.mohamed@gulfglobaloutsourcing.com"; // Change to your admin email
+        const adminEmail = "abdelrazieg.mohamed@gulfglobaloutsourcing.com";
 
         const subject = `New Account Request: ${displayName || username} (@${username})`;
         const html = `
@@ -1164,11 +1186,16 @@ export default {
     <p><a href="https://your-app.com/admin">Go to Admin Panel</a> to approve or reject.</p>
   `;
 
+        console.log("📧 About to call sendMailjetEmail...");
+        console.log("📧 To:", adminEmail);
+        console.log("📧 Subject:", subject);
+
         try {
           await sendMailjetEmail(env, { to: adminEmail, subject, html });
+          console.log("✅ Email sent successfully");
           return corsJson({ success: true });
         } catch (err) {
-          console.error("Admin notification email failed:", err.message);
+          console.error("❌ Admin notification email failed:", err.message);
           return corsJson({ success: false, error: err.message }, 500);
         }
       }
