@@ -2112,6 +2112,8 @@ function renderThirdPlaceTable() {
     </article>
   `;
 }
+const _lbPrevRanks = {};
+
 function renderLeaderboard() {
   const tbody = document.getElementById("leaderboard-body");
   if (!tbody) return;
@@ -2132,7 +2134,6 @@ function renderLeaderboard() {
         player.displayName || player.playerName || player.username || "Player";
       const username = player.username || "";
 
-      // ---- new data ----
       const predicted =
         player.predicted || player.totalPredictions || player.predictions || 0;
       const correctOutcomes =
@@ -2143,15 +2144,24 @@ function renderLeaderboard() {
         player.resolvedPredictions ||
         0;
 
-      // Accuracy % matching profile.js
       const percent =
         scored > 0 ? Math.round((correctOutcomes / scored) * 100) : 0;
       const percentDisplay =
         scored > 0
           ? `<span class="${percent >= 50 ? "percent-high" : "percent-low"}">${percent}%</span>`
-          : "—"; // ------------------
+          : "—";
 
-      // entire row is clickable → opens profile.html?user=username
+      // ── Rank change arrow ──
+      const prevRank = _lbPrevRanks[username];
+      let arrowHtml = `<span class="rank-arrow rank-arrow-neutral">–</span>`;
+      if (prevRank !== undefined && prevRank !== rank) {
+        const moved = prevRank - rank; // positive = climbed
+        arrowHtml =
+          moved > 0
+            ? `<span class="rank-arrow rank-arrow-up" title="Up ${moved}">▲${moved}</span>`
+            : `<span class="rank-arrow rank-arrow-down" title="Down ${Math.abs(moved)}">▼${Math.abs(moved)}</span>`;
+      }
+
       const onclickAttr = username
         ? `onclick="window.location.href='profile.html?user=${encodeURIComponent(username)}'"`
         : "";
@@ -2159,7 +2169,12 @@ function renderLeaderboard() {
       return `
         <tr class="${player.username === SESSION.username ? "current-user" : ""}" 
             style="cursor:pointer" ${onclickAttr}>
-          <td data-label="Rank"><span class="rank-badge ${rankClass(rank)}">${rank}</span></td>
+          <td data-label="Rank">
+            <div class="rank-cell">
+              <span class="rank-badge ${rankClass(rank)}">${rank}</span>
+              ${arrowHtml}
+            </div>
+          </td>
           <td data-label="Player">
             <div class="player-info">
               <span class="player-avatar">${getInitials(name)}</span>
@@ -2175,6 +2190,12 @@ function renderLeaderboard() {
       `;
     })
     .join("");
+
+  // Snapshot current ranks for next render
+  rows.forEach((player, index) => {
+    if (player.username)
+      _lbPrevRanks[player.username] = player.rank || index + 1;
+  });
 }
 function openMatchDrawer(matchId) {
   const fixture = STATE.fixtures.find((f) => f.matchId === String(matchId));
@@ -2418,69 +2439,119 @@ function renderBracket() {
     );
     return;
   }
-
   const knockout = STATE.fixtures
-    .filter((f) => f.stage !== "group" && f.stage !== "group_stage")
+    .filter((f) => {
+      const stage = String(
+        f.stage || getStageFromRound(f.round || "") || "",
+      ).toLowerCase();
+      return stage !== "group" && stage !== "group_stage" && stage !== "";
+    })
     .sort((a, b) => Number(a.matchId) - Number(b.matchId));
 
   if (!knockout.length) {
-    bracket.innerHTML = emptyState("Knockout fixtures are not loaded yet.", "");
+    bracket.innerHTML = emptyState(
+      "Knockout fixtures are not loaded yet.",
+      "Sync again to load.",
+    );
     return;
   }
 
+  // Build matchMap — deduplicate by matchId (last write wins, prefer latest data)
   const matchMap = {};
   knockout.forEach((m) => {
-    matchMap[String(m.matchId)] = m;
+    const existing = matchMap[String(m.matchId)];
+    if (!existing) {
+      matchMap[String(m.matchId)] = m;
+    }
   });
 
+  // ── Derive bracket structure from actual matchIds, sorted ascending ──
+  // Standard WC 2026 match numbering: 65–72=R32 left, 73–80=R32 right, etc.
+  // But we derive dynamically: sort knockout by matchId, then assign by count.
+  const knockoutIds = Object.keys(matchMap)
+    .map(Number)
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+
+  // Partition by expected round size: 32 matches R32, 16 R16, 8 QF, 4 SF, 1 Final, 1 Third
+  // WC2026: 32 R32 games (matchIds 65-96), 16 R16 (97-112 not used — actually 16 R32 → 8 R16 → 4 QF → 2 SF → Final + 3rd)
+  // Actual count: R32=32, R16=16, QF=8, SF=4, Final=1, Third=1 → total 62...
+  // FIFA 2026 actual: R32=32, R16=16, QF=8, SF=4, Final+3rd=2 = 62 matches
+  // We auto-detect by total count
+  const total = knockoutIds.length;
+
+  let r32Ids = [],
+    r16Ids = [],
+    qfIds = [],
+    sfIds = [],
+    finalId = null,
+    thirdId = null;
+
+  if (total >= 62) {
+    // Full WC2026 bracket
+    r32Ids = knockoutIds.slice(0, 32);
+    r16Ids = knockoutIds.slice(32, 48);
+    qfIds = knockoutIds.slice(48, 56);
+    sfIds = knockoutIds.slice(56, 60);
+    thirdId = knockoutIds[60] !== undefined ? String(knockoutIds[60]) : null;
+    finalId = knockoutIds[61] !== undefined ? String(knockoutIds[61]) : null;
+  } else if (total >= 30) {
+    r32Ids = knockoutIds.slice(0, total - 18);
+    r16Ids = knockoutIds.slice(total - 18, total - 10);
+    qfIds = knockoutIds.slice(total - 10, total - 6);
+    sfIds = knockoutIds.slice(total - 6, total - 4);
+    thirdId =
+      knockoutIds[total - 4] !== undefined
+        ? String(knockoutIds[total - 4])
+        : null;
+    finalId =
+      knockoutIds[total - 1] !== undefined
+        ? String(knockoutIds[total - 1])
+        : null;
+  } else {
+    // Fallback: use original hardcoded IDs
+    r32Ids = [
+      74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87,
+    ].map(String);
+    r16Ids = [89, 90, 93, 94, 91, 92, 95, 96].map(String);
+    qfIds = [97, 98, 99, 100].map(String);
+    sfIds = [101, 102].map(String);
+    finalId = "104";
+    thirdId = "103";
+  }
+
+  // Split left/right halves
+  const r32Left = r32Ids.slice(0, r32Ids.length / 2).map(String);
+  const r32Right = r32Ids.slice(r32Ids.length / 2).map(String);
+  const r16Left = r16Ids.slice(0, r16Ids.length / 2).map(String);
+  const r16Right = r16Ids.slice(r16Ids.length / 2).map(String);
+  const qfLeft = qfIds.slice(0, qfIds.length / 2).map(String);
+  const qfRight = qfIds.slice(qfIds.length / 2).map(String);
+  const sfLeft = sfIds.slice(0, 1).map(String);
+  const sfRight = sfIds.slice(1).map(String);
+
+  // Grid row assignments (visual spacing)
+  const R32_ROWS = [1, 3, 5, 7, 9, 11, 13, 15];
+  const R16_ROWS = [2, 6, 10, 14];
+  const QF_ROWS = [4, 12];
+  const SF_ROWS = [8];
+
   const leftRounds = [
-    {
-      label: "Round of 32",
-      rows: [1, 3, 5, 7, 9, 11, 13, 15],
-      ids: ["74", "77", "73", "75", "83", "84", "81", "82"],
-    },
-    {
-      label: "Round of 16",
-      rows: [2, 6, 10, 14],
-      ids: ["89", "90", "93", "94"],
-    },
-    {
-      label: "Quarter-final",
-      rows: [4, 12],
-      ids: ["97", "98"],
-    },
-    {
-      label: "Semi-final",
-      rows: [8],
-      ids: ["101"],
-    },
+    { label: "Round of 32", rows: R32_ROWS, ids: r32Left },
+    { label: "Round of 16", rows: R16_ROWS, ids: r16Left },
+    { label: "Quarter-final", rows: QF_ROWS, ids: qfLeft },
+    { label: "Semi-final", rows: SF_ROWS, ids: sfLeft },
   ];
 
   const rightRounds = [
-    {
-      label: "Semi-final",
-      rows: [8],
-      ids: ["102"],
-    },
-    {
-      label: "Quarter-final",
-      rows: [4, 12],
-      ids: ["99", "100"],
-    },
-    {
-      label: "Round of 16",
-      rows: [2, 6, 10, 14],
-      ids: ["91", "92", "95", "96"],
-    },
-    {
-      label: "Round of 32",
-      rows: [1, 3, 5, 7, 9, 11, 13, 15],
-      ids: ["76", "78", "79", "80", "86", "88", "85", "87"],
-    },
+    { label: "Semi-final", rows: SF_ROWS, ids: sfRight },
+    { label: "Quarter-final", rows: QF_ROWS, ids: qfRight },
+    { label: "Round of 16", rows: R16_ROWS, ids: r16Right },
+    { label: "Round of 32", rows: R32_ROWS, ids: r32Right },
   ];
 
-  const finalMatch = matchMap["104"];
-  const thirdMatch = matchMap["103"];
+  const finalMatch = finalId ? matchMap[finalId] : null;
+  const thirdMatch = thirdId ? matchMap[thirdId] : null;
 
   const renderRound = (round, side) => {
     let html = `

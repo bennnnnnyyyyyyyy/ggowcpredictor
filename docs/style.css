@@ -1381,7 +1381,32 @@ main {
 .leaderboard-table td[data-label="Correct %"] .percent-low {
   color: var(--danger);
 }
+/* ── Leaderboard rank cell ── */
+.rank-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
+.rank-arrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.rank-arrow-up {
+  color: #00d15e;
+}
+
+.rank-arrow-down {
+  color: #ff4444;
+}
+
+.rank-arrow-neutral {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 9px;
+}
 .table-empty {
   text-align: center;
   padding: 40px;
