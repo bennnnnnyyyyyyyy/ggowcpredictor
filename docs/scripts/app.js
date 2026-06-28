@@ -996,21 +996,26 @@ function renderHome() {
       const homeColor = wcTeamColors[fixture.team1] || "var(--wc-blue)";
       const awayColor = wcTeamColors[fixture.team2] || "var(--wc-red)";
 
+  const result = STATE.results?.[fixture.matchId];
+  const isFinished = result && ["FT","AET","PEN","FINISHED","FULL_TIME"].includes(String(result.status||"").toUpperCase());
+  const finalScore = isFinished && result.score1 != null && result.score2 != null
+    ? `${result.score1}-${result.score2}` : null;
+
       const popularHtml = scoreGroups.length
         ? scoreGroups
-            .slice(0, 8)
             .map((group, index) => {
-              // Match has started if result exists OR kickoff time passed
-              const result = STATE.results?.[fixture.matchId];
-
               const hasStarted =
                 result &&
                 !["NS", "NOT_STARTED", "TBD"].includes(
                   String(result.status || "").toUpperCase(),
                 );
 
+              // Only highlight the exact score (15 pts)
+              const scoreClass = (isFinished && finalScore && group.score === finalScore)
+                ? "correct-score" : "";
+
               return `
-          <div class="popular-score ${index === 0 ? "popular-score-top" : ""}">
+          <div class="popular-score ${index === 0 ? "popular-score-top" : ""} ${scoreClass}">
             <div class="popular-score-main">
               <span class="score-badge">${escapeHtml(group.score)}</span>
               <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
@@ -1034,7 +1039,7 @@ function renderHome() {
         : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
       return `
-            <article class="home-match-card-large">
+            <article class="home-match-card-large${isFinished ? " match-finished" : ""}">
               <div class="home-match-card-head">
                 <div>
                   <div class="home-match-kickoff">
@@ -1042,7 +1047,7 @@ function renderHome() {
   <span class="match-status-badge ${getMatchStatusInfo(fixture).cssClass}">${escapeHtml(getMatchStatusInfo(fixture).label)}</span>
   ${fixture.group ? `<span class="match-group-label">${escapeHtml(fixture.group)}</span>` : ""}
 </div>
-                  <h4>${escapeHtml(fixture.team1 || "TBD")} <span>vs</span> ${escapeHtml(fixture.team2 || "TBD")}</h4>
+                  <h4>${escapeHtml(fixture.team1 || "TBD")} ${finalScore ? `<span class="final-score-chip">${escapeHtml(finalScore)}</span>` : "<span>vs</span>"} ${escapeHtml(fixture.team2 || "TBD")}</h4>
                 </div>
                 <div class="pick-count"><strong>${matchPreds.length}</strong><span>picks</span></div>
               </div>
