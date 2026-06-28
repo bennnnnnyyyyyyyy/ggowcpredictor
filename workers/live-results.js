@@ -342,19 +342,32 @@ function buildLeaderboard(
     const isKnockoutStage =
       stage !== "group" && stage !== "group_stage" && stage !== "";
     const actualIsDraw = result.score1 === result.score2;
+    const userPredictedDraw = pred1 === pred2;
 
-    // Knockout draw with no recorded penalty winner yet: not scoreable.
-    if (isKnockoutStage && actualIsDraw && !result.penalty_winner) {
-      continue;
+    let points;
+
+    if (isKnockoutStage && actualIsDraw && userPredictedDraw) {
+      // Penalty-decided draw, user also predicted a draw: not scoreable
+      // until the penalty winner is recorded. Correct pick = full exact
+      // score (stage-weighted); wrong/missing pick = 0.
+      if (!result.penalty_winner) continue;
+      const multiplier = STAGE_MULTIPLIERS[stage] ?? 1;
+      points =
+        prediction.pen_winner && prediction.pen_winner === result.penalty_winner
+          ? 15 * multiplier
+          : 0;
+    } else {
+      // Non-draw prediction, or group stage: normal scoring applies
+      // regardless of how the match was actually decided.
+      points = scoreMatch(
+        pred1,
+        pred2,
+        result.score1,
+        result.score2,
+        fixture.stage,
+      );
     }
 
-    const points = scoreMatch(
-      pred1,
-      pred2,
-      result.score1,
-      result.score2,
-      fixture.stage,
-    );
     userMap[username].totalPoints += points;
     userMap[username].scored++;
     if (pred1 === result.score1 && pred2 === result.score2)
