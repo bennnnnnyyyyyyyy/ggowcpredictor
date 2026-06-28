@@ -160,6 +160,11 @@
 
     <!-- MAIN CONTENT -->
     <main>
+      <div class="knockout-banner" id="knockout-banner">
+        <span class="knockout-banner-fire">🔥</span>
+        <span class="knockout-banner-text">Knockout stage is <strong>LIVE</strong> — predictions now score at <strong>×2 dor the Round of 32</strong> - Check Rules Tab</span>
+        <button class="knockout-banner-close" onclick="this.parentElement.hidden=true" aria-label="Dismiss">✕</button>
+      </div>
       <!-- ── PREDICTIONS VIEW ── -->
       <div id="view-predictions" class="view">
         <div class="section-title">
@@ -442,6 +447,17 @@
               </div>
 
             </div>
+            <div class="scoring-example-box">
+              <div class="scoring-example-title">🔥 Knockout Multipliers</div>
+              <div class="multiplier-table">
+                <div class="multiplier-row"><span class="multiplier-stage">Group Stage</span><span class="multiplier-val">×1</span><span class="multiplier-pts">15 / 8 / 5 pts</span></div>
+                <div class="multiplier-row"><span class="multiplier-stage">Round of 32</span><span class="multiplier-val">×2</span><span class="multiplier-pts">30 / 16 / 10 pts</span></div>
+                <div class="multiplier-row"><span class="multiplier-stage">Round of 16</span><span class="multiplier-val">×2.5</span><span class="multiplier-pts">37.5 / 20 / 12.5 pts</span></div>
+                <div class="multiplier-row"><span class="multiplier-stage">Quarter-final</span><span class="multiplier-val">×3</span><span class="multiplier-pts">45 / 24 / 15 pts</span></div>
+                <div class="multiplier-row"><span class="multiplier-stage">Semi-final</span><span class="multiplier-val">×4</span><span class="multiplier-pts">60 / 32 / 20 pts</span></div>
+                <div class="multiplier-row"><span class="multiplier-stage">Final</span><span class="multiplier-val">×5</span><span class="multiplier-pts">75 / 40 / 25 pts</span></div>
+              </div>
+            </div>
 
             <div class="rules-divider"></div>
 
@@ -452,14 +468,18 @@
 
               <div class="scoring-example">
                 <strong>8 pts:</strong>
-                Prediction 2-0 • Actual 4-2 → Goal Difference +2 vs +2
+                Prediction 2-0 · Actual 4-2 → GD matched
               </div>
 
               <div class="scoring-example">
                 <strong>5 pts:</strong>
-                Prediction 1-2 • Actual 0-3 → Goal Difference -1 vs -3
+                Prediction 1-2 · Actual 0-3 → result right, GD off
               </div>
             </div>
+
+            <div class="rules-divider"></div>
+
+            
 
           </div>
         </div>
