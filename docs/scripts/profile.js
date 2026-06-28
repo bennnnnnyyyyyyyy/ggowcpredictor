@@ -29,7 +29,6 @@ function sbHeaders(extra = {}) {
   );
 }
 
-
 async function sbSelect(table, selectQ = "*", filterQ = "") {
   let qs = `select=${encodeURIComponent(selectQ)}`;
   if (filterQ) qs += `&${filterQ}`;
@@ -65,13 +64,32 @@ const STAGE_MULTIPLIERS = {
   third: 4,
   final: 5,
 };
+function calcPoints(
+  p1,
+  p2,
+  a1,
+  a2,
+  stage = "group",
+  penWinner = null,
+  actualPenWinner = null,
+) {
+  const stageKey = String(stage || "group").toLowerCase();
+  const multiplier = STAGE_MULTIPLIERS[stageKey] ?? 1;
+  const isKnockout =
+    stageKey !== "group" && stageKey !== "group_stage" && stageKey !== "";
+  const actualIsDraw = a1 === a2;
+  const userPredictedDraw = p1 === p2;
 
-function calcPoints(p1, p2, a1, a2, stage = "group") {
-  const multiplier = STAGE_MULTIPLIERS[String(stage || "group").toLowerCase()] ?? 1;
+  if (isKnockout && actualIsDraw && userPredictedDraw) {
+    if (!actualPenWinner) return null; // not scoreable yet
+    return penWinner && penWinner === actualPenWinner ? 15 * multiplier : 0;
+  }
+
   if (p1 === a1 && p2 === a2) return 15 * multiplier;
   const po = Math.sign(p1 - p2);
   const ao = Math.sign(a1 - a2);
-  if (po === ao) return (Math.abs((p1 - p2) - (a1 - a2)) <= 1 ? 8 : 5) * multiplier;
+  if (po === ao)
+    return (Math.abs(p1 - p2 - (a1 - a2)) <= 1 ? 8 : 5) * multiplier;
   return 0;
 }
 
@@ -218,10 +236,20 @@ function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
       }
 
       if (hasPred && actualHome !== null && actualAway !== null) {
-        points = calcPoints(pred1, pred2, actualHome, actualAway, fixture.stage);
-        totalPoints += points;
-        if (pred1 === actualHome && pred2 === actualAway) exactScores++;
-        if (points > 0) correctOutcomes++;
+        points = calcPoints(
+          pred1,
+          pred2,
+          actualHome,
+          actualAway,
+          fixture.stage,
+          p.pen_winner,
+          result?.penalty_winner,
+        );
+        if (points !== null) {
+          totalPoints += points;
+          if (pred1 === actualHome && pred2 === actualAway) exactScores++;
+          if (points > 0) correctOutcomes++;
+        }
       }
 
       return {
@@ -393,7 +421,9 @@ function renderProfile(data) {
   let activeFilter = "all";
 
   function renderList(filter) {
-    let list = predictions.filter((p) => p.statusType === "finished" || p.statusType === "live");
+    let list = predictions.filter(
+      (p) => p.statusType === "finished" || p.statusType === "live",
+    );
     if (filter === "finished")
       list = predictions.filter((p) => p.statusType === "finished");
     if (filter === "live")
@@ -541,8 +571,9 @@ function renderProfile(data) {
     </div>
 
     <!-- Accuracy bar -->
-    ${scored > 0
-      ? `
+    ${
+      scored > 0
+        ? `
     <div class="accuracy-bar-wrap" style="margin-bottom:28px">
       <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Scoring accuracy</span>
       <div class="accuracy-bar-track">
@@ -550,7 +581,7 @@ function renderProfile(data) {
       </div>
       <span class="accuracy-label">${accuracy}%</span>
     </div>`
-      : ""
+        : ""
     }
 
     
@@ -664,9 +695,3 @@ function renderError(message) {
     );
   }
 })();
-
-
-
-
-
-
