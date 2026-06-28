@@ -6311,3 +6311,67 @@ main {
     padding: 20px;
   }
 }
+
+/* ── Multiplier table ── */
+.multiplier-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+.multiplier-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+}
+.multiplier-stage {
+  flex: 1;
+  color: var(--light);
+  font-weight: 600;
+}
+.multiplier-val {
+  font-weight: 800;
+  color: var(--wc-gold, #f5c842);
+  font-size: 14px;
+  min-width: 40px;
+  text-align: center;
+}
+.multiplier-pts {
+  color: var(--muted);
+  font-size: 11px;
+  min-width: 120px;
+  text-align: right;
+}
+
+/* ── Knockout live banner ── */
+.knockout-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(90deg, rgba(255,80,0,0.15), rgba(255,180,0,0.1));
+  border-bottom: 1px solid rgba(255,120,0,0.3);
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--light);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.knockout-banner-fire { font-size: 18px; }
+.knockout-banner-text strong { color: #ffb300; }
+.knockout-banner-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.knockout-banner-close:hover { background: rgba(255,255,255,0.08); }
