@@ -88,6 +88,28 @@ const THIRD_PLACE_SLOT_ORDER = [
   "3E/F/G/I/J", // 7th
   "3D/E/I/J/L", // 8th
 ];
+
+// ── Static R32 seed map — real teams confirmed from group stage draw ──
+// Overrides bad/stale API team values for R32 fixtures before rendering.
+// R16+ slots (W73, W74…) auto-resolve via resolveSlot once results exist.
+const R32_SEED_MAP = {
+  "73": { team1: "South Africa",        team2: "Canada" },
+  "74": { team1: "Brazil",              team2: "Japan" },
+  "75": { team1: "Germany",             team2: "Paraguay" },
+  "76": { team1: "Netherlands",         team2: "Morocco" },
+  "77": { team1: "Ivory Coast",         team2: "Norway" },
+  "78": { team1: "France",              team2: "Sweden" },
+  "79": { team1: "Mexico",              team2: "Ecuador" },
+  "80": { team1: "England",             team2: "DR Congo" },
+  "81": { team1: "Belgium",             team2: "Senegal" },
+  "82": { team1: "USA",                 team2: "Bosnia & Herzegovina" },
+  "83": { team1: "Spain",               team2: "Austria" },
+  "84": { team1: "Portugal",            team2: "Croatia" },
+  "85": { team1: "Switzerland",         team2: "Algeria" },
+  "86": { team1: "Australia",           team2: "Egypt" },
+  "87": { team1: "Argentina",           team2: "Cape Verde" },
+  "88": { team1: "Colombia",            team2: "Ghana" },
+};
 const SESSION = {
   token: localStorage.getItem("ggo_wc_token") || null,
   username: localStorage.getItem("ggo_wc_user") || null,
@@ -1500,6 +1522,8 @@ function normalizeFixture(fixture) {
   );
   const stage = fixture.stage || getStageFromRound(fixture.round);
 
+  const seedOverride = R32_SEED_MAP[matchId];
+
   return {
     ...fixture,
     matchId,
@@ -1509,8 +1533,8 @@ function normalizeFixture(fixture) {
       ? kickoffDate.toISOString()
       : fixture.kickoffUTC || "",
     kickoffDate,
-    team1: fixture.team1 || fixture.homeTeam || "TBD",
-    team2: fixture.team2 || fixture.awayTeam || "TBD",
+    team1: seedOverride ? seedOverride.team1 : (fixture.team1 || fixture.homeTeam || "TBD"),
+    team2: seedOverride ? seedOverride.team2 : (fixture.team2 || fixture.awayTeam || "TBD"),
     ground: fixture.ground || fixture.venue || "TBD",
   };
 }
@@ -2521,37 +2545,71 @@ function renderBracket() {
   }
 
   // Split left/right halves
-  const r32Left = r32Ids.slice(0, r32Ids.length / 2).map(String);
+  const r32Left  = r32Ids.slice(0, r32Ids.length / 2).map(String);
   const r32Right = r32Ids.slice(r32Ids.length / 2).map(String);
-  const r16Left = r16Ids.slice(0, r16Ids.length / 2).map(String);
+  const r16Left  = r16Ids.slice(0, r16Ids.length / 2).map(String);
   const r16Right = r16Ids.slice(r16Ids.length / 2).map(String);
-  const qfLeft = qfIds.slice(0, qfIds.length / 2).map(String);
-  const qfRight = qfIds.slice(qfIds.length / 2).map(String);
-  const sfLeft = sfIds.slice(0, 1).map(String);
-  const sfRight = sfIds.slice(1).map(String);
+  const qfLeft   = qfIds.slice(0, qfIds.length / 2).map(String);
+  const qfRight  = qfIds.slice(qfIds.length / 2).map(String);
+  const sfLeft   = sfIds.slice(0, 1).map(String);
+  const sfRight  = sfIds.slice(1).map(String);
 
   // Grid row assignments (visual spacing)
   const R32_ROWS = [1, 3, 5, 7, 9, 11, 13, 15];
   const R16_ROWS = [2, 6, 10, 14];
-  const QF_ROWS = [4, 12];
-  const SF_ROWS = [8];
+  const QF_ROWS  = [4, 12];
+  const SF_ROWS  = [8];
 
+  // ── Explicit bracket layout using confirmed Supabase matchIds ──
+  // Left side: odd R32s feed left half; Right side: even R32s feed right half.
   const leftRounds = [
-    { label: "Round of 32", rows: R32_ROWS, ids: r32Left },
-    { label: "Round of 16", rows: R16_ROWS, ids: r16Left },
-    { label: "Quarter-final", rows: QF_ROWS, ids: qfLeft },
-    { label: "Semi-final", rows: SF_ROWS, ids: sfLeft },
+    {
+      label: "Round of 32",
+      rows:  [1, 3, 5, 7, 9, 11, 13, 15],
+      ids:   ["73", "75", "77", "79", "81", "83", "85", "87"],
+    },
+    {
+      label: "Round of 16",
+      rows:  [2, 6, 10, 14],
+      ids:   ["90", "91", "93", "94"],
+    },
+    {
+      label: "Quarter-final",
+      rows:  [4, 12],
+      ids:   ["97", "98"],
+    },
+    {
+      label: "Semi-final",
+      rows:  [8],
+      ids:   ["101"],
+    },
   ];
 
   const rightRounds = [
-    { label: "Semi-final", rows: SF_ROWS, ids: sfRight },
-    { label: "Quarter-final", rows: QF_ROWS, ids: qfRight },
-    { label: "Round of 16", rows: R16_ROWS, ids: r16Right },
-    { label: "Round of 32", rows: R32_ROWS, ids: r32Right },
+    {
+      label: "Semi-final",
+      rows:  [8],
+      ids:   ["102"],
+    },
+    {
+      label: "Quarter-final",
+      rows:  [4, 12],
+      ids:   ["99", "100"],
+    },
+    {
+      label: "Round of 16",
+      rows:  [2, 6, 10, 14],
+      ids:   ["89", "92", "95", "96"],
+    },
+    {
+      label: "Round of 32",
+      rows:  [1, 3, 5, 7, 9, 11, 13, 15],
+      ids:   ["74", "76", "78", "80", "82", "84", "86", "88"],
+    },
   ];
 
-  const finalMatch = finalId ? matchMap[finalId] : null;
-  const thirdMatch = thirdId ? matchMap[thirdId] : null;
+  const finalMatch = matchMap["104"] ?? null;
+  const thirdMatch = matchMap["103"] ?? null;
 
   const renderRound = (round, side) => {
     let html = `
@@ -2791,8 +2849,9 @@ function renderBracketMatch(match) {
       ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
       : "VS";
 
-  const team1 = getBracketTeamDisplay(match.team1, result, "team1");
-  const team2 = getBracketTeamDisplay(match.team2, result, "team2");
+  const seedOverride = R32_SEED_MAP[String(match.matchId)];
+  const team1 = getBracketTeamDisplay(seedOverride ? seedOverride.team1 : match.team1, result, "team1");
+  const team2 = getBracketTeamDisplay(seedOverride ? seedOverride.team2 : match.team2, result, "team2");
 
   return `
     <article class="bracket-match ${getBracketMatchStateClass(result)}">
@@ -2875,6 +2934,9 @@ function getBracketMatchStateClass(result) {
 function isBracketReference(value) {
   const trimmed = String(value || "").trim();
   if (!trimmed || trimmed === "TBD") return false;
+  // Real team names always have spaces or length > 6 — never treat them as slot codes
+  if (trimmed.includes(" ") || trimmed.length > 6) return false;
+  // Slot codes: 1A, 2B, 3A/B/C, W74, L101
   return /^([12][A-L]|[WL]\d+|3[A-L\/]+)$/i.test(trimmed);
 }
 /**
