@@ -93,22 +93,22 @@ const THIRD_PLACE_SLOT_ORDER = [
 // Overrides bad/stale API team values for R32 fixtures before rendering.
 // R16+ slots (W73, W74…) auto-resolve via resolveSlot once results exist.
 const R32_SEED_MAP = {
-  "73": { team1: "South Africa",        team2: "Canada" },
-  "74": { team1: "Brazil",              team2: "Japan" },
-  "75": { team1: "Germany",             team2: "Paraguay" },
-  "76": { team1: "Netherlands",         team2: "Morocco" },
-  "77": { team1: "Ivory Coast",         team2: "Norway" },
-  "78": { team1: "France",              team2: "Sweden" },
-  "79": { team1: "Mexico",              team2: "Ecuador" },
-  "80": { team1: "England",             team2: "DR Congo" },
-  "81": { team1: "Belgium",             team2: "Senegal" },
-  "82": { team1: "USA",                 team2: "Bosnia & Herzegovina" },
-  "83": { team1: "Spain",               team2: "Austria" },
-  "84": { team1: "Portugal",            team2: "Croatia" },
-  "85": { team1: "Switzerland",         team2: "Algeria" },
-  "86": { team1: "Australia",           team2: "Egypt" },
-  "87": { team1: "Argentina",           team2: "Cape Verde" },
-  "88": { team1: "Colombia",            team2: "Ghana" },
+  73: { team1: "South Africa", team2: "Canada" },
+  74: { team1: "Brazil", team2: "Japan" },
+  75: { team1: "Germany", team2: "Paraguay" },
+  76: { team1: "Netherlands", team2: "Morocco" },
+  77: { team1: "Ivory Coast", team2: "Norway" },
+  78: { team1: "France", team2: "Sweden" },
+  79: { team1: "Mexico", team2: "Ecuador" },
+  80: { team1: "England", team2: "DR Congo" },
+  81: { team1: "Belgium", team2: "Senegal" },
+  82: { team1: "USA", team2: "Bosnia & Herzegovina" },
+  83: { team1: "Spain", team2: "Austria" },
+  84: { team1: "Portugal", team2: "Croatia" },
+  85: { team1: "Switzerland", team2: "Algeria" },
+  86: { team1: "Australia", team2: "Egypt" },
+  87: { team1: "Argentina", team2: "Cape Verde" },
+  88: { team1: "Colombia", team2: "Ghana" },
 };
 const SESSION = {
   token: localStorage.getItem("ggo_wc_token") || null,
@@ -996,10 +996,16 @@ function renderHome() {
       const homeColor = wcTeamColors[fixture.team1] || "var(--wc-blue)";
       const awayColor = wcTeamColors[fixture.team2] || "var(--wc-red)";
 
-  const result = STATE.results?.[fixture.matchId];
-  const isFinished = result && ["FT","AET","PEN","FINISHED","FULL_TIME"].includes(String(result.status||"").toUpperCase());
-  const finalScore = isFinished && result.score1 != null && result.score2 != null
-    ? `${result.score1}-${result.score2}` : null;
+      const result = STATE.results?.[fixture.matchId];
+      const isFinished =
+        result &&
+        ["FT", "AET", "PEN", "FINISHED", "FULL_TIME"].includes(
+          String(result.status || "").toUpperCase(),
+        );
+      const finalScore =
+        isFinished && result.score1 != null && result.score2 != null
+          ? `${result.score1}-${result.score2}`
+          : null;
 
       const popularHtml = scoreGroups.length
         ? scoreGroups
@@ -1011,8 +1017,10 @@ function renderHome() {
                 );
 
               // Only highlight the exact score (15 pts)
-              const scoreClass = (isFinished && finalScore && group.score === finalScore)
-                ? "correct-score" : "";
+              const scoreClass =
+                isFinished && finalScore && group.score === finalScore
+                  ? "correct-score"
+                  : "";
 
               return `
           <div class="popular-score ${index === 0 ? "popular-score-top" : ""} ${scoreClass}">
@@ -1538,8 +1546,12 @@ function normalizeFixture(fixture) {
       ? kickoffDate.toISOString()
       : fixture.kickoffUTC || "",
     kickoffDate,
-    team1: seedOverride ? seedOverride.team1 : (fixture.team1 || fixture.homeTeam || "TBD"),
-    team2: seedOverride ? seedOverride.team2 : (fixture.team2 || fixture.awayTeam || "TBD"),
+    team1: seedOverride
+      ? seedOverride.team1
+      : fixture.team1 || fixture.homeTeam || "TBD",
+    team2: seedOverride
+      ? seedOverride.team2
+      : fixture.team2 || fixture.awayTeam || "TBD",
     ground: fixture.ground || fixture.venue || "TBD",
   };
 }
@@ -1679,7 +1691,7 @@ function normalizeResultStatus(status) {
   return status ? String(status).toUpperCase() : "NS";
 }
 
-async function savePrediction(matchId, pred1, pred2) {
+async function savePrediction(matchId, pred1, pred2, penWinner = null) {
   const fixture = STATE.fixtures.find(
     (match) => match.matchId === String(matchId),
   );
@@ -1719,6 +1731,7 @@ async function savePrediction(matchId, pred1, pred2) {
       matchId: matchIdStr,
       pred1: score1,
       pred2: score2,
+      pen_winner: penWinner,
       submittedAt: new Date().toISOString(),
       pointsAwarded: null,
       scoredAt: null,
@@ -1731,6 +1744,7 @@ async function savePrediction(matchId, pred1, pred2) {
       username: SESSION.username,
       pred1: score1,
       pred2: score2,
+      pen_winner: penWinner,
       submittedAt: new Date().toISOString(),
       pointsAwarded: null,
       scoredAt: null,
@@ -1984,13 +1998,60 @@ function handleScoreChange(matchId) {
       num2 < 0
     )
       return;
-    savePrediction(matchId, num1, num2);
+
+    if (num1 === num2 && isKnockoutMatch(matchId)) {
+      showPenaltyPopup(matchId, num1, num2);
+    } else {
+      savePrediction(matchId, num1, num2);
+    }
     saveTimeouts.delete(matchId);
   }, 400);
 
   saveTimeouts.set(matchId, timeout);
 }
+function isKnockoutMatch(matchId) {
+  const fixture = STATE.fixtures.find((m) => m.matchId === String(matchId));
+  if (!fixture) return false;
+  const stage = String(
+    fixture.stage || getStageFromRound(fixture.round || "") || "",
+  ).toLowerCase();
+  return stage !== "group" && stage !== "group_stage" && stage !== "";
+}
 
+function showPenaltyPopup(matchId, num1, num2) {
+  const fixture = STATE.fixtures.find((m) => m.matchId === String(matchId));
+  if (!fixture) return;
+
+  const existing = document.getElementById("pen-popup-overlay");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "pen-popup-overlay";
+  overlay.className = "pen-popup-overlay";
+  overlay.innerHTML = `
+    <div class="pen-popup">
+      <div class="pen-popup-title">Draw — who wins on penalties?</div>
+      <div class="pen-popup-teams">
+        <button class="pen-popup-btn" data-team="1">${escapeHtml(fixture.team1)}</button>
+        <button class="pen-popup-btn" data-team="2">${escapeHtml(fixture.team2)}</button>
+      </div>
+      <button class="pen-popup-cancel">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelectorAll(".pen-popup-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const penWinner = btn.dataset.team === "1" ? "team1" : "team2";
+      overlay.remove();
+      savePrediction(matchId, num1, num2, penWinner);
+    });
+  });
+  overlay.querySelector(".pen-popup-cancel").addEventListener("click", () => {
+    overlay.remove();
+    renderPredictions();
+  });
+}
 function renderGroupStandings() {
   const container = document.getElementById("group-standings");
   if (!container) return;
@@ -2550,66 +2611,66 @@ function renderBracket() {
   }
 
   // Split left/right halves
-  const r32Left  = r32Ids.slice(0, r32Ids.length / 2).map(String);
+  const r32Left = r32Ids.slice(0, r32Ids.length / 2).map(String);
   const r32Right = r32Ids.slice(r32Ids.length / 2).map(String);
-  const r16Left  = r16Ids.slice(0, r16Ids.length / 2).map(String);
+  const r16Left = r16Ids.slice(0, r16Ids.length / 2).map(String);
   const r16Right = r16Ids.slice(r16Ids.length / 2).map(String);
-  const qfLeft   = qfIds.slice(0, qfIds.length / 2).map(String);
-  const qfRight  = qfIds.slice(qfIds.length / 2).map(String);
-  const sfLeft   = sfIds.slice(0, 1).map(String);
-  const sfRight  = sfIds.slice(1).map(String);
+  const qfLeft = qfIds.slice(0, qfIds.length / 2).map(String);
+  const qfRight = qfIds.slice(qfIds.length / 2).map(String);
+  const sfLeft = sfIds.slice(0, 1).map(String);
+  const sfRight = sfIds.slice(1).map(String);
 
   // Grid row assignments (visual spacing)
   const R32_ROWS = [1, 3, 5, 7, 9, 11, 13, 15];
   const R16_ROWS = [2, 6, 10, 14];
-  const QF_ROWS  = [4, 12];
-  const SF_ROWS  = [8];
+  const QF_ROWS = [4, 12];
+  const SF_ROWS = [8];
 
   // ── Explicit bracket layout using confirmed Supabase matchIds ──
   // Left side: odd R32s feed left half; Right side: even R32s feed right half.
   const leftRounds = [
     {
       label: "Round of 32",
-      rows:  [1, 3, 5, 7, 9, 11, 13, 15],
-      ids:   ["73", "75", "77", "79", "81", "83", "85", "87"],
+      rows: [1, 3, 5, 7, 9, 11, 13, 15],
+      ids: ["73", "75", "77", "79", "81", "83", "85", "87"],
     },
     {
       label: "Round of 16",
-      rows:  [2, 6, 10, 14],
-      ids:   ["90", "91", "93", "94"],
+      rows: [2, 6, 10, 14],
+      ids: ["90", "91", "93", "94"],
     },
     {
       label: "Quarter-final",
-      rows:  [4, 12],
-      ids:   ["97", "98"],
+      rows: [4, 12],
+      ids: ["97", "98"],
     },
     {
       label: "Semi-final",
-      rows:  [8],
-      ids:   ["101"],
+      rows: [8],
+      ids: ["101"],
     },
   ];
 
   const rightRounds = [
     {
       label: "Semi-final",
-      rows:  [8],
-      ids:   ["102"],
+      rows: [8],
+      ids: ["102"],
     },
     {
       label: "Quarter-final",
-      rows:  [4, 12],
-      ids:   ["99", "100"],
+      rows: [4, 12],
+      ids: ["99", "100"],
     },
     {
       label: "Round of 16",
-      rows:  [2, 6, 10, 14],
-      ids:   ["89", "92", "95", "96"],
+      rows: [2, 6, 10, 14],
+      ids: ["89", "92", "95", "96"],
     },
     {
       label: "Round of 32",
-      rows:  [1, 3, 5, 7, 9, 11, 13, 15],
-      ids:   ["74", "76", "78", "80", "82", "84", "86", "88"],
+      rows: [1, 3, 5, 7, 9, 11, 13, 15],
+      ids: ["74", "76", "78", "80", "82", "84", "86", "88"],
     },
   ];
 
@@ -2855,8 +2916,16 @@ function renderBracketMatch(match) {
       : "VS";
 
   const seedOverride = R32_SEED_MAP[String(match.matchId)];
-  const team1 = getBracketTeamDisplay(seedOverride ? seedOverride.team1 : match.team1, result, "team1");
-  const team2 = getBracketTeamDisplay(seedOverride ? seedOverride.team2 : match.team2, result, "team2");
+  const team1 = getBracketTeamDisplay(
+    seedOverride ? seedOverride.team1 : match.team1,
+    result,
+    "team1",
+  );
+  const team2 = getBracketTeamDisplay(
+    seedOverride ? seedOverride.team2 : match.team2,
+    result,
+    "team2",
+  );
 
   return `
     <article class="bracket-match ${getBracketMatchStateClass(result)}">

@@ -6327,7 +6327,7 @@ main {
   font-size: 13px;
   padding: 6px 10px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
 }
 .multiplier-stage {
   flex: 1;
@@ -6353,8 +6353,12 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: linear-gradient(90deg, rgba(255,80,0,0.15), rgba(255,180,0,0.1));
-  border-bottom: 1px solid rgba(255,120,0,0.3);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 80, 0, 0.15),
+    rgba(255, 180, 0, 0.1)
+  );
+  border-bottom: 1px solid rgba(255, 120, 0, 0.3);
   padding: 10px 18px;
   font-size: 13px;
   font-weight: 600;
@@ -6363,8 +6367,12 @@ main {
   top: 0;
   z-index: 50;
 }
-.knockout-banner-fire { font-size: 18px; }
-.knockout-banner-text strong { color: #ffb300; }
+.knockout-banner-fire {
+  font-size: 18px;
+}
+.knockout-banner-text strong {
+  color: #ffb300;
+}
 .knockout-banner-close {
   margin-left: auto;
   background: none;
@@ -6375,7 +6383,9 @@ main {
   padding: 2px 6px;
   border-radius: 4px;
 }
-.knockout-banner-close:hover { background: rgba(255,255,255,0.08); }
+.knockout-banner-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
 
 /* ── Final score chip (replaces "vs" when match is done) ── */
 .final-score-chip {
@@ -6388,20 +6398,67 @@ main {
   border-radius: 20px;
   letter-spacing: 0.04em;
   vertical-align: middle;
-  box-shadow: 0 2px 8px rgba(245,200,66,0.35);
+  box-shadow: 0 2px 8px rgba(245, 200, 66, 0.35);
 }
 
 /* ── Finished match card accent ── */
 .home-match-card-large.match-finished {
-  border-left: 3px solid rgba(245,200,66,0.5);
+  border-left: 3px solid rgba(245, 200, 66, 0.5);
 }
 
 /* ── Exact score highlight (15 pts) — full row gold fill ── */
 .popular-score.correct-score {
   background: rgba(245, 200, 66, 0.14);
   border-color: rgba(245, 200, 66, 0.35);
-  box-shadow: 0 0 12px rgba(245, 200, 66, 0.3), inset 0 0 20px rgba(245, 200, 66, 0.06);
+  box-shadow:
+    0 0 12px rgba(245, 200, 66, 0.3),
+    inset 0 0 20px rgba(245, 200, 66, 0.06);
 }
 .popular-score.correct-score .score-badge {
   color: #f5c842;
+}
+
+.pen-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.pen-popup {
+  background: var(--card-bg, #1a1a1a);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 320px;
+  text-align: center;
+}
+.pen-popup-title {
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.pen-popup-teams {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.pen-popup-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #fff;
+  cursor: pointer;
+}
+.pen-popup-btn:hover {
+  background: #00b359;
+}
+.pen-popup-cancel {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
 }
