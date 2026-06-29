@@ -1440,7 +1440,22 @@ async function loadAllPredictions() {
     STATE.allPredictions = readLocalObject("ggo_wc_predictions_all") || {};
   }
 }
-
+// Auto-relock check every 30 seconds
+setInterval(() => {
+  const now = Date.now();
+  STATE.fixtures.forEach(fix => {
+    const kickoff = fix.kickoffDate;
+    if (!kickoff) return;
+    const msUntil = kickoff.getTime() - now;
+    // If just passed kickoff (within last 2 minutes), re-render that card
+    if (msUntil <= 0 && msUntil > -120000) {
+      const card = document.querySelector(`[data-matchid="${fix.matchId}"]`);
+      if (card && !card.closest('article')?.classList.contains('locked')) {
+        renderPredictions();
+      }
+    }
+  });
+}, 30000);
 async function loadPredictions() {
   const local =
     readLocalObject(`ggo_wc_predictions_${SESSION.username || "demo"}`) || {};
@@ -1734,6 +1749,8 @@ async function savePrediction(matchId, pred1, pred2, penWinner = null) {
   if (isLocked(fixture)) {
     showToast("This match is locked.", "error");
     renderPredictions();
+    setInterval(renderPredictions, 30000);
+
     return;
   }
 
