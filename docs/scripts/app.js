@@ -2879,6 +2879,14 @@ function renderBracketTabs() {
     }
   });
 
+  // Also add Final and 3rd Place as tabs (they live in .bracket-center, not .bracket-round)
+  ["Final", "3rd Place"].forEach((label) => {
+    if (!seen.has(label)) {
+      seen.add(label);
+      labels.push(label);
+    }
+  });
+
   tabsEl.innerHTML = labels
     .map(
       (label, i) => `
@@ -2904,6 +2912,26 @@ function renderBracketTabs() {
         round.style.display = "";
       }
     });
+
+    // Handle center column (Final / 3rd Place)
+    const bracket = document.getElementById("bracket");
+    if (!bracket) return;
+    const centerEl = bracket.querySelector(".bracket-center");
+    if (!centerEl) return;
+    const isCenterTab = roundName === "Final" || roundName === "3rd Place";
+    if (isMobile) {
+      centerEl.style.display = isCenterTab ? "flex" : "none";
+      // Within center, show only the matching block
+      centerEl.querySelectorAll(".bracket-final, .bracket-third").forEach((block) => {
+        const blockLabel = block.querySelector(".bracket-round-label")?.textContent.trim();
+        block.style.display = (!roundName || blockLabel === roundName) ? "flex" : "none";
+      });
+    } else {
+      centerEl.style.display = "";
+      centerEl.querySelectorAll(".bracket-final, .bracket-third").forEach((block) => {
+        block.style.display = "";
+      });
+    }
   };
 
   setActiveRound(labels[0]);
