@@ -5218,7 +5218,7 @@ main {
 /* ── Percent bar ── */
 .match-percent-bar {
   display: flex;
-  height: 6px;
+  height: 3px;
   border-radius: 999px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.05);
@@ -5304,22 +5304,24 @@ main {
   font-size: 12px;
   color: var(--muted);
 }
-
+/* REPLACE lines 5308-5320 with: */
 .popular-score-names {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
+  max-height: 38px;
+  overflow: hidden;
 }
 
 .popular-score-names span {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.55);
   background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
-  padding: 1px 6px;
+  padding: 1px 5px;
+  white-space: nowrap;
 }
-
 @media (max-width: 600px) {
   .home-hero-copy h2 {
     font-size: 20px;
@@ -6158,6 +6160,41 @@ main {
   100% {
     background-position: -200% 0;
   }
+}
+
+.pred-stage-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 10px;
+}
+.pred-stage-divider::before,
+.pred-stage-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.pred-stage-divider span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wc-gold, #f5c518);
+  white-space: nowrap;
+}
+
+.mc-stage-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--wc-gold, #f5c518);
+  background: rgba(245, 197, 24, 0.1);
+  border: 1px solid rgba(245, 197, 24, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
 }
 
 .skel-hero {

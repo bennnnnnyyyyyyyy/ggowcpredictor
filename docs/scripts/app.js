@@ -869,22 +869,41 @@ function getTodayFixtures() {
     );
 }
 // add after getTodayFixtures():
+// REPLACE lines 873-892 with:
 function getHomeWindowFixtures() {
   const now = new Date();
+
+  // "Yesterday" boundary: noon today local time
+  // TO:
+  const noonToday = new Date(now);
+  noonToday.setUTCHours(12, 0, 0, 0);
+
+  const todayKey = getLocalDateKey(now);
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayKey = getLocalDateKey(yesterday);
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const keys = {
-    yesterday: getLocalDateKey(yesterday),
-    today: getLocalDateKey(now),
-    tomorrow: getLocalDateKey(tomorrow),
-  };
+  const tomorrowKey = getLocalDateKey(tomorrow);
+
   const buckets = { yesterday: [], today: [], tomorrow: [] };
+
   (STATE.fixtures || []).forEach((fixture) => {
     const key = getFixtureDateKey(fixture);
-    if (key === keys.yesterday) buckets.yesterday.push(fixture);
-    else if (key === keys.today) buckets.today.push(fixture);
-    else if (key === keys.tomorrow) buckets.tomorrow.push(fixture);
+    const kickoff = fixture.kickoffDate;
+
+    if (key === yesterdayKey) {
+      buckets.yesterday.push(fixture);
+    } else if (key === todayKey) {
+      // AM games (before noon local) slide into "yesterday"
+      if (kickoff instanceof Date && kickoff < noonToday) {
+        buckets.yesterday.push(fixture);
+      } else {
+        buckets.today.push(fixture);
+      }
+    } else if (key === tomorrowKey) {
+      buckets.tomorrow.push(fixture);
+    }
   });
+
   const byKickoff = (a, b) =>
     (a.kickoffDate?.getTime?.() || 0) - (b.kickoffDate?.getTime?.() || 0);
   buckets.yesterday.sort(byKickoff);
@@ -892,7 +911,6 @@ function getHomeWindowFixtures() {
   buckets.tomorrow.sort(byKickoff);
   return buckets;
 }
-
 function getMatchStatusInfo(fixture) {
   const result = STATE.results?.[fixture.matchId];
   const status = String(result?.status || "").toUpperCase();
@@ -945,7 +963,7 @@ function renderHome() {
   const winSplit = { home: 0, draw: 0, away: 0 };
 
   predictions.forEach((prediction) => {
-    const matchId = String(prediction.matchId);
+    const matchId = String(prediction.match_id ?? prediction.matchId);
     const list = groupedByMatch.get(matchId) || [];
     list.push(prediction);
     groupedByMatch.set(matchId, list);
@@ -1386,11 +1404,15 @@ async function loadResults() {
 async function loadAllPredictions() {
   try {
     const localAll = readLocalObject("ggo_wc_predictions_all") || {};
-    const supabaseAll = await supabaseSelect("predictions", "*");
+    const supabaseAll = await supabaseSelect(
+      "predictions",
+      "*",
+      "order=submittedAt.asc&limit=10000",
+    );
     const merged = { ...localAll };
 
     supabaseAll.forEach((prediction) => {
-      const matchId = String(prediction.matchId);
+      const matchId = String(prediction.match_id ?? prediction.matchId);
       const id = String(prediction.id || "");
       const key =
         id || String(prediction.username || "unknown") + "_" + matchId;
@@ -1439,7 +1461,7 @@ async function loadPredictions() {
   const merged = { ...local };
 
   supabasePredictions.forEach((prediction) => {
-    const matchId = String(prediction.matchId);
+    const matchId = String(prediction.match_id ?? prediction.matchId);
     const existing = merged[matchId];
     if (existing) {
       const existingTime = new Date(existing.submittedAt || 0).getTime();
@@ -1559,7 +1581,7 @@ function normalizeFixture(fixture) {
 function normalizePrediction(prediction) {
   return {
     ...prediction,
-    matchId: String(prediction.matchId),
+    matchId: String(prediction.match_id ?? prediction.matchId),
     pred1: Number(prediction.pred1),
     pred2: Number(prediction.pred2),
   };
@@ -1809,25 +1831,60 @@ function renderPredictions() {
     }
     return;
   }
+  // REPLACE lines 1814-1831 (the groups = groupBy ... container.innerHTML block) with:
+  const STAGE_ORDER = [
+    "group",
+    "group_stage",
+    "r32",
+    "r16",
+    "qf",
+    "sf",
+    "third",
+    "final",
+  ];
+  const stageOf = (f) => f.stage || getStageFromRound(f.round || "") || "group";
 
-  const groups = groupBy(visibleFixtures, (fixture) => {
-    const fixtureLocalDate = formatFixtureLocalDate(fixture);
-    if (fixtureLocalDate) return fixtureLocalDate;
-
-    return fixture.date || "Unknown Date";
+  // Sort fixtures: by stage order then by kickoff
+  visibleFixtures.sort((a, b) => {
+    const si = STAGE_ORDER.indexOf(stageOf(a));
+    const sj = STAGE_ORDER.indexOf(stageOf(b));
+    if (si !== sj) return si - sj;
+    return (
+      (a.kickoffDate?.getTime?.() || 0) - (b.kickoffDate?.getTime?.() || 0)
+    );
   });
-  container.innerHTML = Object.entries(groups)
-    .map(([groupName, fixtures]) => {
-      return `
-        <section class="group-section">
-          <h3>${escapeHtml(groupName)}</h3>
-          <div class="group-matches">
-            ${fixtures.map(renderPredictionCard).join("")}
-          </div>
-        </section>
-      `;
-    })
-    .join("");
+
+  // Group by date within each stage
+  let lastStage = null;
+  const sections = [];
+  const dateGroups = groupBy(visibleFixtures, (fixture) => {
+    const fixtureLocalDate = formatFixtureLocalDate(fixture);
+    return (
+      (fixtureLocalDate || fixture.date || "Unknown Date") +
+      "||" +
+      stageOf(fixture)
+    );
+  });
+
+  Object.entries(dateGroups).forEach(([key, fixtures]) => {
+    const [groupName, stage] = key.split("||");
+    if (stage !== lastStage) {
+      sections.push(
+        `<div class="pred-stage-divider"><span>${escapeHtml(stageLabel(stage))}</span></div>`,
+      );
+      lastStage = stage;
+    }
+    sections.push(`
+      <section class="group-section">
+        <h3>${escapeHtml(groupName)}</h3>
+        <div class="group-matches">
+          ${fixtures.map(renderPredictionCard).join("")}
+        </div>
+      </section>
+    `);
+  });
+
+  container.innerHTML = sections.join("");
 }
 
 function renderPredictionCard(match) {
@@ -1906,8 +1963,9 @@ function renderPredictionCard(match) {
   return `
     <article class="match-card ${locked ? "locked" : "open"} ${isLive ? "live" : ""} ${isFinal ? "final" : ""}">
       <div class="mc-header">
-        <div class="mc-meta">
+<div class="mc-meta">
           <span class="mc-kickoff"><span class="meta-label">Kickoff</span>${formatKickoff(match)}</span>
+          ${match.stage && match.stage !== "group" && match.stage !== "group_stage" ? `<span class="mc-stage-badge">${escapeHtml(stageLabel(match.stage))}</span>` : ""}
           <a class="mc-venue" href="${venue.mapsUrl}" target="_blank" rel="noopener noreferrer">
             <span class="meta-label">City</span>
             <strong>${escapeHtml(venue.city)}</strong>
