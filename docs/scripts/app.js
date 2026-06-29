@@ -39,7 +39,7 @@ async function supabaseSelect(table, selectQuery = "*", extraQuery = "") {
   const response = await fetch(url, {
     headers: supabaseHeaders({
       "Range-Unit": "items",
-      "Range": "0-9999",
+      Range: "0-9999",
     }),
   });
   if (!response.ok) {
@@ -119,9 +119,7 @@ const SESSION = {
 };
 window.SESSION = SESSION;
 const CONFIG = {
-  appsScriptUrl:
-    localStorage.getItem("ggo_wc_url") ||
-    "https://ggowcpredictor.ben-arthur-wiz.workers.dev",
+  appsScriptUrl: localStorage.getItem("ggo_wc_url") || "http://localhost:8787",
 
   apiKey: localStorage.getItem("ggo_wc_key") || "",
 
@@ -457,7 +455,7 @@ async function handleLogin(event) {
             };
           }
         }
-      } catch (_) { }
+      } catch (_) {}
     }
 
     // 4. Demo users last resort
@@ -1028,27 +1026,28 @@ function renderHome() {
 
       const popularHtml = scoreGroups.length
         ? scoreGroups
-          .map((group, index) => {
-            const hasStarted =
-              result &&
-              !["NS", "NOT_STARTED", "TBD"].includes(
-                String(result.status || "").toUpperCase(),
-              );
+            .map((group, index) => {
+              const hasStarted =
+                result &&
+                !["NS", "NOT_STARTED", "TBD"].includes(
+                  String(result.status || "").toUpperCase(),
+                );
 
-            // Only highlight the exact score (15 pts)
-            const scoreClass =
-              isFinished && finalScore && group.score === finalScore
-                ? "correct-score"
-                : "";
+              // Only highlight the exact score (15 pts)
+              const scoreClass =
+                isFinished && finalScore && group.score === finalScore
+                  ? "correct-score"
+                  : "";
 
-            return `
+              return `
           <div class="popular-score ${index === 0 ? "popular-score-top" : ""} ${scoreClass}">
             <div class="popular-score-main">
               <span class="score-badge">${escapeHtml(group.score)}</span>
               <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
             </div>
 
-            ${hasStarted
+            ${
+              hasStarted
                 ? `
               <div class="popular-score-names">
                 ${group.users
@@ -1057,11 +1056,11 @@ function renderHome() {
               </div>
             `
                 : ""
-              }
+            }
           </div>
         `;
-          })
-          .join("")
+            })
+            .join("")
         : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
       return `
@@ -1110,10 +1109,10 @@ function renderHome() {
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
-      buildDaySection("Yesterday", windowBuckets.yesterday),
-      buildDaySection("Today", windowBuckets.today),
-      buildDaySection("Tomorrow", windowBuckets.tomorrow),
-    ].join("")
+        buildDaySection("Yesterday", windowBuckets.yesterday),
+        buildDaySection("Today", windowBuckets.today),
+        buildDaySection("Tomorrow", windowBuckets.tomorrow),
+      ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   // Kept the top summary bar as default colors since it aggregates all matches
   winBar.innerHTML = `
@@ -1220,10 +1219,10 @@ async function requestSync() {
       hadError && !hasAnyData
         ? "Sync failed"
         : `Live - ${STATE.lastSync.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Africa/Cairo",
-        })}`;
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Africa/Cairo",
+          })}`;
   }
 
   updateAdminBadge();
@@ -1410,7 +1409,12 @@ async function loadAllPredictions() {
     while (true) {
       const response = await fetch(
         getSupabaseUrl("predictions", `select=*&order=submittedAt.asc`),
-        { headers: supabaseHeaders({ "Range-Unit": "items", "Range": `${offset}-${offset + PAGE - 1}` }) }
+        {
+          headers: supabaseHeaders({
+            "Range-Unit": "items",
+            Range: `${offset}-${offset + PAGE - 1}`,
+          }),
+        },
       );
       const page = await response.json();
       if (!Array.isArray(page) || page.length === 0) break;
@@ -1613,21 +1617,21 @@ function readResultScore(result, side) {
   const directKeys =
     side === "home"
       ? [
-        "score1",
-        "team1Score",
-        "homeScore",
-        "home_score",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "score1",
+          "team1Score",
+          "homeScore",
+          "home_score",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "score2",
-        "team2Score",
-        "awayScore",
-        "away_score",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "score2",
+          "team2Score",
+          "awayScore",
+          "away_score",
+          "awayGoals",
+          "goalsAway",
+        ];
 
   for (const key of directKeys) {
     if (
@@ -1644,21 +1648,21 @@ function readResultScore(result, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
 
     for (const path of paths) {
       let value = nested;
@@ -1898,8 +1902,12 @@ function renderPredictions() {
 
 function renderPredictionCard(match) {
   // Resolve slot codes (W74, W77 etc) to real team names if results exist
-  const team1 = isBracketReference(match.team1) ? (resolveSlot(match.team1) || match.team1) : match.team1;
-  const team2 = isBracketReference(match.team2) ? (resolveSlot(match.team2) || match.team2) : match.team2;
+  const team1 = isBracketReference(match.team1)
+    ? resolveSlot(match.team1) || match.team1
+    : match.team1;
+  const team2 = isBracketReference(match.team2)
+    ? resolveSlot(match.team2) || match.team2
+    : match.team2;
   match = { ...match, team1, team2 };
 
   const pred = STATE.predictions[match.matchId] || {};
@@ -1914,21 +1922,33 @@ function renderPredictionCard(match) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-        match.stage,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+          match.stage,
+          pred.pen_winner,
+          result.penalty_winner,
+        )
       : null;
   const ptsTier = (() => {
     if (points === null) return "";
     if (points === 0) return "pts-zero";
-    const multiplierMap = { group: 1, r32: 2, r16: 2.5, qf: 3, sf: 4, third: 4, final: 5 };
-    const mult = multiplierMap[String(match.stage || "group").toLowerCase()] ?? 1;
+    const multiplierMap = {
+      group: 1,
+      r32: 2,
+      r16: 2.5,
+      qf: 3,
+      sf: 4,
+      third: 4,
+      final: 5,
+    };
+    const mult =
+      multiplierMap[String(match.stage || "group").toLowerCase()] ?? 1;
     const base = points / mult;
     if (Math.abs(base - 15) < 0.01) return "pts-exact";
-    if (Math.abs(base - 8) < 0.01 || Math.abs(base - 5) < 0.01) return base >= 8 ? "pts-good" : "pts-partial";
+    if (Math.abs(base - 8) < 0.01 || Math.abs(base - 5) < 0.01)
+      return base >= 8 ? "pts-good" : "pts-partial";
     return "pts-partial";
   })();
 
@@ -1961,15 +1981,16 @@ function renderPredictionCard(match) {
           <span class="mc-scoreline-label">Your Pick</span>
           <span class="mc-scoreline-pick">${predictionScore}</span>
         </div>
-        ${hasPred
-      ? `
+        ${
+          hasPred
+            ? `
           <div class="mc-scoreline-divider"></div>
           <div class="mc-scoreline-points">
             <span class="mc-scoreline-pts ${ptsTier}">${points ?? 0} pts</span>
           </div>
         `
-      : ""
-    }
+            : ""
+        }
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -1991,15 +2012,16 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-      ${hasRes
-      ? ``
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+      ${
+        hasRes
+          ? ``
+          : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+      }
         </div>
 
         <div class="mc-middle">
@@ -2009,30 +2031,32 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-        ${hasRes
-      ? ``
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+        ${
+          hasRes
+            ? ``
+            : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+        }
         </div>
       </div>
 
       ${statusLineHtml ? `<div class="mc-footer">${statusLineHtml}</div>` : ""}
 
       <!-- ★ Add loading overlay -->
-      ${isSaving
-      ? `
+      ${
+        isSaving
+          ? `
         <div class="mc-loading-overlay">
           <span class="spinner"></span>
           <span>Saving…</span>
         </div>
       `
-      : ""
-    }
+          : ""
+      }
     </article>
   `;
 }
@@ -2165,8 +2189,8 @@ function renderGroupTable(groupName, standings) {
         </thead>
         <tbody>
           ${sorted
-      .map(
-        (row) => `
+            .map(
+              (row) => `
             <tr>
               <td class="team-rank">${row.position}</td>
               <td data-label="Team">${getFlagImg(row.team_name)} ${escapeHtml(row.team_name)}</td>
@@ -2178,8 +2202,8 @@ function renderGroupTable(groupName, standings) {
               <td><strong>${row.points ?? 0}</strong></td>
             </tr>
           `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -2246,8 +2270,8 @@ function renderThirdPlaceTable() {
         </thead>
         <tbody>
           ${rows
-      .map(
-        (row, index) => `
+            .map(
+              (row, index) => `
               <tr class="${row.qualifies ? "" : "eliminated"} ${index === cutoffIndex ? "cutoff-row" : ""}">
                 <td data-label="#">${row.rank}</td>
                 <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
@@ -2259,8 +2283,8 @@ function renderThirdPlaceTable() {
                 <td data-label="Status">${row.qualifies ? "Qualifies" : "Out"}</td>
               </tr>
             `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
       <div class="third-place-legend">
@@ -2428,11 +2452,14 @@ function openMatchDrawer(matchId) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+          null,
+          pred.pen_winner,
+          result.penalty_winner,
+        )
       : null;
 
   const ptsCls =
@@ -2559,12 +2586,14 @@ function renderResults() {
       const points =
         hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-            pred.pred1,
-            pred.pred2,
-            result.score1,
-            result.score2,
-            fixture.stage,
-          )
+              pred.pred1,
+              pred.pred2,
+              result.score1,
+              result.score2,
+              fixture.stage,
+              pred.pen_winner,
+              result.penalty_winner,
+            )
           : null;
 
       return `
@@ -2799,10 +2828,11 @@ function renderBracket() {
               Final
             </div>
 
-            ${finalMatch
-      ? renderBracketMatch(finalMatch)
-      : `<div class="bracket-placeholder">TBD</div>`
-    }
+            ${
+              finalMatch
+                ? renderBracketMatch(finalMatch)
+                : `<div class="bracket-placeholder">TBD</div>`
+            }
 
           </div>
 
@@ -2812,10 +2842,11 @@ function renderBracket() {
               3rd Place
             </div>
 
-            ${thirdMatch
-      ? renderBracketMatch(thirdMatch)
-      : `<div class="bracket-placeholder">TBD</div>`
-    }
+            ${
+              thirdMatch
+                ? renderBracketMatch(thirdMatch)
+                : `<div class="bracket-placeholder">TBD</div>`
+            }
 
           </div>
 
@@ -2930,15 +2961,22 @@ function renderBracketTabs() {
     if (isMobile) {
       centerEl.style.display = isCenterTab ? "flex" : "none";
       // Within center, show only the matching block
-      centerEl.querySelectorAll(".bracket-final, .bracket-third").forEach((block) => {
-        const blockLabel = block.querySelector(".bracket-round-label")?.textContent.trim();
-        block.style.display = (!roundName || blockLabel === roundName) ? "flex" : "none";
-      });
+      centerEl
+        .querySelectorAll(".bracket-final, .bracket-third")
+        .forEach((block) => {
+          const blockLabel = block
+            .querySelector(".bracket-round-label")
+            ?.textContent.trim();
+          block.style.display =
+            !roundName || blockLabel === roundName ? "flex" : "none";
+        });
     } else {
       centerEl.style.display = "";
-      centerEl.querySelectorAll(".bracket-final, .bracket-third").forEach((block) => {
-        block.style.display = "";
-      });
+      centerEl
+        .querySelectorAll(".bracket-final, .bracket-third")
+        .forEach((block) => {
+          block.style.display = "";
+        });
     }
   };
 
@@ -3290,8 +3328,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-      .map(
-        (request) => `
+        .map(
+          (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -3304,8 +3342,8 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-      )
-      .join("")}
+        )
+        .join("")}
     </div>
   `;
 }
@@ -3948,7 +3986,15 @@ function hasResult(result) {
  * Points: exact=15, correct result plus close goal difference=8,
  * correct result=5, wrong result=0.
  */
-function calculateMatchPoints(pred1, pred2, actual1, actual2, stage = "group") {
+function calculateMatchPoints(
+  pred1,
+  pred2,
+  actual1,
+  actual2,
+  stage = "group",
+  penWinner = null,
+  actualPenWinner = null,
+) {
   const resultStage = String(stage || "group").toLowerCase();
   const multiplierMap = {
     group: 1,
@@ -3960,12 +4006,22 @@ function calculateMatchPoints(pred1, pred2, actual1, actual2, stage = "group") {
     final: 5,
   };
   const multiplier = multiplierMap[resultStage] ?? 1;
+  const isKnockout = resultStage !== "group" && resultStage !== "";
+
+  if (isKnockout && actualPenWinner) {
+    // Penalty shootout decided this match
+    const userPredictedDraw = pred1 === pred2;
+    if (userPredictedDraw) {
+      return penWinner === actualPenWinner ? 15 * multiplier : 0;
+    } else {
+      const predWinner = pred1 > pred2 ? "team1" : "team2";
+      return predWinner === actualPenWinner ? 5 * multiplier : 0;
+    }
+  }
 
   if (pred1 === actual1 && pred2 === actual2) return 15 * multiplier;
-
   const predOutcome = Math.sign(pred1 - pred2);
   const actualOutcome = Math.sign(actual1 - actual2);
-
   if (predOutcome === actualOutcome) {
     const diffGap = Math.abs(pred1 - pred2 - (actual1 - actual2));
     return (diffGap <= 1 ? 8 : 5) * multiplier;
@@ -4004,6 +4060,8 @@ function buildLocalLeaderboard() {
       result.score1,
       result.score2,
       fixture?.stage,
+      prediction.pen_winner,
+      result.penalty_winner,
     );
     totalPoints += points;
     if (
