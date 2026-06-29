@@ -94,11 +94,11 @@ const THIRD_PLACE_SLOT_ORDER = [
 // R16+ slots (W73, W74…) auto-resolve via resolveSlot once results exist.
 const R32_SEED_MAP = {
   73: { team1: "South Africa", team2: "Canada" },
-  74: { team1: "Germany", team2: "Paraguay" },
-  75: { team1: "Netherlands", team2: "Morocco" },
-  76: { team1: "Brazil", team2: "Japan" },
-  77: { team1: "France", team2: "Sweden" },
-  78: { team1: "Ivory Coast", team2: "Norway" },
+  74: { team1: "Brazil", team2: "Japan" },
+  75: { team1: "Germany", team2: "Paraguay" },
+  76: { team1: "Netherlands", team2: "Morocco" },
+  77: { team1: "Ivory Coast", team2: "Norway" },
+  78: { team1: "France", team2: "Sweden" },
   79: { team1: "Mexico", team2: "Ecuador" },
   80: { team1: "England", team2: "DR Congo" },
   81: { team1: "USA", team2: "Bosnia & Herzegovina" },
