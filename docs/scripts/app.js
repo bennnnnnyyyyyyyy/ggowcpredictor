@@ -1404,11 +1404,20 @@ async function loadResults() {
 async function loadAllPredictions() {
   try {
     const localAll = readLocalObject("ggo_wc_predictions_all") || {};
-    const supabaseAll = await supabaseSelect(
-      "predictions",
-      "*",
-      "order=submittedAt.asc&limit=10000",
-    );
+    const PAGE = 1000;
+    let supabaseAll = [];
+    let offset = 0;
+    while (true) {
+      const response = await fetch(
+        getSupabaseUrl("predictions", `select=*&order=submittedAt.asc`),
+        { headers: supabaseHeaders({ "Range-Unit": "items", "Range": `${offset}-${offset + PAGE - 1}` }) }
+      );
+      const page = await response.json();
+      if (!Array.isArray(page) || page.length === 0) break;
+      supabaseAll = supabaseAll.concat(page);
+      if (page.length < PAGE) break;
+      offset += PAGE;
+    }
     const merged = { ...localAll };
 
     supabaseAll.forEach((prediction) => {
