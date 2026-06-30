@@ -240,7 +240,7 @@ function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
         else if (isLiveStatus(status)) statusType = "live";
       }
 
-      if (hasPred && actualHome !== null && actualAway !== null) {
+      if (hasPred && statusType === "finished") {
         points = calcPoints(
           pred1,
           pred2,
