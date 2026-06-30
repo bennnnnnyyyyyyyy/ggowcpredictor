@@ -4313,7 +4313,7 @@ main {
 
 @media (min-width: 1000px) {
   .vertical-bracket {
-    max-width: 60%;
+    max-width: 95%;
     margin: 0 auto;
   }
 }

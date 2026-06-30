@@ -1801,6 +1801,7 @@ async function savePrediction(matchId, pred1, pred2, penWinner = null) {
     renderPredictions();
     renderGroupStandings();
     renderLeaderboard();
+    renderBracket();
   }
 }
 
@@ -3168,17 +3169,36 @@ function resolveSlot(code) {
     const refFixture = STATE.fixtures.find(
       (f) => String(f.matchId) === refMatchId,
     );
+    if (!refFixture) return trimmed;
+
     const refResult = STATE.results[refMatchId];
-    if (!refFixture || !refResult || !isFinalResult(refResult)) return trimmed;
-    const { score1, score2 } = refResult;
-    let winnerIsTeam1;
-    if (score1 > score2) winnerIsTeam1 = true;
-    else if (score2 > score1) winnerIsTeam1 = false;
-    else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
-      winnerIsTeam1 = true;
-    else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
-      winnerIsTeam1 = false;
-    else return trimmed;
+    let winnerIsTeam1 = null;
+
+    if (refResult && isFinalResult(refResult)) {
+      const { score1, score2 } = refResult;
+      if (score1 > score2) winnerIsTeam1 = true;
+      else if (score2 > score1) winnerIsTeam1 = false;
+      else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
+        winnerIsTeam1 = true;
+      else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
+        winnerIsTeam1 = false;
+    } else {
+      // Fallback: check user's prediction
+      const refPred = STATE.predictions[refMatchId];
+      if (refPred && Number.isInteger(refPred.pred1) && Number.isInteger(refPred.pred2)) {
+        const p1 = refPred.pred1;
+        const p2 = refPred.pred2;
+        if (p1 > p2) winnerIsTeam1 = true;
+        else if (p2 > p1) winnerIsTeam1 = false;
+        else if (String(refPred.pen_winner || "").toLowerCase() === "team1")
+          winnerIsTeam1 = true;
+        else if (String(refPred.pen_winner || "").toLowerCase() === "team2")
+          winnerIsTeam1 = false;
+      }
+    }
+
+    if (winnerIsTeam1 === null) return trimmed;
+
     const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
     const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
     const resolvedWinner = resolveSlot(winnerTeam);
