@@ -160,12 +160,26 @@
 
     <!-- MAIN CONTENT -->
     <main>
-      <div class="knockout-banner" id="knockout-banner">
+      <div class="knockout-banner" id="knockout-banner" hidden>
         <span class="knockout-banner-fire">🔥</span>
-        <span class="knockout-banner-text">Knockout stage is <strong>LIVE</strong> — predictions now score at <strong>×2
-          </strong>for the Round of 32</strong> - Check Rules Tab</span>
-        <button class="knockout-banner-close" onclick="this.parentElement.hidden=true" aria-label="Dismiss">✕</button>
+        <span class="knockout-banner-text">Knockout stage is <strong>LIVE</strong> — predictions now score at
+          <strong>×2</strong> for the Round of 32 — Check Rules Tab</span>
+        <button class="knockout-banner-close" onclick="dismissBanner()" aria-label="Dismiss">✕</button>
       </div>
+
+      <script>
+        // Check if user previously dismissed the banner
+        if (localStorage.getItem('knockoutBannerDismissed') !== 'true') {
+          document.getElementById('knockout-banner').removeAttribute('hidden');
+        }
+
+        // Hide banner and save choice to localStorage
+        function dismissBanner() {
+          document.getElementById('knockout-banner').setAttribute('hidden', 'true');
+          localStorage.setItem('knockoutBannerDismissed', 'true');
+        }
+      </script>
+
       <!-- ── PREDICTIONS VIEW ── -->
       <div id="view-predictions" class="view">
         <div class="section-title">
@@ -333,7 +347,9 @@
           <!-- Account Requests -->
           <div class="admin-section">
             <div class="admin-section-title">👤 Account Requests</div>
-            <div id="admin-account-requests"><p class="admin-empty">Loading…</p></div>
+            <div id="admin-account-requests">
+              <p class="admin-empty">Loading…</p>
+            </div>
           </div>
 
           <!-- Manual Score Override -->
@@ -345,7 +361,8 @@
                 <input id="admin-override-matchid" class="admin-input" type="text" placeholder="Match ID (e.g. 75)" />
                 <input id="admin-override-score1" class="admin-input" type="number" min="0" placeholder="Home score" />
                 <input id="admin-override-score2" class="admin-input" type="number" min="0" placeholder="Away score" />
-                <button id="admin-override-submit" class="admin-btn" onclick="adminOverrideScore()">Update Score</button>
+                <button id="admin-override-submit" class="admin-btn" onclick="adminOverrideScore()">Update
+                  Score</button>
               </div>
               <div id="admin-override-msg" class="admin-msg"></div>
             </div>
