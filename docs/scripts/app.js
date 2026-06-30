@@ -1021,7 +1021,7 @@ function renderHome() {
       const result = STATE.results?.[fixture.matchId];
       const isFinished =
         result &&
-        ["FT", "AET", "PEN", "FINISHED", "FULL_TIME"].includes(
+        ["1H", "HT", "2H", "ET", "P", "FT", "AET", "PEN", "FINISHED", "FULL_TIME"].includes(
           String(result.status || "").toUpperCase(),
         );
       const finalScore =
@@ -1942,7 +1942,7 @@ function renderPredictionCard(match, idx) {
   const isSaving = savingMatchId === match.matchId; // ★ already present
 
   const points =
-    hasRes && hasPred
+    hasRes && hasPred && isFinalStatus(result.status)
       ? calculateMatchPoints(
         pred.pred1,
         pred.pred2,
@@ -2468,16 +2468,15 @@ function openMatchDrawer(matchId) {
   // ── Prediction block ──
   const hasPred = hasPrediction(pred);
   const points =
-    hasRes && hasPred
-      ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-        null,
-        pred.pen_winner,
-        result.penalty_winner,
-      )
+    hasRes && hasPred && isFinalStatus(result.status) ? calculateMatchPoints(
+      pred.pred1,
+      pred.pred2,
+      result.score1,
+      result.score2,
+      null,
+      pred.pen_winner,
+      result.penalty_winner,
+    )
       : null;
 
   const ptsCls =
@@ -2602,7 +2601,7 @@ function renderResults() {
       const result = STATE.results[fixture.matchId];
       const pred = STATE.predictions[fixture.matchId];
       const points =
-        hasPrediction(pred) && hasResult(result)
+        hasPrediction(pred) && hasResult(result) && isFinalStatus(result?.status)
           ? calculateMatchPoints(
             pred.pred1,
             pred.pred2,
@@ -4147,16 +4146,13 @@ function hasPrediction(prediction) {
     Number.isInteger(prediction.pred2)
   );
 }
-
 function hasResult(result) {
   if (!result) return false;
-  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2))
-    return false;
+  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
   const status = String(result.status || "").toUpperCase();
   if (status === "NS" || status === "") return false;
   return isLiveStatus(status) || isFinalStatus(status);
 }
-
 /**
  * Client-side scoring - mirrors canonical scoreMatch on the backend.
  * Points: exact=15, correct result plus close goal difference=8,
@@ -4305,7 +4301,7 @@ function buildLocalLeaderboard() {
     predicted += 1;
 
     const result = STATE.results[String(prediction.matchId)];
-    if (!hasResult(result)) return;
+    if (!hasResult(result) || !isFinalStatus(result.status)) return;
 
     completedPredictions += 1; // NEW: only count predictions that have a result
 
