@@ -359,7 +359,7 @@ function buildLeaderboard(
         // User predicted draw + chose pen winner
         points =
           String(prediction.pen_winner || "").toLowerCase() ===
-          String(result.penalty_winner || "").toLowerCase()
+            String(result.penalty_winner || "").toLowerCase()
             ? 15 * multiplier
             : 0;
       } else {
@@ -762,13 +762,13 @@ async function handleRivalryGet(env, username) {
     twin:
       twinEntry.agreement / twinEntry.shared > 0.2
         ? {
-            username: twinEntry.username,
-            displayName: nameMap[twinEntry.username] || twinEntry.username,
-            agreementPct: Math.round(
-              (twinEntry.agreement / twinEntry.shared) * 100,
-            ),
-            sharedMatches: twinEntry.shared,
-          }
+          username: twinEntry.username,
+          displayName: nameMap[twinEntry.username] || twinEntry.username,
+          agreementPct: Math.round(
+            (twinEntry.agreement / twinEntry.shared) * 100,
+          ),
+          sharedMatches: twinEntry.shared,
+        }
         : null,
   };
 }
@@ -927,7 +927,8 @@ async function handleSyncGet(env) {
       status: String(r.status || "NS").toUpperCase(),
       homeScorers: r.homeScorers || [],
       awayScorers: r.awayScorers || [],
-    };
+      penalty_winner: r.penalty_winner || null,
+    }
   }
 
   const users = userRows
@@ -1571,21 +1572,21 @@ function readScore(item, side) {
   const keys =
     side === "home"
       ? [
-          "homeScore",
-          "score1",
-          "team1Score",
-          "home_goal",
-          "homeGoals",
-          "goalsHome",
-        ]
+        "homeScore",
+        "score1",
+        "team1Score",
+        "home_goal",
+        "homeGoals",
+        "goalsHome",
+      ]
       : [
-          "awayScore",
-          "score2",
-          "team2Score",
-          "away_goal",
-          "awayGoals",
-          "goalsAway",
-        ];
+        "awayScore",
+        "score2",
+        "team2Score",
+        "away_goal",
+        "awayGoals",
+        "goalsAway",
+      ];
   for (const key of keys) {
     if (item[key] !== undefined && item[key] !== null && item[key] !== "")
       return item[key];
@@ -1595,21 +1596,21 @@ function readScore(item, side) {
     const paths =
       side === "home"
         ? [
-            ["home"],
-            ["local"],
-            ["team1"],
-            ["fulltime", "home"],
-            ["ft", "home"],
-            ["final", "home"],
-          ]
+          ["home"],
+          ["local"],
+          ["team1"],
+          ["fulltime", "home"],
+          ["ft", "home"],
+          ["final", "home"],
+        ]
         : [
-            ["away"],
-            ["visitor"],
-            ["team2"],
-            ["fulltime", "away"],
-            ["ft", "away"],
-            ["final", "away"],
-          ];
+          ["away"],
+          ["visitor"],
+          ["team2"],
+          ["fulltime", "away"],
+          ["ft", "away"],
+          ["final", "away"],
+        ];
     for (const path of paths) {
       let value = nested;
       let found = true;
@@ -1725,19 +1726,19 @@ function formatGroupStandings(rows) {
 function buildLivescoreKey(item) {
   const home = cleanTeamName(
     item.home_name ||
-      item.home ||
-      item.team1 ||
-      item.localteam_name ||
-      item.localteam ||
-      "",
+    item.home ||
+    item.team1 ||
+    item.localteam_name ||
+    item.localteam ||
+    "",
   );
   const away = cleanTeamName(
     item.away_name ||
-      item.away ||
-      item.team2 ||
-      item.visitorteam_name ||
-      item.visitorteam ||
-      "",
+    item.away ||
+    item.team2 ||
+    item.visitorteam_name ||
+    item.visitorteam ||
+    "",
   );
   if (!home || !away) return "";
   return `${home}__${away}`;
