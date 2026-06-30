@@ -323,9 +323,51 @@
           <span class="title-accent">Admin</span> Panel
         </div>
         <div id="admin-content">
-          <div class="empty-state">
-            <div class="empty-icon">LOCK</div>
-            <p>Admin panel - coming soon.</p>
+          <!-- Penalty Winner Audit -->
+          <div class="admin-section">
+            <div class="admin-section-title">⚽ Penalty Winner Audit</div>
+            <p class="admin-section-desc">Knockout draws missing a penalty winner. Click to set the correct winner.</p>
+            <div id="admin-pen-winners"></div>
+          </div>
+
+          <!-- Account Requests -->
+          <div class="admin-section">
+            <div class="admin-section-title">👤 Account Requests</div>
+            <div id="admin-account-requests"><p class="admin-empty">Loading…</p></div>
+          </div>
+
+          <!-- Manual Score Override -->
+          <div class="admin-section">
+            <div class="admin-section-title">🛠 Manual Score Override</div>
+            <p class="admin-section-desc">Override a result directly in the database.</p>
+            <div id="admin-score-override">
+              <div class="admin-override-row">
+                <input id="admin-override-matchid" class="admin-input" type="text" placeholder="Match ID (e.g. 75)" />
+                <input id="admin-override-score1" class="admin-input" type="number" min="0" placeholder="Home score" />
+                <input id="admin-override-score2" class="admin-input" type="number" min="0" placeholder="Away score" />
+                <button id="admin-override-submit" class="admin-btn" onclick="adminOverrideScore()">Update Score</button>
+              </div>
+              <div id="admin-override-msg" class="admin-msg"></div>
+            </div>
+          </div>
+
+          <!-- Leaderboard Recalc -->
+          <div class="admin-section">
+            <div class="admin-section-title">🔄 Leaderboard Recalculation</div>
+            <p class="admin-section-desc">Trigger a full leaderboard rebuild from raw predictions + results.</p>
+            <button id="admin-recalc-btn" class="admin-btn" onclick="adminTriggerRecalc()">Recalculate Now</button>
+            <div id="admin-recalc-msg" class="admin-msg"></div>
+          </div>
+
+          <!-- Prediction Lookup -->
+          <div class="admin-section">
+            <div class="admin-section-title">🔍 Prediction Lookup</div>
+            <p class="admin-section-desc">Inspect a user's predictions vs results.</p>
+            <div class="admin-override-row">
+              <input id="admin-lookup-user" class="admin-input" type="text" placeholder="Username" />
+              <button class="admin-btn" onclick="adminLookupUser()">Lookup</button>
+            </div>
+            <div id="admin-lookup-result"></div>
           </div>
         </div>
       </div>

@@ -2151,6 +2151,104 @@ main {
   margin-bottom: 14px;
 }
 
+.admin-section-title {
+  font-family: var(--font-ggo-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+  color: var(--primary);
+}
+
+.admin-section-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.admin-override-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.admin-input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--light);
+  font-size: 14px;
+  min-width: 100px;
+}
+
+.admin-input::placeholder {
+  color: var(--muted);
+}
+
+.admin-btn {
+  background: var(--primary);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.admin-btn:hover { opacity: 0.85; }
+.admin-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.admin-msg {
+  font-size: 13px;
+  margin-top: 6px;
+  min-height: 18px;
+  color: var(--muted);
+}
+
+.admin-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-pen-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  font-size: 14px;
+}
+
+.admin-pen-row:last-child { border-bottom: none; }
+
+.admin-lookup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.admin-lookup-table th,
+.admin-lookup-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  text-align: left;
+}
+
+.admin-lookup-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .request-list {
   display: grid;
   gap: 12px;

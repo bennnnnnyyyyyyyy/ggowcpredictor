@@ -3306,33 +3306,110 @@ async function setPenaltyWinnerAdmin(matchId, winner) {
   await loadResults();
   renderPenaltyWinnerAudit();
 }
+
+async function adminOverrideScore() {
+  const matchId = document.getElementById("admin-override-matchid")?.value?.trim();
+  const score1 = document.getElementById("admin-override-score1")?.value;
+  const score2 = document.getElementById("admin-override-score2")?.value;
+  const msgEl = document.getElementById("admin-override-msg");
+  if (!matchId || score1 === "" || score2 === "") {
+    if (msgEl) msgEl.textContent = "Fill in all three fields.";
+    return;
+  }
+  if (msgEl) msgEl.textContent = "Saving…";
+  try {
+    const res = await fetch(`${CONFIG.appsScriptUrl}/admin/set-score`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId, score1: Number(score1), score2: Number(score2) }),
+    });
+    const data = await res.json();
+    if (msgEl) msgEl.textContent = data.ok ? `✅ Updated match ${matchId}: ${score1}-${score2}` : `❌ ${data.error || "Unknown error"}`;
+    if (data.ok) await loadResults();
+  } catch (e) {
+    if (msgEl) msgEl.textContent = `❌ ${e.message}`;
+  }
+}
+
+async function adminTriggerRecalc() {
+  const btn = document.getElementById("admin-recalc-btn");
+  const msgEl = document.getElementById("admin-recalc-msg");
+  if (btn) btn.disabled = true;
+  if (msgEl) msgEl.textContent = "Running recalculation…";
+  try {
+    const res = await fetch(`${CONFIG.appsScriptUrl}/sync-scores`, { method: "POST" });
+    const data = await res.json();
+    if (msgEl) msgEl.textContent = data.ok !== false ? `✅ Done — ${data.updated ?? "?"} predictions updated` : `❌ ${data.error || "Unknown error"}`;
+    await requestSync();
+  } catch (e) {
+    if (msgEl) msgEl.textContent = `❌ ${e.message}`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function adminLookupUser() {
+  const username = document.getElementById("admin-lookup-user")?.value?.trim().toLowerCase();
+  const outEl = document.getElementById("admin-lookup-result");
+  if (!outEl) return;
+  if (!username) { outEl.innerHTML = "<p>Enter a username.</p>"; return; }
+
+  const allPreds = STATE.allPredictions?.[username] || {};
+  const myPreds = Object.values(allPreds);
+  if (!myPreds.length) {
+    outEl.innerHTML = `<p>No predictions found for <strong>${escapeHtml(username)}</strong>.</p>`;
+    return;
+  }
+  const rows = myPreds
+    .map((p) => {
+      const fix = STATE.fixtures.find((f) => String(f.matchId) === String(p.matchId));
+      const result = STATE.results[String(p.matchId)];
+      const team1 = fix?.team1 ?? "?";
+      const team2 = fix?.team2 ?? "?";
+      const predicted = `${p.pred1}-${p.pred2}${p.pen_winner ? ` (pens: ${p.pen_winner})` : ""}`;
+      const actual = result ? `${result.score1}-${result.score2}${result.penalty_winner ? ` (pens: ${result.penalty_winner})` : ""}` : "—";
+      const pts = p.pointsAwarded ?? "?";
+      return `<tr><td>${escapeHtml(String(p.matchId))}</td><td>${escapeHtml(team1)} v ${escapeHtml(team2)}</td><td>${predicted}</td><td>${actual}</td><td>${pts}</td></tr>`;
+    })
+    .join("");
+  outEl.innerHTML = `<table class="admin-lookup-table"><thead><tr><th>ID</th><th>Match</th><th>Predicted</th><th>Result</th><th>Pts</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+
 function renderAdmin() {
   const container = document.getElementById("admin-content");
   if (!container || !SESSION.isAdmin) return;
   if (!STATE.accountRequests.length) requestSync(); // ensure requests are loaded
 
-  container.innerHTML = `
-    <div class="admin-grid">
+  // Stats bar — inject once at top if not present
+  let statsBar = document.getElementById("admin-stats-bar");
+  if (!statsBar) {
+    statsBar = document.createElement("div");
+    statsBar.id = "admin-stats-bar";
+    statsBar.className = "admin-grid";
+    statsBar.innerHTML = `
       <button class="btn-primary sync-btn" type="button" onclick="requestSync()">Refresh Data</button>
-      <button class="btn-primary sync-btn" type="button" onclick="toggleSettings(true)" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.25); color: var(--light);">System Settings</button>
-      <div class="admin-card">
-        <strong>${STATE.fixtures.length}</strong>
-        <span>fixtures loaded</span>
-      </div>
-      <div class="admin-card">
-        <strong>${Object.keys(STATE.predictions).length}</strong>
-        <span>your predictions</span>
-      </div>
-      <div class="admin-card">
-        <strong>${Object.keys(STATE.results).length}</strong>
-        <span>results synced</span>
-      </div>
-    </div>
-    <div class="admin-section">
-      <h3>Pending account requests</h3>
-      ${renderAccountRequests()}
-    </div>
-  `;
+      <button class="btn-primary sync-btn" type="button" onclick="toggleSettings(true)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);color:var(--light);">System Settings</button>
+      <div class="admin-card"><strong id="admin-stat-fixtures">${STATE.fixtures.length}</strong><span>fixtures</span></div>
+      <div class="admin-card"><strong id="admin-stat-preds">${Object.keys(STATE.predictions).length}</strong><span>your predictions</span></div>
+      <div class="admin-card"><strong id="admin-stat-results">${Object.keys(STATE.results).length}</strong><span>results synced</span></div>
+    `;
+    container.prepend(statsBar);
+  } else {
+    const sf = document.getElementById("admin-stat-fixtures");
+    const sp = document.getElementById("admin-stat-preds");
+    const sr = document.getElementById("admin-stat-results");
+    if (sf) sf.textContent = STATE.fixtures.length;
+    if (sp) sp.textContent = Object.keys(STATE.predictions).length;
+    if (sr) sr.textContent = Object.keys(STATE.results).length;
+  }
+
+  // Account requests
+  const reqContainer = document.getElementById("admin-account-requests");
+  if (reqContainer) reqContainer.innerHTML = renderAccountRequests();
+
+  // Penalty winner audit
+  renderPenaltyWinnerAudit();
 
   updateAdminBadge();
 }
@@ -4051,10 +4128,15 @@ function calculateMatchPoints(
     // Penalty shootout decided this match
     const userPredictedDraw = pred1 === pred2;
     if (userPredictedDraw) {
-      return penWinner === actualPenWinner ? 15 * multiplier : 0;
+      return String(penWinner || "").toLowerCase() ===
+        String(actualPenWinner || "").toLowerCase()
+        ? 15 * multiplier
+        : 0;
     } else {
       const predWinner = pred1 > pred2 ? "team1" : "team2";
-      return predWinner === actualPenWinner ? 5 * multiplier : 0;
+      return predWinner === String(actualPenWinner || "").toLowerCase()
+        ? 5 * multiplier
+        : 0;
     }
   }
 

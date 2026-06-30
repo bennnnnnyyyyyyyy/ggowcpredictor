@@ -358,11 +358,17 @@ function buildLeaderboard(
       if (userPredictedDraw) {
         // User predicted draw + chose pen winner
         points =
-          prediction.pen_winner === result.penalty_winner ? 15 * multiplier : 0;
+          String(prediction.pen_winner || "").toLowerCase() ===
+          String(result.penalty_winner || "").toLowerCase()
+            ? 15 * multiplier
+            : 0;
       } else {
         // User predicted an outright winner (no draw)
         const predWinner = pred1 > pred2 ? "team1" : "team2";
-        points = predWinner === result.penalty_winner ? 5 * multiplier : 0;
+        points =
+          predWinner === String(result.penalty_winner || "").toLowerCase()
+            ? 5 * multiplier
+            : 0;
       }
     } else {
       // No penalties (FT/AET with a winner, or group stage): normal scoring
@@ -1044,6 +1050,20 @@ export default {
         ]);
         return corsJson({ ok: true, matchId, penalty_winner: winner });
       }
+
+      // POST /admin/set-score — manual score override { matchId, score1, score2 }
+      if (path === "/admin/set-score" && request.method === "POST") {
+        const body = await request.json();
+        const matchId = String(body.matchId || "");
+        const score1 = body.score1 !== undefined ? Number(body.score1) : null;
+        const score2 = body.score2 !== undefined ? Number(body.score2) : null;
+        if (!matchId || score1 === null || score2 === null || isNaN(score1) || isNaN(score2)) {
+          return corsJson({ error: "matchId, score1, and score2 required" }, 400);
+        }
+        await supabaseUpsert(env, "results", [{ matchId, score1, score2 }]);
+        return corsJson({ ok: true, matchId, score1, score2 });
+      }
+
       // /sync — returns all data (public, read-only)
       if (path === "/sync" || action === "sync") {
         const data = await handleSyncGet(env);
@@ -1271,6 +1291,8 @@ export default {
           "/admin/sync-standings",
           "/admin/approve-request",
           "/admin/reject-request",
+          "/admin/set-penalty-winner",
+          "/admin/set-score",
           "/fixtures",
           "/leaderboard",
         ],
