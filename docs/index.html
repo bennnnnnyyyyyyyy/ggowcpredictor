@@ -464,23 +464,22 @@
               </div>
 
               <!-- RIGHT -->
-              <div class="rules-points">
-
+<div class="rules-points" id="rules-points-box">
                 <h4>Points Allocation</h4>
 
                 <div class="score-rule-card pts-exact">
                   <strong>Exact Score</strong>
-                  <span class="pts-val">15 pts</span>
+                  <span class="pts-val" id="rules-pts-exact">15 pts</span>
                 </div>
 
                 <div class="score-rule-card pts-good">
                   <strong>Correct Result + Goal Difference</strong>
-                  <span class="pts-val">8 pts</span>
+                  <span class="pts-val" id="rules-pts-diff">8 pts</span>
                 </div>
 
                 <div class="score-rule-card pts-partial">
                   <strong>Correct Result</strong>
-                  <span class="pts-val">5 pts</span>
+                  <span class="pts-val" id="rules-pts-partial">5 pts</span>
                 </div>
 
                 <div class="score-rule-card pts-zero">
@@ -494,17 +493,17 @@
             <div class="scoring-example-box">
               <div class="scoring-example-title">🔥 Knockout Multipliers</div>
               <div class="multiplier-table">
-                <div class="multiplier-row"><span class="multiplier-stage">Group Stage</span><span
+                <div class="multiplier-row"> data-stage="group"<span class="multiplier-stage">Group Stage</span><span
                     class="multiplier-val">×1</span><span class="multiplier-pts">15 / 8 / 5 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Round of 32</span><span
+                <div class="multiplier-row"> data-stage="r32"<span class="multiplier-stage">Round of 32</span><span
                     class="multiplier-val">×2</span><span class="multiplier-pts">30 / 16 / 10 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Round of 16</span><span
+                <div class="multiplier-row"> data-stage="r16"<span class="multiplier-stage">Round of 16</span><span
                     class="multiplier-val">×2.5</span><span class="multiplier-pts">37.5 / 20 / 12.5 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Quarter-final</span><span
+                <div class="multiplier-row"> data-stage="qf"<span class="multiplier-stage">Quarter-final</span><span
                     class="multiplier-val">×3</span><span class="multiplier-pts">45 / 24 / 15 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Semi-final</span><span
+                <div class="multiplier-row"> data-stage="sf"<span class="multiplier-stage">Semi-final</span><span
                     class="multiplier-val">×4</span><span class="multiplier-pts">60 / 32 / 20 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Final</span><span
+                <div class="multiplier-row"> data-stage="final"<span class="multiplier-stage">Final</span><span
                     class="multiplier-val">×5</span><span class="multiplier-pts">75 / 40 / 25 pts</span></div>
               </div>
             </div>

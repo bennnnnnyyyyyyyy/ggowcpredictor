@@ -3308,7 +3308,9 @@ async function setPenaltyWinnerAdmin(matchId, winner) {
 }
 
 async function adminOverrideScore() {
-  const matchId = document.getElementById("admin-override-matchid")?.value?.trim();
+  const matchId = document
+    .getElementById("admin-override-matchid")
+    ?.value?.trim();
   const score1 = document.getElementById("admin-override-score1")?.value;
   const score2 = document.getElementById("admin-override-score2")?.value;
   const msgEl = document.getElementById("admin-override-msg");
@@ -3321,10 +3323,17 @@ async function adminOverrideScore() {
     const res = await fetch(`${CONFIG.appsScriptUrl}/admin/set-score`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ matchId, score1: Number(score1), score2: Number(score2) }),
+      body: JSON.stringify({
+        matchId,
+        score1: Number(score1),
+        score2: Number(score2),
+      }),
     });
     const data = await res.json();
-    if (msgEl) msgEl.textContent = data.ok ? `✅ Updated match ${matchId}: ${score1}-${score2}` : `❌ ${data.error || "Unknown error"}`;
+    if (msgEl)
+      msgEl.textContent = data.ok
+        ? `✅ Updated match ${matchId}: ${score1}-${score2}`
+        : `❌ ${data.error || "Unknown error"}`;
     if (data.ok) await loadResults();
   } catch (e) {
     if (msgEl) msgEl.textContent = `❌ ${e.message}`;
@@ -3337,9 +3346,15 @@ async function adminTriggerRecalc() {
   if (btn) btn.disabled = true;
   if (msgEl) msgEl.textContent = "Running recalculation…";
   try {
-    const res = await fetch(`${CONFIG.appsScriptUrl}/sync-scores`, { method: "POST" });
+    const res = await fetch(`${CONFIG.appsScriptUrl}/sync-scores`, {
+      method: "POST",
+    });
     const data = await res.json();
-    if (msgEl) msgEl.textContent = data.ok !== false ? `✅ Done — ${data.updated ?? "?"} predictions updated` : `❌ ${data.error || "Unknown error"}`;
+    if (msgEl)
+      msgEl.textContent =
+        data.ok !== false
+          ? `✅ Done — ${data.updated ?? "?"} predictions updated`
+          : `❌ ${data.error || "Unknown error"}`;
     await requestSync();
   } catch (e) {
     if (msgEl) msgEl.textContent = `❌ ${e.message}`;
@@ -3349,10 +3364,16 @@ async function adminTriggerRecalc() {
 }
 
 function adminLookupUser() {
-  const username = document.getElementById("admin-lookup-user")?.value?.trim().toLowerCase();
+  const username = document
+    .getElementById("admin-lookup-user")
+    ?.value?.trim()
+    .toLowerCase();
   const outEl = document.getElementById("admin-lookup-result");
   if (!outEl) return;
-  if (!username) { outEl.innerHTML = "<p>Enter a username.</p>"; return; }
+  if (!username) {
+    outEl.innerHTML = "<p>Enter a username.</p>";
+    return;
+  }
 
   const allPreds = STATE.allPredictions?.[username] || {};
   const myPreds = Object.values(allPreds);
@@ -3362,19 +3383,22 @@ function adminLookupUser() {
   }
   const rows = myPreds
     .map((p) => {
-      const fix = STATE.fixtures.find((f) => String(f.matchId) === String(p.matchId));
+      const fix = STATE.fixtures.find(
+        (f) => String(f.matchId) === String(p.matchId),
+      );
       const result = STATE.results[String(p.matchId)];
       const team1 = fix?.team1 ?? "?";
       const team2 = fix?.team2 ?? "?";
       const predicted = `${p.pred1}-${p.pred2}${p.pen_winner ? ` (pens: ${p.pen_winner})` : ""}`;
-      const actual = result ? `${result.score1}-${result.score2}${result.penalty_winner ? ` (pens: ${result.penalty_winner})` : ""}` : "—";
+      const actual = result
+        ? `${result.score1}-${result.score2}${result.penalty_winner ? ` (pens: ${result.penalty_winner})` : ""}`
+        : "—";
       const pts = p.pointsAwarded ?? "?";
       return `<tr><td>${escapeHtml(String(p.matchId))}</td><td>${escapeHtml(team1)} v ${escapeHtml(team2)}</td><td>${predicted}</td><td>${actual}</td><td>${pts}</td></tr>`;
     })
     .join("");
   outEl.innerHTML = `<table class="admin-lookup-table"><thead><tr><th>ID</th><th>Match</th><th>Predicted</th><th>Result</th><th>Pts</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
-
 
 function renderAdmin() {
   const container = document.getElementById("admin-content");
