@@ -3269,6 +3269,43 @@ function computeThirdPlaceRanking() {
 
   return thirdPlaceTeams;
 }
+function renderPenaltyWinnerAudit() {
+  const container = document.getElementById("admin-pen-winners");
+  if (!container) return;
+  const needsReview = STATE.fixtures.filter((f) => {
+    const r = STATE.results[f.matchId];
+    const isKnockout = f.stage && f.stage !== "group";
+    return (
+      isKnockout &&
+      r &&
+      r.score1 === r.score2 &&
+      isFinalStatus(r.status) &&
+      !r.penalty_winner
+    );
+  });
+  container.innerHTML = needsReview.length
+    ? needsReview
+        .map(
+          (f) => `
+        <div class="admin-pen-row">
+          <span>${escapeHtml(f.team1)} ${STATE.results[f.matchId].score1}-${STATE.results[f.matchId].score2} ${escapeHtml(f.team2)} (match ${f.matchId})</span>
+          <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team1')">${escapeHtml(f.team1)} won pens</button>
+          <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team2')">${escapeHtml(f.team2)} won pens</button>
+        </div>`,
+        )
+        .join("")
+    : "<p>No knockout draws missing a penalty winner.</p>";
+}
+
+async function setPenaltyWinnerAdmin(matchId, winner) {
+  await fetch(`${CONFIG.appsScriptUrl}/admin/set-penalty-winner`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ matchId, penalty_winner: winner }),
+  });
+  await loadResults();
+  renderPenaltyWinnerAudit();
+}
 function renderAdmin() {
   const container = document.getElementById("admin-content");
   if (!container || !SESSION.isAdmin) return;
