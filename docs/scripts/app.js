@@ -840,6 +840,7 @@ function showView(id, btn) {
   if (id === "leaderboard") renderLeaderboard();
   if (id === "calendar") toggleCalendarModal(true);
   if (id === "admin") renderAdmin();
+  if (id === "rules") renderRulesPage();
 }
 
 function getLocalDateKey(date = new Date()) {
@@ -3713,6 +3714,7 @@ function toggleRules(show) {
       usernameEl.textContent =
         SESSION.displayName || SESSION.username || "Employee";
     }
+    renderRulesPage();
     modal.classList.add("show");
   } else {
     modal.classList.remove("show");
@@ -4172,6 +4174,83 @@ function calculateMatchPoints(
     return (diffGap <= 1 ? 8 : 5) * multiplier;
   }
   return 0;
+}
+
+const STAGE_ORDER = ["group", "r32", "r16", "qf", "sf", "third", "final"];
+const STAGE_LABELS = {
+  group: "Group Stage",
+  r32: "Round of 32",
+  r16: "Round of 16",
+  qf: "Quarter-final",
+  sf: "Semi-final",
+  third: "Third Place",
+  final: "Final",
+};
+const STAGE_MULTIPLIERS = {
+  group: 1, r32: 2, r16: 2.5, qf: 3, sf: 4, third: 4, final: 5,
+};
+
+function getCurrentActiveStage() {
+  const fixtures = STATE.fixtures || [];
+  if (!fixtures.length) return "group";
+
+  for (const stage of STAGE_ORDER) {
+    const stageFixtures = fixtures.filter(
+      (f) => (f.stage || getStageFromRound(f.round || "") || "group").toLowerCase() === stage,
+    );
+    if (!stageFixtures.length) continue;
+    const hasUnplayed = stageFixtures.some((f) => {
+      const result = STATE.results?.[f.matchId];
+      const status = String(result?.status || f.status || "").toUpperCase();
+      return status !== "FT" && status !== "AET" && status !== "PEN" && status !== "FINISHED" && status !== "ENDED";
+    });
+    if (hasUnplayed) return stage;
+  }
+  return STAGE_ORDER[STAGE_ORDER.length - 1];
+}
+
+function renderRulesPage() {
+  const stage = getCurrentActiveStage();
+  const multiplier = STAGE_MULTIPLIERS[stage] ?? 1;
+  const label = STAGE_LABELS[stage] || stage;
+
+  // Main rules page
+  const exactEl = document.getElementById("rules-pts-exact");
+  const goodEl = document.getElementById("rules-pts-good");
+  const partialEl = document.getElementById("rules-pts-partial");
+  if (exactEl) exactEl.textContent = `${15 * multiplier} pts`;
+  if (goodEl) goodEl.textContent = `${8 * multiplier} pts`;
+  if (partialEl) partialEl.textContent = `${5 * multiplier} pts`;
+
+  // Modal rules
+  const modalExactEl = document.getElementById("modal-rules-pts-exact");
+  const modalGoodEl = document.getElementById("modal-rules-pts-good");
+  const modalPartialEl = document.getElementById("modal-rules-pts-partial");
+  if (modalExactEl) modalExactEl.textContent = `${15 * multiplier} pts`;
+  if (modalGoodEl) modalGoodEl.textContent = `${8 * multiplier} pts`;
+  if (modalPartialEl) modalPartialEl.textContent = `${5 * multiplier} pts`;
+
+  const banner = document.getElementById("rules-active-stage-banner");
+  if (banner) {
+    banner.hidden = false;
+    banner.textContent =
+      multiplier === 1
+        ? `Currently active: ${label} (×1 — base points)`
+        : `Currently active: ${label} (×${multiplier} multiplier applied below)`;
+  }
+
+  const modalBanner = document.getElementById("modal-rules-active-stage-banner");
+  if (modalBanner) {
+    modalBanner.hidden = false;
+    modalBanner.textContent =
+      multiplier === 1
+        ? `Currently active: ${label} (×1 — base points)`
+        : `Currently active: ${label} (×${multiplier} multiplier applied below)`;
+  }
+
+  document.querySelectorAll(".multiplier-row").forEach((row) => {
+    row.classList.toggle("multiplier-row-active", row.dataset.stage === stage);
+  });
 }
 
 // ================================================================

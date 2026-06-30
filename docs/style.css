@@ -6659,3 +6659,29 @@ main {
   font-size: 13px;
   cursor: pointer;
 }
+
+.rules-active-stage-banner {
+  background: rgba(255, 200, 0, 0.12);
+  border: 1px solid rgba(255, 200, 0, 0.4);
+  color: #ffcc00;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin: 6px 0 12px;
+}
+
+.multiplier-row-active {
+  outline: 2px solid #ffcc00;
+  outline-offset: -2px;
+  border-radius: 6px;
+  background: rgba(255, 200, 0, 0.08);
+}
+
+.rules-pen-intro,
+.rules-pen-note {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin: 6px 0;
+}
+
