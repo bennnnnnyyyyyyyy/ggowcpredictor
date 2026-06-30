@@ -119,7 +119,9 @@ const SESSION = {
 };
 window.SESSION = SESSION;
 const CONFIG = {
-  appsScriptUrl: localStorage.getItem("ggo_wc_url") || "https://ggowcpredictor.ben-arthur-wiz.workers.dev/",
+  appsScriptUrl:
+    localStorage.getItem("ggo_wc_url") ||
+    "https://ggowcpredictor.ben-arthur-wiz.workers.dev/",
 
   apiKey: localStorage.getItem("ggo_wc_key") || "",
 
@@ -455,7 +457,7 @@ async function handleLogin(event) {
             };
           }
         }
-      } catch (_) { }
+      } catch (_) {}
     }
 
     // 4. Demo users last resort
@@ -1017,9 +1019,18 @@ function renderHome() {
       const result = STATE.results?.[fixture.matchId];
       const isFinished =
         result &&
-        ["1H", "HT", "2H", "ET", "P", "FT", "AET", "PEN", "FINISHED", "FULL_TIME"].includes(
-          String(result.status || "").toUpperCase(),
-        );
+        [
+          "1H",
+          "HT",
+          "2H",
+          "ET",
+          "P",
+          "FT",
+          "AET",
+          "PEN",
+          "FINISHED",
+          "FULL_TIME",
+        ].includes(String(result.status || "").toUpperCase());
       const finalScore =
         isFinished && result.score1 != null && result.score2 != null
           ? `${result.score1}-${result.score2}`
@@ -1027,27 +1038,28 @@ function renderHome() {
 
       const popularHtml = scoreGroups.length
         ? scoreGroups
-          .map((group, index) => {
-            const hasStarted =
-              result &&
-              !["NS", "NOT_STARTED", "TBD"].includes(
-                String(result.status || "").toUpperCase(),
-              );
+            .map((group, index) => {
+              const hasStarted =
+                result &&
+                !["NS", "NOT_STARTED", "TBD"].includes(
+                  String(result.status || "").toUpperCase(),
+                );
 
-            // Only highlight the exact score (15 pts)
-            const scoreClass =
-              isFinished && finalScore && group.score === finalScore
-                ? "correct-score"
-                : "";
+              // Only highlight the exact score (15 pts)
+              const scoreClass =
+                isFinished && finalScore && group.score === finalScore
+                  ? "correct-score"
+                  : "";
 
-            return `
+              return `
           <div class="popular-score ${index === 0 ? "popular-score-top" : ""} ${scoreClass}">
             <div class="popular-score-main">
               <span class="score-badge">${escapeHtml(group.score)}</span>
               <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
             </div>
 
-            ${hasStarted
+            ${
+              hasStarted
                 ? `
               <div class="popular-score-names">
                 ${group.users
@@ -1056,11 +1068,11 @@ function renderHome() {
               </div>
             `
                 : ""
-              }
+            }
           </div>
         `;
-          })
-          .join("")
+            })
+            .join("")
         : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
       return `
@@ -1109,10 +1121,10 @@ function renderHome() {
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
-      buildDaySection("Yesterday", windowBuckets.yesterday),
-      buildDaySection("Today", windowBuckets.today),
-      buildDaySection("Tomorrow", windowBuckets.tomorrow),
-    ].join("")
+        buildDaySection("Yesterday", windowBuckets.yesterday),
+        buildDaySection("Today", windowBuckets.today),
+        buildDaySection("Tomorrow", windowBuckets.tomorrow),
+      ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   // Kept the top summary bar as default colors since it aggregates all matches
   winBar.innerHTML = `
@@ -1219,10 +1231,10 @@ async function requestSync() {
       hadError && !hasAnyData
         ? "Sync failed"
         : `Live - ${STATE.lastSync.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Africa/Cairo",
-        })}`;
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Africa/Cairo",
+          })}`;
   }
 
   updateAdminBadge();
@@ -1447,14 +1459,14 @@ async function loadAllPredictions() {
 // Auto-relock check every 30 seconds
 setInterval(() => {
   const now = Date.now();
-  STATE.fixtures.forEach(fix => {
+  STATE.fixtures.forEach((fix) => {
     const kickoff = fix.kickoffDate;
     if (!kickoff) return;
     const msUntil = kickoff.getTime() - now;
     // If just passed kickoff (within last 2 minutes), re-render that card
     if (msUntil <= 0 && msUntil > -120000) {
       const card = document.querySelector(`[data-matchid="${fix.matchId}"]`);
-      if (card && !card.closest('article')?.classList.contains('locked')) {
+      if (card && !card.closest("article")?.classList.contains("locked")) {
         renderPredictions();
       }
     }
@@ -1632,21 +1644,21 @@ function readResultScore(result, side) {
   const directKeys =
     side === "home"
       ? [
-        "score1",
-        "team1Score",
-        "homeScore",
-        "home_score",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "score1",
+          "team1Score",
+          "homeScore",
+          "home_score",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "score2",
-        "team2Score",
-        "awayScore",
-        "away_score",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "score2",
+          "team2Score",
+          "awayScore",
+          "away_score",
+          "awayGoals",
+          "goalsAway",
+        ];
 
   for (const key of directKeys) {
     if (
@@ -1663,21 +1675,21 @@ function readResultScore(result, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
 
     for (const path of paths) {
       let value = nested;
@@ -1938,16 +1950,16 @@ function renderPredictionCard(match) {
   const isSaving = savingMatchId === match.matchId; // ★ already present
 
   const points =
-    hasRes && hasPred && isFinalStatus(result.status)
+    hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-        match.stage,
-        pred.pen_winner,
-        result.penalty_winner,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+          match.stage,
+          pred.pen_winner,
+          result.penalty_winner,
+        )
       : null;
   const ptsTier = (() => {
     if (points === null) return "";
@@ -1999,15 +2011,16 @@ function renderPredictionCard(match) {
           <span class="mc-scoreline-label">Your Pick</span>
           <span class="mc-scoreline-pick">${predictionScore}</span>
         </div>
-        ${hasPred
-      ? `
+        ${
+          hasPred
+            ? `
           <div class="mc-scoreline-divider"></div>
           <div class="mc-scoreline-points">
             <span class="mc-scoreline-pts ${ptsTier}">${points ?? 0} pts</span>
           </div>
         `
-      : ""
-    }
+            : ""
+        }
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -2029,15 +2042,16 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-      ${hasRes
-      ? ``
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+      ${
+        hasRes
+          ? ``
+          : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+      }
         </div>
 
         <div class="mc-middle">
@@ -2047,30 +2061,32 @@ function renderPredictionCard(match) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-        ${hasRes
-      ? ``
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+        ${
+          hasRes
+            ? ``
+            : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+        }
         </div>
       </div>
 
       ${statusLineHtml ? `<div class="mc-footer">${statusLineHtml}</div>` : ""}
 
       <!-- ★ Add loading overlay -->
-      ${isSaving
-      ? `
+      ${
+        isSaving
+          ? `
         <div class="mc-loading-overlay">
           <span class="spinner"></span>
           <span>Saving…</span>
         </div>
       `
-      : ""
-    }
+          : ""
+      }
     </article>
   `;
 }
@@ -2203,8 +2219,8 @@ function renderGroupTable(groupName, standings) {
         </thead>
         <tbody>
           ${sorted
-      .map(
-        (row) => `
+            .map(
+              (row) => `
             <tr>
               <td class="team-rank">${row.position}</td>
               <td data-label="Team">${getFlagImg(row.team_name)} ${escapeHtml(row.team_name)}</td>
@@ -2216,8 +2232,8 @@ function renderGroupTable(groupName, standings) {
               <td><strong>${row.points ?? 0}</strong></td>
             </tr>
           `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -2284,8 +2300,8 @@ function renderThirdPlaceTable() {
         </thead>
         <tbody>
           ${rows
-      .map(
-        (row, index) => `
+            .map(
+              (row, index) => `
               <tr class="${row.qualifies ? "" : "eliminated"} ${index === cutoffIndex ? "cutoff-row" : ""}">
                 <td data-label="#">${row.rank}</td>
                 <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
@@ -2297,8 +2313,8 @@ function renderThirdPlaceTable() {
                 <td data-label="Status">${row.qualifies ? "Qualifies" : "Out"}</td>
               </tr>
             `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
       <div class="third-place-legend">
@@ -2464,15 +2480,16 @@ function openMatchDrawer(matchId) {
   // ── Prediction block ──
   const hasPred = hasPrediction(pred);
   const points =
-    hasRes && hasPred && isFinalStatus(result.status) ? calculateMatchPoints(
-      pred.pred1,
-      pred.pred2,
-      result.score1,
-      result.score2,
-      null,
-      pred.pen_winner,
-      result.penalty_winner,
-    )
+    hasRes && hasPred
+      ? calculateMatchPoints(
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+          null,
+          pred.pen_winner,
+          result.penalty_winner,
+        )
       : null;
 
   const ptsCls =
@@ -2597,16 +2614,16 @@ function renderResults() {
       const result = STATE.results[fixture.matchId];
       const pred = STATE.predictions[fixture.matchId];
       const points =
-        hasPrediction(pred) && hasResult(result) && isFinalStatus(result?.status)
+        hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-            pred.pred1,
-            pred.pred2,
-            result.score1,
-            result.score2,
-            fixture.stage,
-            pred.pen_winner,
-            result.penalty_winner,
-          )
+              pred.pred1,
+              pred.pred2,
+              result.score1,
+              result.score2,
+              fixture.stage,
+              pred.pen_winner,
+              result.penalty_winner,
+            )
           : null;
 
       return `
@@ -2841,10 +2858,11 @@ function renderBracket() {
               Final
             </div>
 
-            ${finalMatch
-      ? renderBracketMatch(finalMatch)
-      : `<div class="bracket-placeholder">TBD</div>`
-    }
+            ${
+              finalMatch
+                ? renderBracketMatch(finalMatch)
+                : `<div class="bracket-placeholder">TBD</div>`
+            }
 
           </div>
 
@@ -2854,10 +2872,11 @@ function renderBracket() {
               3rd Place
             </div>
 
-            ${thirdMatch
-      ? renderBracketMatch(thirdMatch)
-      : `<div class="bracket-placeholder">TBD</div>`
-    }
+            ${
+              thirdMatch
+                ? renderBracketMatch(thirdMatch)
+                : `<div class="bracket-placeholder">TBD</div>`
+            }
 
           </div>
 
@@ -3198,9 +3217,13 @@ function resolveSlot(code) {
         const { score1, score2 } = refResult;
         if (score1 > score2) winnerIsTeam1 = true;
         else if (score2 > score1) winnerIsTeam1 = false;
-        else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
+        else if (
+          String(refResult.penalty_winner || "").toLowerCase() === "team1"
+        )
           winnerIsTeam1 = true;
-        else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
+        else if (
+          String(refResult.penalty_winner || "").toLowerCase() === "team2"
+        )
           winnerIsTeam1 = false;
       }
     }
@@ -3314,15 +3337,15 @@ function renderPenaltyWinnerAudit() {
   });
   container.innerHTML = needsReview.length
     ? needsReview
-      .map(
-        (f) => `
+        .map(
+          (f) => `
         <div class="admin-pen-row">
           <span>${escapeHtml(f.team1)} ${STATE.results[f.matchId].score1}-${STATE.results[f.matchId].score2} ${escapeHtml(f.team2)} (match ${f.matchId})</span>
           <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team1')">${escapeHtml(f.team1)} won pens</button>
           <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team2')">${escapeHtml(f.team2)} won pens</button>
         </div>`,
-      )
-      .join("")
+        )
+        .join("")
     : "<p>No knockout draws missing a penalty winner.</p>";
 }
 
@@ -3497,8 +3520,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-      .map(
-        (request) => `
+        .map(
+          (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -3511,8 +3534,8 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-      )
-      .join("")}
+        )
+        .join("")}
     </div>
   `;
 }
@@ -3777,7 +3800,10 @@ function saveSettings() {
 }
 
 function parseKickoff(date, time, kickoffUTC) {
-  if (kickoffUTC && /\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(String(kickoffUTC))) {
+  if (
+    kickoffUTC &&
+    /\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(String(kickoffUTC))
+  ) {
     const normalized = String(kickoffUTC).replace(" ", "T");
     const parsed = new Date(normalized);
     if (!Number.isNaN(parsed.getTime())) return parsed;
@@ -4144,7 +4170,8 @@ function hasPrediction(prediction) {
 }
 function hasResult(result) {
   if (!result) return false;
-  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
+  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2))
+    return false;
   const status = String(result.status || "").toUpperCase();
   if (status === "NS" || status === "") return false;
   return isLiveStatus(status) || isFinalStatus(status);
@@ -4213,7 +4240,13 @@ const STAGE_LABELS = {
   final: "Final",
 };
 const STAGE_MULTIPLIERS = {
-  group: 1, r32: 2, r16: 2.5, qf: 3, sf: 4, third: 4, final: 5,
+  group: 1,
+  r32: 2,
+  r16: 2.5,
+  qf: 3,
+  sf: 4,
+  third: 4,
+  final: 5,
 };
 
 function getCurrentActiveStage() {
@@ -4222,13 +4255,24 @@ function getCurrentActiveStage() {
 
   for (const stage of STAGE_ORDER) {
     const stageFixtures = fixtures.filter(
-      (f) => (f.stage || getStageFromRound(f.round || "") || "group").toLowerCase() === stage,
+      (f) =>
+        (
+          f.stage ||
+          getStageFromRound(f.round || "") ||
+          "group"
+        ).toLowerCase() === stage,
     );
     if (!stageFixtures.length) continue;
     const hasUnplayed = stageFixtures.some((f) => {
       const result = STATE.results?.[f.matchId];
       const status = String(result?.status || f.status || "").toUpperCase();
-      return status !== "FT" && status !== "AET" && status !== "PEN" && status !== "FINISHED" && status !== "ENDED";
+      return (
+        status !== "FT" &&
+        status !== "AET" &&
+        status !== "PEN" &&
+        status !== "FINISHED" &&
+        status !== "ENDED"
+      );
     });
     if (hasUnplayed) return stage;
   }
@@ -4265,7 +4309,9 @@ function renderRulesPage() {
         : `Currently active: ${label} (×${multiplier} multiplier applied below)`;
   }
 
-  const modalBanner = document.getElementById("modal-rules-active-stage-banner");
+  const modalBanner = document.getElementById(
+    "modal-rules-active-stage-banner",
+  );
   if (modalBanner) {
     modalBanner.hidden = false;
     modalBanner.textContent =
@@ -4339,7 +4385,10 @@ function buildLocalLeaderboard() {
 function formatKickoff(match) {
   if (match.kickoffDate) {
     return match.kickoffDate.toLocaleString([], {
-      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
       timeZone: "Africa/Cairo",
     });
   }
