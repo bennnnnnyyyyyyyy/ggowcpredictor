@@ -4148,7 +4148,7 @@ function hasResult(result) {
   if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
   const status = String(result.status || "").toUpperCase();
   if (status === "NS" || status === "") return false;
-  return isFinalStatus(status);
+  return isLiveStatus(status) || isFinalStatus(status);
 }
 /**
  * Client-side scoring - mirrors canonical scoreMatch on the backend.
