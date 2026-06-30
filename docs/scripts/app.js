@@ -3173,8 +3173,10 @@ function resolveSlot(code) {
     let winnerIsTeam1;
     if (score1 > score2) winnerIsTeam1 = true;
     else if (score2 > score1) winnerIsTeam1 = false;
-    else if (refResult.penalty_winner === "team1") winnerIsTeam1 = true;
-    else if (refResult.penalty_winner === "team2") winnerIsTeam1 = false;
+    else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
+      winnerIsTeam1 = true;
+    else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
+      winnerIsTeam1 = false;
     else return trimmed;
     const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
     const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
