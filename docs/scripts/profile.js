@@ -79,10 +79,15 @@ function calcPoints(
     stageKey !== "group" && stageKey !== "group_stage" && stageKey !== "";
   const actualIsDraw = a1 === a2;
   const userPredictedDraw = p1 === p2;
-
-  if (isKnockout && actualIsDraw && userPredictedDraw) {
-    if (!actualPenWinner) return null; // not scoreable yet
-    return penWinner && penWinner === actualPenWinner ? 15 * multiplier : 0;
+  if (isKnockout && actualPenWinner) {
+    const userPredictedDraw = p1 === p2;
+    if (userPredictedDraw) {
+      return penWinner && String(penWinner).toLowerCase() === String(actualPenWinner).toLowerCase()
+        ? 15 * multiplier : 0;
+    } else {
+      const predWinner = p1 > p2 ? "team1" : "team2";
+      return predWinner === String(actualPenWinner).toLowerCase() ? 5 * multiplier : 0;
+    }
   }
 
   if (p1 === a1 && p2 === a2) return 15 * multiplier;
@@ -571,9 +576,8 @@ function renderProfile(data) {
     </div>
 
     <!-- Accuracy bar -->
-    ${
-      scored > 0
-        ? `
+    ${scored > 0
+      ? `
     <div class="accuracy-bar-wrap" style="margin-bottom:28px">
       <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Scoring accuracy</span>
       <div class="accuracy-bar-track">
@@ -581,7 +585,7 @@ function renderProfile(data) {
       </div>
       <span class="accuracy-label">${accuracy}%</span>
     </div>`
-        : ""
+      : ""
     }
 
     

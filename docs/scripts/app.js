@@ -3195,14 +3195,13 @@ function resolveSlot(code) {
     } else {
       // Fallback: check user's prediction
       const refPred = STATE.predictions[refMatchId];
-      if (refPred && Number.isInteger(refPred.pred1) && Number.isInteger(refPred.pred2)) {
-        const p1 = refPred.pred1;
-        const p2 = refPred.pred2;
-        if (p1 > p2) winnerIsTeam1 = true;
-        else if (p2 > p1) winnerIsTeam1 = false;
-        else if (String(refPred.pen_winner || "").toLowerCase() === "team1")
+      if (refResult && isFinalResult(refResult)) {
+        const { score1, score2 } = refResult;
+        if (score1 > score2) winnerIsTeam1 = true;
+        else if (score2 > score1) winnerIsTeam1 = false;
+        else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
           winnerIsTeam1 = true;
-        else if (String(refPred.pen_winner || "").toLowerCase() === "team2")
+        else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
           winnerIsTeam1 = false;
       }
     }
@@ -3779,6 +3778,12 @@ function saveSettings() {
 }
 
 function parseKickoff(date, time, kickoffUTC) {
+  if (kickoffUTC && /\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(String(kickoffUTC))) {
+    const normalized = String(kickoffUTC).replace(" ", "T");
+    const parsed = new Date(normalized);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
   if (date && time) {
     const match = String(time).match(
       /(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2}(?:\.\d+)?)/i,
@@ -3798,11 +3803,6 @@ function parseKickoff(date, time, kickoffUTC) {
       const [y, m, d] = date.split("-").map(Number);
       return new Date(Date.UTC(y, m - 1, d, hour, minute));
     }
-  }
-
-  if (kickoffUTC && String(kickoffUTC).includes("T")) {
-    const parsed = new Date(kickoffUTC);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
   }
 
   return null;
@@ -4340,21 +4340,16 @@ function buildLocalLeaderboard() {
     },
   ];
 }
-
 function formatKickoff(match) {
+  if (match.kickoffDate) {
+    return match.kickoffDate.toLocaleString([], {
+      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+      timeZone: "Africa/Cairo",
+    });
+  }
   const fixtureLocal = formatFixtureLocalKickoff(match);
   if (fixtureLocal) return fixtureLocal;
-
-  if (!match.kickoffDate)
-    return `${match.date || ""} ${match.time || ""}`.trim();
-
-  return match.kickoffDate.toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Africa/Cairo",
-  });
+  return `${match.date || ""} ${match.time || ""}`.trim();
 }
 
 function formatFixtureLocalKickoff(match) {
