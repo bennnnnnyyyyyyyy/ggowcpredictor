@@ -1017,7 +1017,7 @@ function renderHome() {
       const result = STATE.results?.[fixture.matchId];
       const isFinished =
         result &&
-        ["FT", "AET", "PEN", "FINISHED", "FULL_TIME"].includes(
+        ["1H", "HT", "2H", "ET", "P", "FT", "AET", "PEN", "FINISHED", "FULL_TIME"].includes(
           String(result.status || "").toUpperCase(),
         );
       const finalScore =
