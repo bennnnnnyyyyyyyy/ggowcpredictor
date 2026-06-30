@@ -4143,16 +4143,13 @@ function hasPrediction(prediction) {
     Number.isInteger(prediction.pred2)
   );
 }
-
 function hasResult(result) {
   if (!result) return false;
-  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2))
-    return false;
+  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
   const status = String(result.status || "").toUpperCase();
   if (status === "NS" || status === "") return false;
-  return isLiveStatus(status) || isFinalStatus(status);
+  return isFinalStatus(status);
 }
-
 /**
  * Client-side scoring - mirrors canonical scoreMatch on the backend.
  * Points: exact=15, correct result plus close goal difference=8,
