@@ -1,17 +1,29 @@
 /* GGO WC 2026 Predictor - Main Stylesheet */
 :root {
-  --wc-blue: #00d15e;
-  /* GGO Green */
-  --wc-red: #00b359;
-  /* GGO Green Dim */
-  --dark: #06080f;
-  --light: #f5f5f5;
-  --muted: #a0a0a0;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --wc-blue: #00f576; /* Neon energetic green */
+  --wc-red: #ff3b5c;  /* Cyber red */
+  --wc-purple: #6e00f5; /* Electro purple */
+  --dark: #070a13;    /* Premium dark pitch background */
+  --card-bg: rgba(14, 20, 35, 0.7); /* Translucent cards */
+  --light: #f8fafc;   /* Slate light */
+  --muted: #8e9bb3;   /* Premium muted slate */
+  --success: #00f576;
+  --warning: #ffb300;
+  --danger: #ff3b5c;
   --font-ggo-display: "Barlow Condensed", "Arial Narrow", sans-serif;
   --font-ggo-body: "DM Sans", "Segoe UI", sans-serif;
+
+  /* Spacing Scale */
+  --space-xs: clamp(0.25rem, 0.6vw, 0.5rem);
+  --space-sm: clamp(0.5rem, 1.2vw, 0.875rem);
+  --space-md: clamp(0.875rem, 2vw, 1.25rem);
+  --space-lg: clamp(1.25rem, 3vw, 1.75rem);
+  --space-xl: clamp(1.75rem, 4vw, 2.5rem);
+  
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --border-glow: rgba(0, 245, 118, 0.15);
 }
 
 * {
@@ -6692,4 +6704,206 @@ main {
   font-size: 0.85rem;
   opacity: 0.85;
   margin: 6px 0;
+}
+
+/* ════════════════════════════════════════ UI OVERHAUL STYLES ════════════════════════════════════════ */
+
+/* Atmospheric pitch background & textures */
+body {
+  background-color: var(--dark) !important;
+  background-image: 
+    linear-gradient(180deg, rgba(7, 10, 19, 0.94) 0%, rgba(5, 7, 12, 0.98) 100%),
+    radial-gradient(ellipse at top, rgba(0, 245, 118, 0.05) 0%, transparent 60%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.01) 0 1px, transparent 1px 12px) !important;
+  background-attachment: fixed;
+}
+
+/* Glassmorphism & custom borders on cards */
+.match-card, .home-match-card-large, .pred-card, .result-card {
+  background: var(--card-bg) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 245, 118, 0.15) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Hover effects & animations */
+.match-card:hover, .home-match-card-large:hover, .pred-card:hover, .result-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(0, 245, 118, 0.4) !important;
+  box-shadow: 0 12px 40px 0 rgba(0, 245, 118, 0.15) !important;
+}
+
+/* Staggered card animations */
+.match-card, .home-match-card-large, .result-card {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: slideUpFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(var(--idx, 0) * 0.04s);
+}
+
+@keyframes slideUpFade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sync/connected states visual enhancements */
+.status-dot.connected, .status-dot.active {
+  background: var(--wc-blue) !important;
+  box-shadow: 0 0 10px var(--wc-blue);
+}
+
+/* Live/Active badge pulsing */
+.mc-badge.live, .pred-status-tag.live {
+  background: rgba(255, 59, 92, 0.15) !important;
+  border-color: rgba(255, 59, 92, 0.4) !important;
+  color: var(--wc-red) !important;
+  animation: pulseGlow 1.8s infinite ease-in-out !important;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.8;
+    box-shadow: 0 0 4px rgba(255, 59, 92, 0.2);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(255, 59, 92, 0.5);
+  }
+}
+
+/* Navigation button design adjustments */
+.nav-btn {
+  border-radius: var(--radius-sm) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px;
+  transition: all 0.25s ease !important;
+}
+
+.nav-btn:hover {
+  background: rgba(0, 245, 118, 0.08) !important;
+  color: var(--wc-blue) !important;
+  border-color: rgba(0, 245, 118, 0.3) !important;
+}
+
+.nav-btn.active {
+  background: var(--wc-blue) !important;
+  color: #070a13 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 15px rgba(0, 245, 118, 0.3) !important;
+}
+
+/* Mobile bottom navigation styles */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(7, 10, 19, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(0, 245, 118, 0.15);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 850;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 769px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+.mobile-nav-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--muted) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 8px 12px !important;
+  transition: all 0.2s ease !important;
+  min-height: 48px;
+  flex: 1;
+  box-shadow: none !important;
+}
+
+.mobile-nav-btn:hover {
+  background: transparent !important;
+  color: var(--light) !important;
+}
+
+.mobile-nav-btn .mobile-nav-icon {
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.mobile-nav-btn .mobile-nav-label {
+  font-family: var(--font-ggo-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.mobile-nav-btn.active {
+  color: var(--wc-blue) !important;
+  background: transparent !important;
+  text-shadow: 0 0 10px rgba(0, 245, 118, 0.2);
+}
+
+.mobile-nav-btn.active .mobile-nav-icon {
+  transform: translateY(-1px) scale(1.1);
+}
+
+/* Touch targets and mobile padding constraints */
+@media (max-width: 768px) {
+  main {
+    padding-bottom: 84px !important;
+  }
+
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .hamburger-btn {
+    display: none !important; /* bottom nav handles switching */
+  }
+
+  header {
+    padding: 10px 16px !important;
+    gap: 12px !important;
+  }
+
+  .header-top {
+    justify-content: space-between;
+  }
+
+  .logo {
+    position: static !important;
+    transform: none !important;
+  }
+
+  .logo-text h1 {
+    font-size: 16px !important;
+  }
+
+  .user-pill {
+    margin-left: 0 !important;
+    padding: 4px 8px 4px 4px !important;
+  }
+
+  .desktop-sync-only {
+    display: none !important;
+  }
 }

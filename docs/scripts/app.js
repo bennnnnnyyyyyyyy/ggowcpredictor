@@ -815,11 +815,15 @@ function showView(id, btn) {
 
   if (!nextView || currentView === nextView) return;
 
+  // Sync active states on all nav-btns triggering this view
   document.querySelectorAll(".nav-btn").forEach((navBtn) => {
-    navBtn.classList.remove("active");
+    const onclickStr = navBtn.getAttribute("onclick") || "";
+    if (onclickStr.includes(`showView('${id}'`) || onclickStr.includes(`showView("${id}"`)) {
+      navBtn.classList.add("active");
+    } else {
+      navBtn.classList.remove("active");
+    }
   });
-
-  if (btn) btn.classList.add("active");
 
   if (currentView) {
     currentView.classList.remove("active");
@@ -995,7 +999,7 @@ function renderHome() {
     );
   };
 
-  function buildMatchCardHtml(fixture) {
+  function buildMatchCardHtml(fixture, idx) {
     {
       const matchPreds = groupedByMatch.get(String(fixture.matchId)) || [];
       const homeWins = matchPreds.filter((p) => p.pred1 > p.pred2).length;
@@ -1064,7 +1068,7 @@ function renderHome() {
         : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
       return `
-            <article class="home-match-card-large${isFinished ? " match-finished" : ""}">
+            <article class="home-match-card-large${isFinished ? " match-finished" : ""}" style="--idx: ${idx || 0}">
               <div class="home-match-card-head">
                 <div>
                   <div class="home-match-kickoff">
@@ -1918,7 +1922,7 @@ function renderPredictions() {
   container.innerHTML = sections.join("");
 }
 
-function renderPredictionCard(match) {
+function renderPredictionCard(match, idx) {
   // Resolve slot codes (W74, W77 etc) to real team names if results exist
   const team1 = isBracketReference(match.team1)
     ? resolveSlot(match.team1) || match.team1
@@ -2012,7 +2016,7 @@ function renderPredictionCard(match) {
     : `<div class="mc-vs">VS</div>`;
 
   return `
-    <article class="match-card ${locked ? "locked" : "open"} ${isLive ? "live" : ""} ${isFinal ? "final" : ""}">
+    <article class="match-card ${locked ? "locked" : "open"} ${isLive ? "live" : ""} ${isFinal ? "final" : ""}" style="--idx: ${idx || 0}">
       <div class="mc-header">
 <div class="mc-meta">
           <span class="mc-kickoff"><span class="meta-label">Kickoff</span>${formatKickoff(match)}</span>
@@ -2594,7 +2598,7 @@ function renderResults() {
   }
 
   container.innerHTML = fixtures
-    .map((fixture) => {
+    .map((fixture, idx) => {
       const result = STATE.results[fixture.matchId];
       const pred = STATE.predictions[fixture.matchId];
       const points =
@@ -2611,7 +2615,7 @@ function renderResults() {
           : null;
 
       return `
-        <article class="result-card" onclick="openMatchDrawer('${fixture.matchId}')">
+        <article class="result-card" onclick="openMatchDrawer('${fixture.matchId}')" style="--idx: ${idx}">
           <div class="match-date">${formatKickoff(fixture)}</div>
           <div class="match-teams">
             <div class="team"><div class="team-name">${getFlagImg(fixture.team1)}${escapeHtml(fixture.team1)}</div></div>
