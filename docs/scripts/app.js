@@ -840,6 +840,7 @@ function showView(id, btn) {
   if (id === "leaderboard") renderLeaderboard();
   if (id === "calendar") toggleCalendarModal(true);
   if (id === "admin") renderAdmin();
+  if (id === "rules") renderRulesPage();
 }
 
 function getLocalDateKey(date = new Date()) {
@@ -1817,6 +1818,7 @@ async function savePrediction(matchId, pred1, pred2, penWinner = null) {
     renderPredictions();
     renderGroupStandings();
     renderLeaderboard();
+    renderBracket();
   }
 }
 
@@ -3184,15 +3186,36 @@ function resolveSlot(code) {
     const refFixture = STATE.fixtures.find(
       (f) => String(f.matchId) === refMatchId,
     );
+    if (!refFixture) return trimmed;
+
     const refResult = STATE.results[refMatchId];
-    if (!refFixture || !refResult || !isFinalResult(refResult)) return trimmed;
-    const { score1, score2 } = refResult;
-    let winnerIsTeam1;
-    if (score1 > score2) winnerIsTeam1 = true;
-    else if (score2 > score1) winnerIsTeam1 = false;
-    else if (refResult.penalty_winner === "team1") winnerIsTeam1 = true;
-    else if (refResult.penalty_winner === "team2") winnerIsTeam1 = false;
-    else return trimmed;
+    let winnerIsTeam1 = null;
+
+    if (refResult && isFinalResult(refResult)) {
+      const { score1, score2 } = refResult;
+      if (score1 > score2) winnerIsTeam1 = true;
+      else if (score2 > score1) winnerIsTeam1 = false;
+      else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
+        winnerIsTeam1 = true;
+      else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
+        winnerIsTeam1 = false;
+    } else {
+      // Fallback: check user's prediction
+      const refPred = STATE.predictions[refMatchId];
+      if (refPred && Number.isInteger(refPred.pred1) && Number.isInteger(refPred.pred2)) {
+        const p1 = refPred.pred1;
+        const p2 = refPred.pred2;
+        if (p1 > p2) winnerIsTeam1 = true;
+        else if (p2 > p1) winnerIsTeam1 = false;
+        else if (String(refPred.pen_winner || "").toLowerCase() === "team1")
+          winnerIsTeam1 = true;
+        else if (String(refPred.pen_winner || "").toLowerCase() === "team2")
+          winnerIsTeam1 = false;
+      }
+    }
+
+    if (winnerIsTeam1 === null) return trimmed;
+
     const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
     const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
     const resolvedWinner = resolveSlot(winnerTeam);
@@ -3284,33 +3307,171 @@ function computeThirdPlaceRanking() {
 
   return thirdPlaceTeams;
 }
+function renderPenaltyWinnerAudit() {
+  const container = document.getElementById("admin-pen-winners");
+  if (!container) return;
+  const needsReview = STATE.fixtures.filter((f) => {
+    const r = STATE.results[f.matchId];
+    const isKnockout = f.stage && f.stage !== "group";
+    return (
+      isKnockout &&
+      r &&
+      r.score1 === r.score2 &&
+      isFinalStatus(r.status) &&
+      !r.penalty_winner
+    );
+  });
+  container.innerHTML = needsReview.length
+    ? needsReview
+        .map(
+          (f) => `
+        <div class="admin-pen-row">
+          <span>${escapeHtml(f.team1)} ${STATE.results[f.matchId].score1}-${STATE.results[f.matchId].score2} ${escapeHtml(f.team2)} (match ${f.matchId})</span>
+          <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team1')">${escapeHtml(f.team1)} won pens</button>
+          <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team2')">${escapeHtml(f.team2)} won pens</button>
+        </div>`,
+        )
+        .join("")
+    : "<p>No knockout draws missing a penalty winner.</p>";
+}
+
+async function setPenaltyWinnerAdmin(matchId, winner) {
+  await fetch(`${CONFIG.appsScriptUrl}/admin/set-penalty-winner`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ matchId, penalty_winner: winner }),
+  });
+  await loadResults();
+  renderPenaltyWinnerAudit();
+}
+
+async function adminOverrideScore() {
+  const matchId = document
+    .getElementById("admin-override-matchid")
+    ?.value?.trim();
+  const score1 = document.getElementById("admin-override-score1")?.value;
+  const score2 = document.getElementById("admin-override-score2")?.value;
+  const msgEl = document.getElementById("admin-override-msg");
+  if (!matchId || score1 === "" || score2 === "") {
+    if (msgEl) msgEl.textContent = "Fill in all three fields.";
+    return;
+  }
+  if (msgEl) msgEl.textContent = "Saving…";
+  try {
+    const res = await fetch(`${CONFIG.appsScriptUrl}/admin/set-score`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        matchId,
+        score1: Number(score1),
+        score2: Number(score2),
+      }),
+    });
+    const data = await res.json();
+    if (msgEl)
+      msgEl.textContent = data.ok
+        ? `✅ Updated match ${matchId}: ${score1}-${score2}`
+        : `❌ ${data.error || "Unknown error"}`;
+    if (data.ok) await loadResults();
+  } catch (e) {
+    if (msgEl) msgEl.textContent = `❌ ${e.message}`;
+  }
+}
+
+async function adminTriggerRecalc() {
+  const btn = document.getElementById("admin-recalc-btn");
+  const msgEl = document.getElementById("admin-recalc-msg");
+  if (btn) btn.disabled = true;
+  if (msgEl) msgEl.textContent = "Running recalculation…";
+  try {
+    const res = await fetch(`${CONFIG.appsScriptUrl}/sync-scores`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    if (msgEl)
+      msgEl.textContent =
+        data.ok !== false
+          ? `✅ Done — ${data.updated ?? "?"} predictions updated`
+          : `❌ ${data.error || "Unknown error"}`;
+    await requestSync();
+  } catch (e) {
+    if (msgEl) msgEl.textContent = `❌ ${e.message}`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function adminLookupUser() {
+  const username = document
+    .getElementById("admin-lookup-user")
+    ?.value?.trim()
+    .toLowerCase();
+  const outEl = document.getElementById("admin-lookup-result");
+  if (!outEl) return;
+  if (!username) {
+    outEl.innerHTML = "<p>Enter a username.</p>";
+    return;
+  }
+
+  const allPreds = STATE.allPredictions?.[username] || {};
+  const myPreds = Object.values(allPreds);
+  if (!myPreds.length) {
+    outEl.innerHTML = `<p>No predictions found for <strong>${escapeHtml(username)}</strong>.</p>`;
+    return;
+  }
+  const rows = myPreds
+    .map((p) => {
+      const fix = STATE.fixtures.find(
+        (f) => String(f.matchId) === String(p.matchId),
+      );
+      const result = STATE.results[String(p.matchId)];
+      const team1 = fix?.team1 ?? "?";
+      const team2 = fix?.team2 ?? "?";
+      const predicted = `${p.pred1}-${p.pred2}${p.pen_winner ? ` (pens: ${p.pen_winner})` : ""}`;
+      const actual = result
+        ? `${result.score1}-${result.score2}${result.penalty_winner ? ` (pens: ${result.penalty_winner})` : ""}`
+        : "—";
+      const pts = p.pointsAwarded ?? "?";
+      return `<tr><td>${escapeHtml(String(p.matchId))}</td><td>${escapeHtml(team1)} v ${escapeHtml(team2)}</td><td>${predicted}</td><td>${actual}</td><td>${pts}</td></tr>`;
+    })
+    .join("");
+  outEl.innerHTML = `<table class="admin-lookup-table"><thead><tr><th>ID</th><th>Match</th><th>Predicted</th><th>Result</th><th>Pts</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 function renderAdmin() {
   const container = document.getElementById("admin-content");
   if (!container || !SESSION.isAdmin) return;
   if (!STATE.accountRequests.length) requestSync(); // ensure requests are loaded
 
-  container.innerHTML = `
-    <div class="admin-grid">
+  // Stats bar — inject once at top if not present
+  let statsBar = document.getElementById("admin-stats-bar");
+  if (!statsBar) {
+    statsBar = document.createElement("div");
+    statsBar.id = "admin-stats-bar";
+    statsBar.className = "admin-grid";
+    statsBar.innerHTML = `
       <button class="btn-primary sync-btn" type="button" onclick="requestSync()">Refresh Data</button>
-      <button class="btn-primary sync-btn" type="button" onclick="toggleSettings(true)" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.25); color: var(--light);">System Settings</button>
-      <div class="admin-card">
-        <strong>${STATE.fixtures.length}</strong>
-        <span>fixtures loaded</span>
-      </div>
-      <div class="admin-card">
-        <strong>${Object.keys(STATE.predictions).length}</strong>
-        <span>your predictions</span>
-      </div>
-      <div class="admin-card">
-        <strong>${Object.keys(STATE.results).length}</strong>
-        <span>results synced</span>
-      </div>
-    </div>
-    <div class="admin-section">
-      <h3>Pending account requests</h3>
-      ${renderAccountRequests()}
-    </div>
-  `;
+      <button class="btn-primary sync-btn" type="button" onclick="toggleSettings(true)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);color:var(--light);">System Settings</button>
+      <div class="admin-card"><strong id="admin-stat-fixtures">${STATE.fixtures.length}</strong><span>fixtures</span></div>
+      <div class="admin-card"><strong id="admin-stat-preds">${Object.keys(STATE.predictions).length}</strong><span>your predictions</span></div>
+      <div class="admin-card"><strong id="admin-stat-results">${Object.keys(STATE.results).length}</strong><span>results synced</span></div>
+    `;
+    container.prepend(statsBar);
+  } else {
+    const sf = document.getElementById("admin-stat-fixtures");
+    const sp = document.getElementById("admin-stat-preds");
+    const sr = document.getElementById("admin-stat-results");
+    if (sf) sf.textContent = STATE.fixtures.length;
+    if (sp) sp.textContent = Object.keys(STATE.predictions).length;
+    if (sr) sr.textContent = Object.keys(STATE.results).length;
+  }
+
+  // Account requests
+  const reqContainer = document.getElementById("admin-account-requests");
+  if (reqContainer) reqContainer.innerHTML = renderAccountRequests();
+
+  // Penalty winner audit
+  renderPenaltyWinnerAudit();
 
   updateAdminBadge();
 }
@@ -3590,6 +3751,7 @@ function toggleRules(show) {
       usernameEl.textContent =
         SESSION.displayName || SESSION.username || "Employee";
     }
+    renderRulesPage();
     modal.classList.add("show");
   } else {
     modal.classList.remove("show");
@@ -4029,10 +4191,15 @@ function calculateMatchPoints(
     // Penalty shootout decided this match
     const userPredictedDraw = pred1 === pred2;
     if (userPredictedDraw) {
-      return penWinner === actualPenWinner ? 15 * multiplier : 0;
+      return String(penWinner || "").toLowerCase() ===
+        String(actualPenWinner || "").toLowerCase()
+        ? 15 * multiplier
+        : 0;
     } else {
       const predWinner = pred1 > pred2 ? "team1" : "team2";
-      return predWinner === actualPenWinner ? 5 * multiplier : 0;
+      return predWinner === String(actualPenWinner || "").toLowerCase()
+        ? 5 * multiplier
+        : 0;
     }
   }
 
@@ -4044,6 +4211,83 @@ function calculateMatchPoints(
     return (diffGap <= 1 ? 8 : 5) * multiplier;
   }
   return 0;
+}
+
+const STAGE_ORDER = ["group", "r32", "r16", "qf", "sf", "third", "final"];
+const STAGE_LABELS = {
+  group: "Group Stage",
+  r32: "Round of 32",
+  r16: "Round of 16",
+  qf: "Quarter-final",
+  sf: "Semi-final",
+  third: "Third Place",
+  final: "Final",
+};
+const STAGE_MULTIPLIERS = {
+  group: 1, r32: 2, r16: 2.5, qf: 3, sf: 4, third: 4, final: 5,
+};
+
+function getCurrentActiveStage() {
+  const fixtures = STATE.fixtures || [];
+  if (!fixtures.length) return "group";
+
+  for (const stage of STAGE_ORDER) {
+    const stageFixtures = fixtures.filter(
+      (f) => (f.stage || getStageFromRound(f.round || "") || "group").toLowerCase() === stage,
+    );
+    if (!stageFixtures.length) continue;
+    const hasUnplayed = stageFixtures.some((f) => {
+      const result = STATE.results?.[f.matchId];
+      const status = String(result?.status || f.status || "").toUpperCase();
+      return status !== "FT" && status !== "AET" && status !== "PEN" && status !== "FINISHED" && status !== "ENDED";
+    });
+    if (hasUnplayed) return stage;
+  }
+  return STAGE_ORDER[STAGE_ORDER.length - 1];
+}
+
+function renderRulesPage() {
+  const stage = getCurrentActiveStage();
+  const multiplier = STAGE_MULTIPLIERS[stage] ?? 1;
+  const label = STAGE_LABELS[stage] || stage;
+
+  // Main rules page
+  const exactEl = document.getElementById("rules-pts-exact");
+  const goodEl = document.getElementById("rules-pts-good");
+  const partialEl = document.getElementById("rules-pts-partial");
+  if (exactEl) exactEl.textContent = `${15 * multiplier} pts`;
+  if (goodEl) goodEl.textContent = `${8 * multiplier} pts`;
+  if (partialEl) partialEl.textContent = `${5 * multiplier} pts`;
+
+  // Modal rules
+  const modalExactEl = document.getElementById("modal-rules-pts-exact");
+  const modalGoodEl = document.getElementById("modal-rules-pts-good");
+  const modalPartialEl = document.getElementById("modal-rules-pts-partial");
+  if (modalExactEl) modalExactEl.textContent = `${15 * multiplier} pts`;
+  if (modalGoodEl) modalGoodEl.textContent = `${8 * multiplier} pts`;
+  if (modalPartialEl) modalPartialEl.textContent = `${5 * multiplier} pts`;
+
+  const banner = document.getElementById("rules-active-stage-banner");
+  if (banner) {
+    banner.hidden = false;
+    banner.textContent =
+      multiplier === 1
+        ? `Currently active: ${label} (×1 — base points)`
+        : `Currently active: ${label} (×${multiplier} multiplier applied below)`;
+  }
+
+  const modalBanner = document.getElementById("modal-rules-active-stage-banner");
+  if (modalBanner) {
+    modalBanner.hidden = false;
+    modalBanner.textContent =
+      multiplier === 1
+        ? `Currently active: ${label} (×1 — base points)`
+        : `Currently active: ${label} (×${multiplier} multiplier applied below)`;
+  }
+
+  document.querySelectorAll(".multiplier-row").forEach((row) => {
+    row.classList.toggle("multiplier-row-active", row.dataset.stage === stage);
+  });
 }
 
 // ================================================================

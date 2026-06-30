@@ -323,9 +323,51 @@
           <span class="title-accent">Admin</span> Panel
         </div>
         <div id="admin-content">
-          <div class="empty-state">
-            <div class="empty-icon">LOCK</div>
-            <p>Admin panel - coming soon.</p>
+          <!-- Penalty Winner Audit -->
+          <div class="admin-section">
+            <div class="admin-section-title">⚽ Penalty Winner Audit</div>
+            <p class="admin-section-desc">Knockout draws missing a penalty winner. Click to set the correct winner.</p>
+            <div id="admin-pen-winners"></div>
+          </div>
+
+          <!-- Account Requests -->
+          <div class="admin-section">
+            <div class="admin-section-title">👤 Account Requests</div>
+            <div id="admin-account-requests"><p class="admin-empty">Loading…</p></div>
+          </div>
+
+          <!-- Manual Score Override -->
+          <div class="admin-section">
+            <div class="admin-section-title">🛠 Manual Score Override</div>
+            <p class="admin-section-desc">Override a result directly in the database.</p>
+            <div id="admin-score-override">
+              <div class="admin-override-row">
+                <input id="admin-override-matchid" class="admin-input" type="text" placeholder="Match ID (e.g. 75)" />
+                <input id="admin-override-score1" class="admin-input" type="number" min="0" placeholder="Home score" />
+                <input id="admin-override-score2" class="admin-input" type="number" min="0" placeholder="Away score" />
+                <button id="admin-override-submit" class="admin-btn" onclick="adminOverrideScore()">Update Score</button>
+              </div>
+              <div id="admin-override-msg" class="admin-msg"></div>
+            </div>
+          </div>
+
+          <!-- Leaderboard Recalc -->
+          <div class="admin-section">
+            <div class="admin-section-title">🔄 Leaderboard Recalculation</div>
+            <p class="admin-section-desc">Trigger a full leaderboard rebuild from raw predictions + results.</p>
+            <button id="admin-recalc-btn" class="admin-btn" onclick="adminTriggerRecalc()">Recalculate Now</button>
+            <div id="admin-recalc-msg" class="admin-msg"></div>
+          </div>
+
+          <!-- Prediction Lookup -->
+          <div class="admin-section">
+            <div class="admin-section-title">🔍 Prediction Lookup</div>
+            <p class="admin-section-desc">Inspect a user's predictions vs results.</p>
+            <div class="admin-override-row">
+              <input id="admin-lookup-user" class="admin-input" type="text" placeholder="Username" />
+              <button class="admin-btn" onclick="adminLookupUser()">Lookup</button>
+            </div>
+            <div id="admin-lookup-result"></div>
           </div>
         </div>
       </div>
@@ -422,23 +464,23 @@
               </div>
 
               <!-- RIGHT -->
-              <div class="rules-points">
-
+              <div class="rules-points" id="rules-points-box">
                 <h4>Points Allocation</h4>
+                <div id="rules-active-stage-banner" class="rules-active-stage-banner" hidden></div>
 
                 <div class="score-rule-card pts-exact">
                   <strong>Exact Score</strong>
-                  <span class="pts-val">15 pts</span>
+                  <span class="pts-val" id="rules-pts-exact">15 pts</span>
                 </div>
 
                 <div class="score-rule-card pts-good">
                   <strong>Correct Result + Goal Difference</strong>
-                  <span class="pts-val">8 pts</span>
+                  <span class="pts-val" id="rules-pts-good">8 pts</span>
                 </div>
 
                 <div class="score-rule-card pts-partial">
                   <strong>Correct Result</strong>
-                  <span class="pts-val">5 pts</span>
+                  <span class="pts-val" id="rules-pts-partial">5 pts</span>
                 </div>
 
                 <div class="score-rule-card pts-zero">
@@ -452,17 +494,17 @@
             <div class="scoring-example-box">
               <div class="scoring-example-title">🔥 Knockout Multipliers</div>
               <div class="multiplier-table">
-                <div class="multiplier-row"><span class="multiplier-stage">Group Stage</span><span
+                <div class="multiplier-row" data-stage="group"><span class="multiplier-stage">Group Stage</span><span
                     class="multiplier-val">×1</span><span class="multiplier-pts">15 / 8 / 5 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Round of 32</span><span
+                <div class="multiplier-row" data-stage="r32"><span class="multiplier-stage">Round of 32</span><span
                     class="multiplier-val">×2</span><span class="multiplier-pts">30 / 16 / 10 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Round of 16</span><span
+                <div class="multiplier-row" data-stage="r16"><span class="multiplier-stage">Round of 16</span><span
                     class="multiplier-val">×2.5</span><span class="multiplier-pts">37.5 / 20 / 12.5 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Quarter-final</span><span
+                <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
                     class="multiplier-val">×3</span><span class="multiplier-pts">45 / 24 / 15 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Semi-final</span><span
+                <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
                     class="multiplier-val">×4</span><span class="multiplier-pts">60 / 32 / 20 pts</span></div>
-                <div class="multiplier-row"><span class="multiplier-stage">Final</span><span
+                <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
                     class="multiplier-val">×5</span><span class="multiplier-pts">75 / 40 / 25 pts</span></div>
               </div>
             </div>
@@ -483,6 +525,39 @@
                 <strong>5 pts:</strong>
                 Prediction 1-2 · Actual 0-3 → result right, GD off
               </div>
+            </div>
+
+            <div class="rules-divider"></div>
+
+            <div class="scoring-example-box">
+              <div class="scoring-example-title">🥅 Penalty Shootout Rules</div>
+              <p class="rules-pen-intro">
+                If a knockout match is drawn after 90 minutes and goes to penalties,
+                your prediction is scored differently from a normal result:
+              </p>
+              <div class="scoring-example">
+                <strong>Full points:</strong>
+                You predicted a draw <em>and</em> picked the correct penalty
+                shootout winner → full Exact Score points for that stage
+                (e.g. 30 pts at ×2, 45 pts at ×3, etc).
+              </div>
+              <div class="scoring-example">
+                <strong>Partial points:</strong>
+                You predicted a non-draw scoreline and the team you picked
+                to win went on to win the penalty shootout → Correct Result
+                points for that stage (e.g. 10 pts at ×2, 15 pts at ×3, etc).
+              </div>
+              <div class="scoring-example">
+                <strong>0 pts:</strong>
+                You predicted a draw but picked the wrong penalty winner,
+                or you predicted a non-draw scoreline and picked the team
+                that lost the shootout.
+              </div>
+              <p class="rules-pen-note">
+                Note: once a match is decided on penalties, your predicted
+                scoreline's exact goal difference no longer matters — only
+                whether you called the draw/winner and the shootout winner correctly.
+              </p>
             </div>
 
             <div class="rules-divider"></div>
@@ -704,14 +779,15 @@
         </ul>
 
         <div class="modal-section-title">Points Allocation</div>
+        <div id="modal-rules-active-stage-banner" class="rules-active-stage-banner" hidden></div>
         <div class="scoring-grid">
           <div class="score-rule-card pts-exact">
-            <span class="pts-val">15 pts</span>
+            <span class="pts-val" id="modal-rules-pts-exact">15 pts</span>
             <strong>Exact Score</strong>
             <p>Your prediction matches the final score exactly.</p>
           </div>
           <div class="score-rule-card pts-good">
-            <span class="pts-val">8 pts</span>
+            <span class="pts-val" id="modal-rules-pts-good">8 pts</span>
             <strong>Correct Result + Close Difference</strong>
             <p>
               You picked the right winner or draw, and the goal difference is
@@ -719,7 +795,7 @@
             </p>
           </div>
           <div class="score-rule-card pts-partial">
-            <span class="pts-val">5 pts</span>
+            <span class="pts-val" id="modal-rules-pts-partial">5 pts</span>
             <strong>Correct Result</strong>
             <p>
               You picked the right winner or draw, but the goal difference was
@@ -734,19 +810,44 @@
         </div>
         <div class="modal-section-title" style="margin-top:1.5rem">🔥 Knockout Multipliers</div>
         <div class="multiplier-table" style="margin-bottom:1.25rem">
-          <div class="multiplier-row"><span class="multiplier-stage">Group Stage</span><span
+          <div class="multiplier-row" data-stage="group"><span class="multiplier-stage">Group Stage</span><span
               class="multiplier-val">×1</span><span class="multiplier-pts">15 / 8 / 5 pts</span></div>
-          <div class="multiplier-row"><span class="multiplier-stage">Round of 32</span><span
+          <div class="multiplier-row" data-stage="r32"><span class="multiplier-stage">Round of 32</span><span
               class="multiplier-val">×2</span><span class="multiplier-pts">30 / 16 / 10 pts</span></div>
-          <div class="multiplier-row"><span class="multiplier-stage">Round of 16</span><span
+          <div class="multiplier-row" data-stage="r16"><span class="multiplier-stage">Round of 16</span><span
               class="multiplier-val">×2.5</span><span class="multiplier-pts">37.5 / 20 / 12.5 pts</span></div>
-          <div class="multiplier-row"><span class="multiplier-stage">Quarter-final</span><span
+          <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
               class="multiplier-val">×3</span><span class="multiplier-pts">45 / 24 / 15 pts</span></div>
-          <div class="multiplier-row"><span class="multiplier-stage">Semi-final</span><span
+          <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
               class="multiplier-val">×4</span><span class="multiplier-pts">60 / 32 / 20 pts</span></div>
-          <div class="multiplier-row"><span class="multiplier-stage">Final</span><span
+          <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
               class="multiplier-val">×5</span><span class="multiplier-pts">75 / 40 / 25 pts</span></div>
         </div>
+
+        <div class="scoring-example-box" style="margin-bottom:1.25rem">
+          <div class="scoring-example-title">🥅 Penalty Shootout Rules</div>
+          <p class="rules-pen-intro">
+            If a knockout match is drawn after 90 minutes and goes to penalties,
+            your prediction is scored differently from a normal result:
+          </p>
+          <div class="scoring-example">
+            <strong>Full points:</strong>
+            You predicted a draw <em>and</em> picked the correct penalty
+            shootout winner → full Exact Score points for that stage.
+          </div>
+          <div class="scoring-example">
+            <strong>Partial points:</strong>
+            You predicted a non-draw scoreline and the team you picked
+            to win went on to win the penalty shootout → Correct Result points for that stage.
+          </div>
+          <div class="scoring-example">
+            <strong>0 pts:</strong>
+            You predicted a draw but picked the wrong penalty winner,
+            or you predicted a non-draw scoreline and picked the team
+            that lost the shootout.
+          </div>
+        </div>
+
         <button class="btn-primary start-playing-btn" onclick="toggleRules(false)">
           Let's Play!
         </button>
