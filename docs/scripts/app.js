@@ -1150,8 +1150,9 @@ function renderHome() {
   }
 
   const hasAnyFixtures =
-    windowBuckets.yesterday.length ||
     windowBuckets.today.length ||
+    windowBuckets.yesterday.length ||
+
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
