@@ -1161,7 +1161,7 @@ function renderHome() {
       );
   "
 >
-                <div class="popular-score-title">Most popular predictions</div>
+                <div class="popular-score-title"></div>
                 ${popularHtml}
               </div>
            </article>
