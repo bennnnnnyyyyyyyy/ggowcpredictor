@@ -6803,6 +6803,7 @@ body {
 
 .mobile-nav-btn .mobile-nav-icon {
   font-size: 23px;
+
   transition: transform 0.2s ease;
 }
 
