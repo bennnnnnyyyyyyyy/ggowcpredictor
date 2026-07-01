@@ -1901,18 +1901,20 @@ function renderPredictions() {
   const container = document.getElementById("predictions-list");
   if (!container) return;
 
+  const stageOf = (f) => f.stage || getStageFromRound(f.round || "") || "group";
+
   const visibleFixtures = STATE.fixtures.filter((fixture) => {
-    if (activeMatchFilter === "open") return !isLocked(fixture);
-    if (activeMatchFilter === "locked") return isLocked(fixture);
     if (activeMatchFilter === "live") {
       const result = STATE.results[fixture.matchId];
       return result && isLiveStatus(result.status);
     }
+    if (activeMatchFilter === "r32") return stageOf(fixture) === "r32";
+    if (activeMatchFilter === "r16") return stageOf(fixture) === "r16";
+    if (activeMatchFilter === "qf") return stageOf(fixture) === "qf";
+    if (activeMatchFilter === "finals")
+      return ["sf", "third", "final"].includes(stageOf(fixture));
     return true;
   });
-  if (activeMatchFilter === "round_of_32") {
-    return true;
-  }
   if (!visibleFixtures.length) {
     const hasFixtures = STATE.fixtures.length > 0;
     if (!hasFixtures) {
@@ -1925,15 +1927,25 @@ function renderPredictions() {
         "No live matches right now.",
         "Check back when a game is in progress.",
       );
-    } else if (activeMatchFilter === "open") {
+    } else if (activeMatchFilter === "r32") {
       container.innerHTML = emptyState(
-        "No open matches.",
-        "All upcoming fixtures are locked or finished.",
+        "No Round of 32 matches.",
+        "Check back once the knockout stage begins.",
       );
-    } else if (activeMatchFilter === "locked") {
+    } else if (activeMatchFilter === "r16") {
       container.innerHTML = emptyState(
-        "No locked matches.",
-        "Open fixtures are still accepting predictions.",
+        "No Round of 16 matches.",
+        "Check back once the R32 round wraps up.",
+      );
+    } else if (activeMatchFilter === "qf") {
+      container.innerHTML = emptyState(
+        "No Quarter-final matches.",
+        "Check back once the Round of 16 wraps up.",
+      );
+    } else if (activeMatchFilter === "finals") {
+      container.innerHTML = emptyState(
+        "No Semi-final, Third Place or Final matches yet.",
+        "Check back once the Quarter-finals wrap up.",
       );
     } else {
       container.innerHTML = emptyState("No matches to show.", "");
@@ -1951,7 +1963,6 @@ function renderPredictions() {
     "third",
     "final",
   ];
-  const stageOf = (f) => f.stage || getStageFromRound(f.round || "") || "group";
 
   // Sort fixtures: by stage order then by kickoff
   visibleFixtures.sort((a, b) => {
