@@ -3841,22 +3841,6 @@ function toggleRules(show) {
   }
 }
 // ─── Penalty Shootout Rules Popup ────────────────────────────────────────────
-
-function showPenaltyPopup() {
-  const modal = document.getElementById("penalty-popup-modal");
-  if (!modal) return;
-  modal.classList.add("show");
-}
-
-function closePenaltyPopup() {
-  const modal = document.getElementById("penalty-popup-modal");
-  if (!modal) return;
-  modal.classList.remove("show");
-  // Remember for this user so it doesn't pop up again
-  if (SESSION.username) {
-    localStorage.setItem(`ggo_penalty_popup_seen_${SESSION.username}`, "true");
-  }
-}
 function toggleSettings(show) {
   const modal = document.getElementById("settings-modal");
   if (!modal) return;
