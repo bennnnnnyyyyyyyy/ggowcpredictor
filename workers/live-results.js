@@ -1059,6 +1059,9 @@ export default {
       }
       // POST /admin/set-penalty-winner — manual override { matchId, penalty_winner: "team1"|"team2" }
       if (path === "/admin/set-penalty-winner" && request.method === "POST") {
+        if (!isAuthorized(request, env)) {
+          return corsJson({ success: false, error: "Unauthorized" }, 401);
+        }
         const body = await request.json();
         const matchId = String(body.matchId || "");
         const winner = String(body.penalty_winner || "").toLowerCase();
@@ -1076,6 +1079,9 @@ export default {
 
       // POST /admin/set-score — manual score override { matchId, score1, score2 }
       if (path === "/admin/set-score" && request.method === "POST") {
+        if (!isAuthorized(request, env)) {
+          return corsJson({ success: false, error: "Unauthorized" }, 401);
+        }
         const body = await request.json();
         const matchId = String(body.matchId || "");
         const score1 = body.score1 !== undefined ? Number(body.score1) : null;
