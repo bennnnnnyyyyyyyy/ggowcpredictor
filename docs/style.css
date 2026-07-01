@@ -646,8 +646,7 @@ main {
 }
 
 @media (max-width: 500px) {
-
-  .group-matches {
+  mobile-bottom-nav .group-matches {
     grid-template-columns: repeat(1, minmax(280px, 1fr));
   }
 }
@@ -6772,6 +6771,7 @@ body {
   z-index: 850;
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+
 }
 
 @media (min-width: 769px) {
@@ -6802,7 +6802,7 @@ body {
 }
 
 .mobile-nav-btn .mobile-nav-icon {
-  font-size: 18px;
+  font-size: 23px;
   transition: transform 0.2s ease;
 }
 
