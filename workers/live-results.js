@@ -370,6 +370,19 @@ function buildLeaderboard(
             ? 5 * multiplier
             : 0;
       }
+    } else if (
+      isKnockoutStage &&
+      !result.penalty_winner &&
+      userPredictedDraw &&
+      !actualIsDraw
+    ) {
+      // Predicted a draw+pen pick, but game was settled outright — no shootout.
+      const multiplier = STAGE_MULTIPLIERS[stage] ?? 1;
+      const actualWinner = result.score1 > result.score2 ? "team1" : "team2";
+      points =
+        String(prediction.pen_winner || "").toLowerCase() === actualWinner
+          ? 5 * multiplier
+          : 0;
     } else {
       // No penalties (FT/AET with a winner, or group stage): normal scoring
       points = scoreMatch(
@@ -845,13 +858,22 @@ async function handleProfileGet(env, username) {
       }
 
       if (hasPred && actualHome !== null && actualAway !== null) {
-        points = scoreMatch(
-          pred1,
-          pred2,
-          actualHome,
-          actualAway,
-          fixture.stage,
-        );
+        const stage = String(fixture.stage || "").toLowerCase();
+        const isKO = stage !== "group" && stage !== "group_stage" && stage !== "";
+        const multiplier = STAGE_MULTIPLIERS[stage] ?? 1;
+        const penWinner = result?.penalty_winner || null;
+        const userDraw = pred1 === pred2;
+
+        if (isKO && penWinner) {
+          points = userDraw
+            ? (String(p.pen_winner || "").toLowerCase() === String(penWinner).toLowerCase() ? 15 * multiplier : 0)
+            : ((pred1 > pred2 ? "team1" : "team2") === String(penWinner).toLowerCase() ? 5 * multiplier : 0);
+        } else if (isKO && !penWinner && userDraw && actualHome !== actualAway) {
+          const actualWinner = actualHome > actualAway ? "team1" : "team2";
+          points = String(p.pen_winner || "").toLowerCase() === actualWinner ? 5 * multiplier : 0;
+        } else {
+          points = scoreMatch(pred1, pred2, actualHome, actualAway, fixture.stage);
+        }
       }
 
       return {
