@@ -4244,6 +4244,16 @@ function calculateMatchPoints(
     }
   }
 
+  if (isKnockout && !actualPenWinner && pred1 === pred2 && actual1 !== actual2) {
+    // User predicted a draw (with a pen-winner pick) but the match was actually
+    // settled outright in normal/extra time — no shootout needed.
+    // Credit them if their pen pick matches the team that actually won.
+    const actualWinner = actual1 > actual2 ? "team1" : "team2";
+    return String(penWinner || "").toLowerCase() === actualWinner
+      ? 5 * multiplier
+      : 0;
+  }
+
   if (pred1 === actual1 && pred2 === actual2) return 15 * multiplier;
   const predOutcome = Math.sign(pred1 - pred2);
   const actualOutcome = Math.sign(actual1 - actual2);
