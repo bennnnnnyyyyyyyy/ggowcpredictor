@@ -803,6 +803,18 @@ function showApp() {
   requestSync();
 }
 
+function hardRefreshApp() {
+  const btn = document.getElementById("big-refresh-btn");
+  if (btn) btn.classList.add("spinning");
+  window.location.href =
+    window.location.pathname + "?refresh=" + Date.now() + window.location.hash;
+}
+
+setInterval(() => {
+  if (document.hidden) return;
+  hardRefreshApp();
+}, 5 * 60 * 1000);
+
 function handleLogout() {
   localStorage.removeItem("ggo_wc_token");
   localStorage.removeItem("ggo_wc_user");

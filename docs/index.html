@@ -15,7 +15,8 @@
   <link rel="icon" type="image/png" sizes="16x16"
     href="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3-16x16.png" />
 </head>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css" id="app-stylesheet" />
+<script>document.getElementById('app-stylesheet').href = 'style.css?v=' + Date.now();</script>
 
 <!-- Match Detail Drawer -->
 <div id="match-drawer-overlay" class="match-drawer-overlay" onclick="closeMatchDrawer()"></div>
@@ -87,6 +88,14 @@
       <div class="header-top">
         <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar(true)" aria-label="Open menu">
           <span></span><span></span><span></span>
+        </button>
+        <button class="big-refresh-btn" id="big-refresh-btn" onclick="hardRefreshApp()" aria-label="Refresh app"
+          title="Force refresh to latest version">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <path d="M21 3v6h-6" />
+          </svg>
         </button>
         <div class="logo">
           <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
@@ -987,6 +996,7 @@
        SCAFFOLD JS - wire-up only, no data yet
   ════════════════════════════════════════ -->
 </body>
-<script src="scripts/app.js"></script>
+<link rel="stylesheet" href="style.css" id="app-stylesheet" />
+<script>document.write('<script src="scripts/app.js?v=' + Date.now() + '"><\/script>');</script>
 
 </html>
