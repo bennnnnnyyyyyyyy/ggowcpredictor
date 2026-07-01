@@ -1139,10 +1139,10 @@ function renderHome() {
               <div class="home-match-card-head">
                 <div>
                   <div class="home-match-kickoff">
-  ${escapeHtml(formatKickoff(fixture))}
-  <span class="match-status-badge ${getMatchStatusInfo(fixture).cssClass}">${escapeHtml(getMatchStatusInfo(fixture).label)}</span>
-  ${fixture.group ? `<span class="match-group-label">${escapeHtml(fixture.group)}</span>` : ""}
-</div>
+                  ${escapeHtml(formatKickoff(fixture))}
+                  <span class="match-status-badge ${getMatchStatusInfo(fixture).cssClass}">${escapeHtml(getMatchStatusInfo(fixture).label)}</span>
+                  ${fixture.group ? `<span class="match-group-label">${escapeHtml(fixture.group)}</span>` : ""}
+                </div>
                   <h4>${getFlagImg(fixture.team1)} ${escapeHtml(fixture.team1 || "TBD")} ${finalScore ? `<span class="final-score-chip">${escapeHtml(finalScore)}</span>` : "<span>vs</span>"} ${escapeHtml(fixture.team2 || "TBD")} ${getFlagImg(fixture.team2)}</h4>
                 </div>
                 <div class="pick-count"><strong>${matchPreds.length}</strong><span>picks</span></div>
