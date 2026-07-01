@@ -102,14 +102,14 @@ const R32_SEED_MAP = {
   78: { team1: "France", team2: "Sweden" },
   79: { team1: "Mexico", team2: "Ecuador" },
   80: { team1: "England", team2: "DR Congo" },
-  81: { team1: "USA", team2: "Bosnia & Herzegovina" },
-  82: { team1: "Belgium", team2: "Senegal" },
-  83: { team1: "Portugal", team2: "Croatia" },
-  84: { team1: "Spain", team2: "Austria" },
+  81: { team1: "Belgium", team2: "Senegal" },
+  82: { team1: "USA", team2: "Bosnia & Herzegovina" },
+  83: { team1: "Spain", team2: "Austria" },
+  84: { team1: "Portugal", team2: "Croatia" },
   85: { team1: "Switzerland", team2: "Algeria" },
-  86: { team1: "Argentina", team2: "Cape Verde" },
-  87: { team1: "Colombia", team2: "Ghana" },
-  88: { team1: "Australia", team2: "Egypt" },
+  86: { team1: "Australia", team2: "Egypt" },
+  87: { team1: "Argentina", team2: "Cape Verde" },
+  88: { team1: "Colombia", team2: "Ghana" },
 };
 const SESSION = {
   token: localStorage.getItem("ggo_wc_token") || null,
@@ -119,7 +119,9 @@ const SESSION = {
 };
 window.SESSION = SESSION;
 const CONFIG = {
-  appsScriptUrl: localStorage.getItem("ggo_wc_url") || "https://ggowcpredictor.ben-arthur-wiz.workers.dev/",
+  appsScriptUrl:
+    localStorage.getItem("ggo_wc_url") ||
+    "https://ggowcpredictor.ben-arthur-wiz.workers.dev/",
 
   apiKey: localStorage.getItem("ggo_wc_key") || "",
 
@@ -1021,9 +1023,18 @@ function renderHome() {
       const result = STATE.results?.[fixture.matchId];
       const isFinished =
         result &&
-        ["1H", "HT", "2H", "ET", "P", "FT", "AET", "PEN", "FINISHED", "FULL_TIME"].includes(
-          String(result.status || "").toUpperCase(),
-        );
+        [
+          "1H",
+          "HT",
+          "2H",
+          "ET",
+          "P",
+          "FT",
+          "AET",
+          "PEN",
+          "FINISHED",
+          "FULL_TIME",
+        ].includes(String(result.status || "").toUpperCase());
       const finalScore =
         isFinished && result.score1 != null && result.score2 != null
           ? `${result.score1}-${result.score2}`
@@ -1451,14 +1462,14 @@ async function loadAllPredictions() {
 // Auto-relock check every 30 seconds
 setInterval(() => {
   const now = Date.now();
-  STATE.fixtures.forEach(fix => {
+  STATE.fixtures.forEach((fix) => {
     const kickoff = fix.kickoffDate;
     if (!kickoff) return;
     const msUntil = kickoff.getTime() - now;
     // If just passed kickoff (within last 2 minutes), re-render that card
     if (msUntil <= 0 && msUntil > -120000) {
       const card = document.querySelector(`[data-matchid="${fix.matchId}"]`);
-      if (card && !card.closest('article')?.classList.contains('locked')) {
+      if (card && !card.closest("article")?.classList.contains("locked")) {
         renderPredictions();
       }
     }
@@ -1942,7 +1953,7 @@ function renderPredictionCard(match, idx) {
   const isSaving = savingMatchId === match.matchId; // ★ already present
 
   const points =
-    hasRes && hasPred && isFinalStatus(result.status)
+    hasRes && hasPred
       ? calculateMatchPoints(
         pred.pred1,
         pred.pred2,
@@ -2468,15 +2479,16 @@ function openMatchDrawer(matchId) {
   // ── Prediction block ──
   const hasPred = hasPrediction(pred);
   const points =
-    hasRes && hasPred && isFinalStatus(result.status) ? calculateMatchPoints(
-      pred.pred1,
-      pred.pred2,
-      result.score1,
-      result.score2,
-      null,
-      pred.pen_winner,
-      result.penalty_winner,
-    )
+    hasRes && hasPred
+      ? calculateMatchPoints(
+        pred.pred1,
+        pred.pred2,
+        result.score1,
+        result.score2,
+        null,
+        pred.pen_winner,
+        result.penalty_winner,
+      )
       : null;
 
   const ptsCls =
@@ -2601,7 +2613,7 @@ function renderResults() {
       const result = STATE.results[fixture.matchId];
       const pred = STATE.predictions[fixture.matchId];
       const points =
-        hasPrediction(pred) && hasResult(result) && isFinalStatus(result?.status)
+        hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
             pred.pred1,
             pred.pred2,
@@ -3202,9 +3214,13 @@ function resolveSlot(code) {
         const { score1, score2 } = refResult;
         if (score1 > score2) winnerIsTeam1 = true;
         else if (score2 > score1) winnerIsTeam1 = false;
-        else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
+        else if (
+          String(refResult.penalty_winner || "").toLowerCase() === "team1"
+        )
           winnerIsTeam1 = true;
-        else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
+        else if (
+          String(refResult.penalty_winner || "").toLowerCase() === "team2"
+        )
           winnerIsTeam1 = false;
       }
     }
@@ -3781,7 +3797,10 @@ function saveSettings() {
 }
 
 function parseKickoff(date, time, kickoffUTC) {
-  if (kickoffUTC && /\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(String(kickoffUTC))) {
+  if (
+    kickoffUTC &&
+    /\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(String(kickoffUTC))
+  ) {
     const normalized = String(kickoffUTC).replace(" ", "T");
     const parsed = new Date(normalized);
     if (!Number.isNaN(parsed.getTime())) return parsed;
@@ -4148,7 +4167,8 @@ function hasPrediction(prediction) {
 }
 function hasResult(result) {
   if (!result) return false;
-  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2)) return false;
+  if (!Number.isFinite(result.score1) || !Number.isFinite(result.score2))
+    return false;
   const status = String(result.status || "").toUpperCase();
   if (status === "NS" || status === "") return false;
   return isLiveStatus(status) || isFinalStatus(status);
@@ -4217,7 +4237,13 @@ const STAGE_LABELS = {
   final: "Final",
 };
 const STAGE_MULTIPLIERS = {
-  group: 1, r32: 2, r16: 2.5, qf: 3, sf: 4, third: 4, final: 5,
+  group: 1,
+  r32: 2,
+  r16: 2.5,
+  qf: 3,
+  sf: 4,
+  third: 4,
+  final: 5,
 };
 
 function getCurrentActiveStage() {
@@ -4226,13 +4252,24 @@ function getCurrentActiveStage() {
 
   for (const stage of STAGE_ORDER) {
     const stageFixtures = fixtures.filter(
-      (f) => (f.stage || getStageFromRound(f.round || "") || "group").toLowerCase() === stage,
+      (f) =>
+        (
+          f.stage ||
+          getStageFromRound(f.round || "") ||
+          "group"
+        ).toLowerCase() === stage,
     );
     if (!stageFixtures.length) continue;
     const hasUnplayed = stageFixtures.some((f) => {
       const result = STATE.results?.[f.matchId];
       const status = String(result?.status || f.status || "").toUpperCase();
-      return status !== "FT" && status !== "AET" && status !== "PEN" && status !== "FINISHED" && status !== "ENDED";
+      return (
+        status !== "FT" &&
+        status !== "AET" &&
+        status !== "PEN" &&
+        status !== "FINISHED" &&
+        status !== "ENDED"
+      );
     });
     if (hasUnplayed) return stage;
   }
@@ -4269,7 +4306,9 @@ function renderRulesPage() {
         : `Currently active: ${label} (×${multiplier} multiplier applied below)`;
   }
 
-  const modalBanner = document.getElementById("modal-rules-active-stage-banner");
+  const modalBanner = document.getElementById(
+    "modal-rules-active-stage-banner",
+  );
   if (modalBanner) {
     modalBanner.hidden = false;
     modalBanner.textContent =
@@ -4343,7 +4382,10 @@ function buildLocalLeaderboard() {
 function formatKickoff(match) {
   if (match.kickoffDate) {
     return match.kickoffDate.toLocaleString([], {
-      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
       timeZone: "Africa/Cairo",
     });
   }
