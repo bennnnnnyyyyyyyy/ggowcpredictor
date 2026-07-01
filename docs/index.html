@@ -792,46 +792,7 @@
        RULES MODAL (How to Play)
   ════════════════════════════════════════ -->
   <div id="rules-modal" class="modal-overlay">
-    <!-- ════════════════════════════════════════
-       PENALTY SHOOTOUT RULES POPUP
-  ════════════════════════════════════════ -->
-    <div id="penalty-popup-modal" class="modal-overlay">
-      <div class="modal rules-modal-content" style="max-width: 560px;">
-        <div class="modal-header">
-          <h2>🥅 Penalty Shootout Rules</h2>
-          <button class="close-modal" onclick="closePenaltyPopup()" aria-label="Close">X</button>
-        </div>
-        <div class="modal-body">
-          <p class="rules-pen-intro">
-            If a knockout match is drawn after 90 minutes and goes to penalties,
-            your prediction is scored differently from a normal result:
-          </p>
-          <p class="rules-pen-intro" style="font-weight:500; color:var(--light);">
-            If you predicted a <strong>draw+penalty shootout</strong> but the game was actually decided
-            outright in normal or extra time (no shootout needed), you <strong>still get Correct Result</strong>
-            points if the penalty winner you picked matches the team that won the game.
-          </p>
-          <ul class="rules-list" style="margin-top:8px;">
-            <li><strong>Full points:</strong> You predicted a draw <em>and</em> picked the correct penalty shootout
-              winner → full Exact Score points for that stage (e.g. 30 pts at ×2, 45 pts at ×3, etc).</li>
-            <li><strong>Partial points:</strong> You predicted a non‑draw scoreline and the team you picked to win went
-              on to win the penalty shootout → Correct Result points for that stage (e.g. 10 pts at ×2, 15 pts at ×3,
-              etc).</li>
-            <li><strong>Partial points (reverse):</strong> You predicted a draw and picked a penalty winner, but the
-              match was settled outright — if your pen pick matches the winner, you get Correct Result points.</li>
-            <li><strong>0 pts:</strong> You predicted a draw but picked the wrong penalty winner (whether shootout or
-              outright), or you predicted a non‑draw and picked the losing team.</li>
-          </ul>
-          <p style="font-size:12px; color:var(--muted); margin-top:12px;">
-            Note: once a match is decided on penalties, your predicted scoreline's exact goal difference no longer
-            matters — only whether you called the draw/winner and the shootout winner correctly.
-          </p>
-          <button class="btn-primary start-playing-btn" onclick="closePenaltyPopup()" style="margin-top:16px;">
-            Got it!
-          </button>
-        </div>
-      </div>
-    </div>
+
     <div class="modal rules-modal-content">
       <div class="modal-header">
         <h2>Welcome to GGO World Cup Predictor!</h2>
@@ -930,6 +891,46 @@
 
         <button class="btn-primary start-playing-btn" onclick="toggleRules(false)">
           Let's Play!
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ════════════════════════════════════════
+       PENALTY SHOOTOUT RULES POPUP
+  ════════════════════════════════════════ -->
+  <div id="penalty-popup-modal" class="modal-overlay">
+    <div class="modal rules-modal-content" style="max-width: 560px;">
+      <div class="modal-header">
+        <h2>🥅 Penalty Shootout Rules</h2>
+        <button class="close-modal" onclick="closePenaltyPopup()" aria-label="Close">X</button>
+      </div>
+      <div class="modal-body">
+        <p class="rules-pen-intro">
+          If a knockout match is drawn after 90 minutes and goes to penalties,
+          your prediction is scored differently from a normal result:
+        </p>
+        <p class="rules-pen-intro" style="font-weight:500; color:var(--light);">
+          If you predicted a <strong>draw+penalty shootout</strong> but the game was actually decided
+          outright in normal or extra time (no shootout needed), you <strong>still get Correct Result</strong>
+          points if the penalty winner you picked matches the team that won the game.
+        </p>
+        <ul class="rules-list" style="margin-top:8px;">
+          <li><strong>Full points:</strong> You predicted a draw <em>and</em> picked the correct penalty shootout winner
+            → full Exact Score points for that stage (e.g. 30 pts at ×2, 45 pts at ×3, etc).</li>
+          <li><strong>Partial points:</strong> You predicted a non‑draw scoreline and the team you picked to win went on
+            to win the penalty shootout → Correct Result points for that stage (e.g. 10 pts at ×2, 15 pts at ×3, etc).
+          </li>
+          <li><strong>Partial points (reverse):</strong> You predicted a draw and picked a penalty winner, but the match
+            was settled outright — if your pen pick matches the winner, you get Correct Result points.</li>
+          <li><strong>0 pts:</strong> You predicted a draw but picked the wrong penalty winner (whether shootout or
+            outright), or you predicted a non‑draw and picked the losing team.</li>
+        </ul>
+        <p style="font-size:12px; color:var(--muted); margin-top:12px;">
+          Note: once a match is decided on penalties, your predicted scoreline's exact goal difference no longer matters
+          — only whether you called the draw/winner and the shootout winner correctly.
+        </p>
+        <button class="btn-primary start-playing-btn" onclick="closePenaltyPopup()" style="margin-top:16px;">
+          Got it!
         </button>
       </div>
     </div>
