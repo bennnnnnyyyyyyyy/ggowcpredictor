@@ -398,15 +398,26 @@ function stripeClass(pts, statusType) {
   if (pts > 0) return "stripe-partial";
   return "stripe-zero";
 }
-
 function formatPts(pts, statusType) {
   if (statusType === "upcoming")
     return `<span class="pred-pts pts-pending">Upcoming</span>`;
   if (statusType === "live" && pts === null)
     return `<span class="pred-pts pts-pending">Live</span>`;
   if (pts === null) return `<span class="pred-pts pts-pending">No pick</span>`;
-  const cls = ptsTierClass(pts);
-  return `<span class="pred-pts ${cls}">${pts}<sub>pts</sub></span>`;
+
+  // Map numeric points to the multiplier‑specific CSS class
+  let ptsClass = "";
+  if (pts === 30) ptsClass = "pts-30";          // exact ×2 (R32)
+  else if (pts === 37.5) ptsClass = "pts-37-5";  // exact ×2.5 (R16)
+  else if (pts === 20) ptsClass = "pts-20";      // exact ×2.5 (R16)
+  else if (pts === 16) ptsClass = "pts-16";     // good ×2 (R32)
+  else if (pts === 10) ptsClass = "pts-10";     // partial ×2 (R32)
+  else if (pts === 15) ptsClass = "pts-exact";  // exact ×1 (group)
+  else if (pts === 8) ptsClass = "pts-good";    // good ×1 (group)
+  else if (pts === 5) ptsClass = "pts-partial"; // partial ×1 (group)
+  else ptsClass = ptsTierClass(pts);            // fallback for other multipliers
+
+  return `<span class="pred-pts ${ptsClass}">${pts}<sub>pts</sub></span>`;
 }
 
 function statusTagHtml(statusType, rawStatus) {
