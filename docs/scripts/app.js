@@ -2140,9 +2140,17 @@ function isKnockoutMatch(matchId) {
 }
 
 function showPenaltyPopup(matchId, num1, num2) {
-  const fixture = STATE.fixtures.find((m) => m.matchId === String(matchId));
-  if (!fixture) return;
-
+  const rawFixture = STATE.fixtures.find((m) => m.matchId === String(matchId));
+  if (!rawFixture) return;
+  const fixture = {
+    ...rawFixture,
+    team1: isBracketReference(rawFixture.team1)
+      ? resolveSlot(rawFixture.team1) || rawFixture.team1
+      : rawFixture.team1,
+    team2: isBracketReference(rawFixture.team2)
+      ? resolveSlot(rawFixture.team2) || rawFixture.team2
+      : rawFixture.team2,
+  };
   const existing = document.getElementById("pen-popup-overlay");
   if (existing) existing.remove();
 
