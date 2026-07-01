@@ -943,6 +943,24 @@ function getPredictionOutcome(pred1, pred2) {
   return "draw";
 }
 
+function buildScoreGroups(matchPreds) {
+  const groups = new Map();
+  matchPreds.forEach((prediction) => {
+    if (prediction.pred1 == null || prediction.pred2 == null) return;
+    const score = `${prediction.pred1}-${prediction.pred2}`;
+    const entry = groups.get(score) || { score, count: 0, users: [] };
+    entry.count += 1;
+    const name =
+      prediction.displayName ||
+      prediction.username ||
+      prediction.user ||
+      "Someone";
+    entry.users.push(name);
+    groups.set(score, entry);
+  });
+  return Array.from(groups.values()).sort((a, b) => b.count - a.count);
+}
+
 function renderHome() {
   const summary = document.getElementById("home-summary-stats");
   const matchCards = document.getElementById("home-today-games");
@@ -966,40 +984,39 @@ function renderHome() {
   );
 
   const groupedByMatch = new Map();
-  const winSplit = { home: 0, draw: 0, away: 0 };
+  const tierSplit = { exact: 0, good: 0, partial: 0, zero: 0 };
 
   predictions.forEach((prediction) => {
     const matchId = String(prediction.match_id ?? prediction.matchId);
     const list = groupedByMatch.get(matchId) || [];
     list.push(prediction);
     groupedByMatch.set(matchId, list);
-    winSplit[getPredictionOutcome(prediction.pred1, prediction.pred2)] += 1;
+
+    const fixture = fixtures.find((f) => String(f.matchId) === matchId);
+    const result = STATE.results?.[matchId];
+    if (!fixture || !result || !hasResult(result)) return; // not played yet, no tier
+
+    const pts = calculateMatchPoints(
+      prediction.pred1,
+      prediction.pred2,
+      result.score1,
+      result.score2,
+      fixture.stage,
+      prediction.pen_winner,
+      result.penalty_winner,
+    );
+    const mult =
+      STAGE_MULTIPLIERS[String(fixture.stage || "group").toLowerCase()] ?? 1;
+    const base = pts / mult;
+    if (Math.abs(base - 15) < 0.01) tierSplit.exact += 1;
+    else if (Math.abs(base - 8) < 0.01) tierSplit.good += 1;
+    else if (Math.abs(base - 5) < 0.01) tierSplit.partial += 1;
+    else tierSplit.zero += 1;
   });
 
   const totalPredictions = predictions.length;
-  const topOutcome = Object.entries(winSplit).sort(
-    (a, b) => b[1] - a[1],
-  )[0] || ["draw", 0];
-
-  summary.innerHTML = [
-    `<div class="hero-metric"><span class="hero-metric-label">Matches in window</span><strong>${fixtures.length}</strong></div>`,
-    `<div class="hero-metric"><span class="hero-metric-label">Predictions tracked</span><strong>${totalPredictions}</strong></div>`,
-  ].join("");
-  count.textContent = `${fixtures.length} match${fixtures.length === 1 ? "" : "es"}`;
-
-  const buildScoreGroups = (matchPreds) => {
-    const buckets = new Map();
-    matchPreds.forEach((prediction) => {
-      const key = `${prediction.pred1}-${prediction.pred2}`;
-      const bucket = buckets.get(key) || { score: key, count: 0, users: [] };
-      bucket.count += 1;
-      bucket.users.push(getUserDisplayName(prediction.username));
-      buckets.set(key, bucket);
-    });
-    return [...buckets.values()].sort(
-      (a, b) => b.count - a.count || a.score.localeCompare(b.score),
-    );
-  };
+  const totalScored =
+    tierSplit.exact + tierSplit.good + tierSplit.partial + tierSplit.zero;
 
   function buildMatchCardHtml(fixture, idx) {
     {
@@ -1129,19 +1146,22 @@ function renderHome() {
       buildDaySection("Tomorrow", windowBuckets.tomorrow),
     ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
-  // Kept the top summary bar as default colors since it aggregates all matches
-  winBar.innerHTML = `
+  winBar.innerHTML = totalScored
+    ? `
     <div class="win-meter-track" aria-hidden="true">
-      <span class="win-home" style="width:${winSplit.home || 0}%"></span>
-      <span class="win-draw" style="width:${winSplit.draw || 0}%"></span>
-      <span class="win-away" style="width:${winSplit.away || 0}%"></span>
+      <span class="win-home" style="width:${(tierSplit.exact / totalScored) * 100}%" title="Exact"></span>
+      <span class="win-draw" style="width:${(tierSplit.good / totalScored) * 100}%" title="Good"></span>
+      <span class="win-away" style="width:${(tierSplit.partial / totalScored) * 100}%" title="Partial"></span>
+      <span class="win-zero" style="width:${(tierSplit.zero / totalScored) * 100}%" title="Miss"></span>
     </div>
     <div class="win-meter-legend">
-      <span><strong>${winSplit.home}</strong> home</span>
-      <span><strong>${winSplit.draw}</strong> draw</span>
-      <span><strong>${winSplit.away}</strong> away</span>
+      <span><strong>${tierSplit.exact}</strong> winners</span>
+      <span><strong>${tierSplit.good}</strong> good</span>
+      <span><strong>${tierSplit.partial}</strong> partial</span>
+      <span><strong>${tierSplit.zero}</strong> miss</span>
     </div>
-  `;
+  `
+    : `<div class="empty-state compact"><p>No results scored in this window yet.</p></div>`;
 }
 function ensureAdminNav() {
   const nav = document.getElementById("main-nav");

@@ -5179,6 +5179,10 @@ main {
   background: var(--wc-red);
 }
 
+.win-meter-track .win-zero {
+  background: var(--wc-gray, #888);
+}
+
 .win-meter-legend {
   display: flex;
   gap: 16px;
