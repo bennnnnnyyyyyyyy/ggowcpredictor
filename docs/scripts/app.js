@@ -1155,8 +1155,9 @@ function renderHome() {
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
-      buildDaySection("Yesterday", windowBuckets.yesterday),
       buildDaySection("Today", windowBuckets.today),
+      buildDaySection("Yesterday", windowBuckets.yesterday),
+
       buildDaySection("Tomorrow", windowBuckets.tomorrow),
     ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
