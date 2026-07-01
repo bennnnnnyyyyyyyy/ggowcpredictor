@@ -5287,7 +5287,7 @@ main {
 
 .home-match-card-head h4 {
   font-family: var(--font-ggo-display);
-  font-size: 16px;
+  font-size: 26px;
   font-weight: 800;
   margin: 0;
   color: #fff;
@@ -5351,7 +5351,7 @@ main {
 .match-percent-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   margin-bottom: 14px;
 }
@@ -5423,10 +5423,11 @@ main {
   gap: 3px;
   max-height: 38px;
   overflow: hidden;
+  font-size: 13px;
 }
 
 .popular-score-names span {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.55);
   background: rgba(255, 255, 255, 0.05);

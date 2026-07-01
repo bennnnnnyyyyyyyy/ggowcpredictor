@@ -955,14 +955,23 @@ function buildScoreGroups(matchPreds) {
     const score = `${prediction.pred1}-${prediction.pred2}`;
     const entry = groups.get(score) || { score, count: 0, users: [] };
     entry.count += 1;
+    const user = STATE.users.find(
+      (u) => u.username === prediction.username
+    );
+
     const name =
+      user?.displayName ||
       prediction.displayName ||
       prediction.username ||
       prediction.user ||
       "Someone";
+
     entry.users.push(name);
+
     groups.set(score, entry);
+
   });
+
   return Array.from(groups.values()).sort((a, b) => b.count - a.count);
 }
 
