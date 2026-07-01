@@ -1910,7 +1910,9 @@ function renderPredictions() {
     }
     return true;
   });
-
+  if (activeMatchFilter === "round_of_32") {
+    return true;
+  }
   if (!visibleFixtures.length) {
     const hasFixtures = STATE.fixtures.length > 0;
     if (!hasFixtures) {
