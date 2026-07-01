@@ -338,6 +338,7 @@ const wcTeamColors = {
   Panama: "#C8102E", // Red
   Jamaica: "#FED100", // Yellow
 };
+
 function initFirebase() {
   if (!window.firebase || !firebase.initializeApp || !firebase.firestore) {
     console.warn(
@@ -1110,7 +1111,19 @@ function renderHome() {
         : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
       return `
-            <article class="home-match-card-large${isFinished ? " match-finished" : ""}" style="--idx: ${idx || 0}">
+            <article
+  class="home-match-card-large${isFinished ? " match-finished" : ""}"
+  style="
+    --idx:${idx || 0};
+    background:
+      linear-gradient(90deg,
+        ${homeColor}00 0%,
+        ${homeColor}25 25%,
+        rgba(15, 20, 35, .92) 50%,
+        ${awayColor}25 75%,
+        ${awayColor}00 100%);
+  "
+>
               <div class="home-match-card-head">
                 <div>
                   <div class="home-match-kickoff">
@@ -1118,7 +1131,7 @@ function renderHome() {
   <span class="match-status-badge ${getMatchStatusInfo(fixture).cssClass}">${escapeHtml(getMatchStatusInfo(fixture).label)}</span>
   ${fixture.group ? `<span class="match-group-label">${escapeHtml(fixture.group)}</span>` : ""}
 </div>
-                  <h4>${escapeHtml(fixture.team1 || "TBD")} ${finalScore ? `<span class="final-score-chip">${escapeHtml(finalScore)}</span>` : "<span>vs</span>"} ${escapeHtml(fixture.team2 || "TBD")}</h4>
+                  <h4>${getFlagImg(fixture.team1)} ${escapeHtml(fixture.team1 || "TBD")} ${finalScore ? `<span class="final-score-chip">${escapeHtml(finalScore)}</span>` : "<span>vs</span>"} ${escapeHtml(fixture.team2 || "TBD")} ${getFlagImg(fixture.team2)}</h4>
                 </div>
                 <div class="pick-count"><strong>${matchPreds.length}</strong><span>picks</span></div>
               </div>
@@ -1135,7 +1148,19 @@ function renderHome() {
                 <span><strong>${awayPct}%</strong>${escapeHtml(fixture.team2 || "Away")}</span>
               </div>
 
-              <div class="popular-score-section">
+              <div
+  class="popular-score-section"
+  style="
+    background:
+      linear-gradient(
+        135deg,
+        ${homeColor}18,
+        rgba(18,22,35,.96) 40%,
+        rgba(18,22,35,.96) 60%,
+        ${awayColor}18
+      );
+  "
+>
                 <div class="popular-score-title">Most popular predictions</div>
                 ${popularHtml}
               </div>
@@ -4660,4 +4685,21 @@ function isFinalResult(result) {
   if (!result) return false;
   const status = String(result.status || "").toUpperCase();
   return ["FT", "AET", "PEN", "COMPLETED", "FINAL"].includes(status);
+}
+
+function getTeamColor(team) {
+  return wcTeamColors[team] || "#1d2633";
+}
+
+function getMatchGradient(home, away) {
+  const c1 = getTeamColor(home);
+  const c2 = getTeamColor(away);
+
+  return `linear-gradient(
+    135deg,
+    ${c1}22 0%,
+    ${c1}12 30%,
+    ${c2}12 70%,
+    ${c2}22 100%
+  )`;
 }
