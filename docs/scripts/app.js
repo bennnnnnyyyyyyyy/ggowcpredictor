@@ -791,6 +791,11 @@ function showApp() {
     localStorage.setItem(rulesKey, "true");
   } else {
     setRulesIntroVisible(false);
+  }// Show penalty popup once per user
+  const penaltyKey = SESSION.username && `ggo_penalty_popup_seen_${SESSION.username}`;
+  const shouldShowPenalty = penaltyKey && !localStorage.getItem(penaltyKey);
+  if (shouldShowPenalty) {
+    showPenaltyPopup();
   }
 
   showNavChangeBanner();
@@ -3799,7 +3804,23 @@ function toggleRules(show) {
     }
   }
 }
+// ─── Penalty Shootout Rules Popup ────────────────────────────────────────────
 
+function showPenaltyPopup() {
+  const modal = document.getElementById("penalty-popup-modal");
+  if (!modal) return;
+  modal.classList.add("show");
+}
+
+function closePenaltyPopup() {
+  const modal = document.getElementById("penalty-popup-modal");
+  if (!modal) return;
+  modal.classList.remove("show");
+  // Remember for this user so it doesn't pop up again
+  if (SESSION.username) {
+    localStorage.setItem(`ggo_penalty_popup_seen_${SESSION.username}`, "true");
+  }
+}
 function toggleSettings(show) {
   const modal = document.getElementById("settings-modal");
   if (!modal) return;
@@ -4242,16 +4263,6 @@ function calculateMatchPoints(
         ? 5 * multiplier
         : 0;
     }
-  }
-
-  if (isKnockout && !actualPenWinner && pred1 === pred2 && actual1 !== actual2) {
-    // User predicted a draw (with a pen-winner pick) but the match was actually
-    // settled outright in normal/extra time — no shootout needed.
-    // Credit them if their pen pick matches the team that actually won.
-    const actualWinner = actual1 > actual2 ? "team1" : "team2";
-    return String(penWinner || "").toLowerCase() === actualWinner
-      ? 5 * multiplier
-      : 0;
   }
 
   if (pred1 === actual1 && pred2 === actual2) return 15 * multiplier;
