@@ -635,8 +635,21 @@ main {
 /* ────────────────────────────────────────MATCH CARDS (redesigned)────────────────────────────────────────── */
 .group-matches {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .group-matches {
+    grid-template-columns: repeat(1, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 500px) {
+
+  .group-matches {
+    grid-template-columns: repeat(1, minmax(280px, 1fr));
+  }
 }
 
 .match-card {
