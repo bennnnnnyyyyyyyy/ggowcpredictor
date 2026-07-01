@@ -77,27 +77,44 @@ function calcPoints(
   const multiplier = STAGE_MULTIPLIERS[stageKey] ?? 1;
   const isKnockout =
     stageKey !== "group" && stageKey !== "group_stage" && stageKey !== "";
-  const actualIsDraw = a1 === a2;
   const userPredictedDraw = p1 === p2;
+
+  // ── Case 1: Match went to a penalty shootout ──
   if (isKnockout && actualPenWinner) {
-    const userPredictedDraw = p1 === p2;
     if (userPredictedDraw) {
-      return penWinner && String(penWinner).toLowerCase() === String(actualPenWinner).toLowerCase()
-        ? 15 * multiplier : 0;
+      // User predicted draw + picked a penalty winner
+      return String(penWinner || "").toLowerCase() ===
+        String(actualPenWinner || "").toLowerCase()
+        ? 15 * multiplier
+        : 0;
     } else {
+      // User predicted a non‑draw; check if their winner matches the shootout winner
       const predWinner = p1 > p2 ? "team1" : "team2";
-      return predWinner === String(actualPenWinner).toLowerCase() ? 5 * multiplier : 0;
+      return predWinner === String(actualPenWinner || "").toLowerCase()
+        ? 5 * multiplier
+        : 0;
     }
   }
 
+  // ── Case 2: Knockout, no shootout, but user predicted a draw + picked a winner ──
+  if (isKnockout && !actualPenWinner && userPredictedDraw && a1 !== a2) {
+    // Match was decided in normal/extra time – credit if the user’s pen pick matches the actual winner
+    const actualWinner = a1 > a2 ? "team1" : "team2";
+    return String(penWinner || "").toLowerCase() === actualWinner
+      ? 5 * multiplier
+      : 0;
+  }
+
+  // ── Case 3: Standard scoring (group stage or no penalty logic) ──
   if (p1 === a1 && p2 === a2) return 15 * multiplier;
-  const po = Math.sign(p1 - p2);
-  const ao = Math.sign(a1 - a2);
-  if (po === ao)
-    return (Math.abs(p1 - p2 - (a1 - a2)) <= 1 ? 8 : 5) * multiplier;
+  const predOutcome = Math.sign(p1 - p2);
+  const actualOutcome = Math.sign(a1 - a2);
+  if (predOutcome === actualOutcome) {
+    const diffGap = Math.abs(p1 - p2 - (a1 - a2));
+    return (diffGap <= 1 ? 8 : 5) * multiplier;
+  }
   return 0;
 }
-
 function isLiveStatus(s = "") {
   return ["1H", "HT", "2H", "ET", "P", "LIVE"].includes(
     String(s).toUpperCase(),
