@@ -357,6 +357,7 @@ header {
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
+  margin-left: 5%;
 }
 
 .next-lock-team {
