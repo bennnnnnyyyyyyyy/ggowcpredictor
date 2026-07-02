@@ -276,69 +276,55 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 });
 const wcTeamColors = {
-  // 📺 Teams in your current fixtures
-  Scotland: "#004B84", // Dark Blue
-  Brazil: "#FFDC02", // Yellow
-  Morocco: "#C1272D", // Red
-  Haiti: "#00209F", // Blue
-  "Czech Republic": "#ED1B24", // Red
-  Mexico: "#006341", // Green
-  "South Africa": "#FFB81C", // Gold (Pops better than dark green)
-  "South Korea": "#C20E1A", // Red
-  Curaçao: "#002B7F", // Blue
-  "Ivory Coast": "#FF8200", // Orange
-  Ecuador: "#FFD100", // Yellow
-  Germany: "#FFCE00", // Gold (Black blends into dark mode)
-
-  // 🇺🇸🇨🇦🇲🇽 Hosts
-  USA: "#BF0A30", // Red
-  Canada: "#FF0000", // Red
-
-  // 🌍 Europe (UEFA)
-  France: "#002395", // Blue
-  England: "#CE1124", // Red (White is too stark for bars)
-  Spain: "#AA151B", // Red
-  Italy: "#0064AA", // Azure Blue
-  Netherlands: "#F36C21", // Orange
-  Portugal: "#E42518", // Red
-  Belgium: "#E30613", // Red
-  Croatia: "#ED1C24", // Red
-  Switzerland: "#FF0000", // Red
-  Denmark: "#C60C30", // Red
-  Sweden: "#FECC00", // Yellow
-  Wales: "#D30731", // Red
-  Poland: "#DC143C", // Crimson
-  Serbia: "#C6363C", // Red
-  Turkey: "#E30A17", // Red
-
-  // 🌎 South America (CONMEBOL)
-  Argentina: "#43A1D5", // Light Blue
-  Uruguay: "#55B5E5", // Light Blue
-  Colombia: "#FCD116", // Yellow
-  Peru: "#D91023", // Red
-  Chile: "#D52B1E", // Red
-
-  // 🌏 Asia (AFC)
-  Japan: "#000555", // Samurai Blue
-  Australia: "#FFCD00", // Gold
-  Iran: "#239F40", // Green
-  "Saudi Arabia": "#006C35", // Green
-  Qatar: "#8A1538", // Maroon
-
-  // 🌍 Africa (CAF)
-  Senegal: "#00853F", // Green
-  Nigeria: "#008751", // Green
-  Algeria: "#006233", // Green
-  Egypt: "#CE1126", // Red
-  Ghana: "#006B3F", // Green
-  Cameroon: "#007A5E", // Green
-
-  // 🌎 North/Central America (CONCACAF)
-  "Costa Rica": "#CE1126", // Red
-  Panama: "#C8102E", // Red
-  Jamaica: "#FED100", // Yellow
+  Algeria: { primary: "#006233", secondary: "#D21034" },
+  Argentina: { primary: "#75AADB", secondary: "#FFFFFF" },
+  Australia: { primary: "#00843D", secondary: "#FFCD00" },
+  Austria: { primary: "#ED2939", secondary: "#FFFFFF" },
+  Belgium: { primary: "#ED2939", secondary: "#FFD90F" },
+  "Bosnia & Herzegovina": { primary: "#002395", secondary: "#FECB00" },
+  Brazil: { primary: "#FEDD00", secondary: "#009739" },
+  Canada: { primary: "#FF0000", secondary: "#FFFFFF" },
+  "Cape Verde": { primary: "#003893", secondary: "#F7D116" },
+  Colombia: { primary: "#FCD116", secondary: "#003893" },
+  Croatia: { primary: "#ED1C24", secondary: "#171796" },
+  Curaçao: { primary: "#002B7F", secondary: "#FFD100" },
+  "Czech Republic": { primary: "#D7141A", secondary: "#11457E" },
+  "DR Congo": { primary: "#007FFF", secondary: "#F7D618" },
+  Ecuador: { primary: "#FFD100", secondary: "#034EA2" },
+  Egypt: { primary: "#CE1126", secondary: "#C09300" },
+  England: { primary: "#CF081F", secondary: "#FFFFFF" },
+  France: { primary: "#0055A4", secondary: "#EF4135" },
+  Germany: { primary: "#DD0000", secondary: "#FFCE00" },
+  Ghana: { primary: "#006B3F", secondary: "#FCD116" },
+  Haiti: { primary: "#00209F", secondary: "#D21034" },
+  Iran: { primary: "#239F40", secondary: "#DA0000" },
+  Iraq: { primary: "#CE1126", secondary: "#000000" },
+  "Ivory Coast": { primary: "#FF8200", secondary: "#009E60" },
+  Japan: { primary: "#BC002D", secondary: "#FFFFFF" },
+  Jordan: { primary: "#CE1126", secondary: "#006233" },
+  Mexico: { primary: "#006847", secondary: "#CE1126" },
+  Morocco: { primary: "#C1272D", secondary: "#006233" },
+  Netherlands: { primary: "#FF6C0C", secondary: "#21468B" },
+  "New Zealand": { primary: "#000000", secondary: "#FFFFFF" },
+  Norway: { primary: "#EF2B2D", secondary: "#002868" },
+  Panama: { primary: "#DA121A", secondary: "#072357" },
+  Paraguay: { primary: "#D52B1E", secondary: "#0038A8" },
+  Portugal: { primary: "#FF0000", secondary: "#046A38" },
+  Qatar: { primary: "#8A1538", secondary: "#FFFFFF" },
+  "Saudi Arabia": { primary: "#0B7B3E", secondary: "#FFFFFF" },
+  Scotland: { primary: "#0065BD", secondary: "#FFFFFF" },
+  Senegal: { primary: "#00853F", secondary: "#FDEF42" },
+  "South Africa": { primary: "#007749", secondary: "#FFB612" },
+  "South Korea": { primary: "#C60C30", secondary: "#003478" },
+  Spain: { primary: "#AA151B", secondary: "#F1BF00" },
+  Sweden: { primary: "#006AA7", secondary: "#FECC02" },
+  Switzerland: { primary: "#FF0000", secondary: "#FFFFFF" },
+  Tunisia: { primary: "#E70013", secondary: "#FFFFFF" },
+  Turkey: { primary: "#E30A17", secondary: "#FFFFFF" },
+  USA: { primary: "#B22234", secondary: "#3C3B6E" },
+  Uruguay: { primary: "#75AADB", secondary: "#FCD116" },
+  Uzbekistan: { primary: "#1EB53A", secondary: "#0099B5" },
 };
-
 function initFirebase() {
   if (!window.firebase || !firebase.initializeApp || !firebase.firestore) {
     console.warn(
@@ -458,7 +444,7 @@ async function handleLogin(event) {
             };
           }
         }
-      } catch (_) { }
+      } catch (_) {}
     }
 
     // 4. Demo users last resort
@@ -792,8 +778,9 @@ function showApp() {
     localStorage.setItem(rulesKey, "true");
   } else {
     setRulesIntroVisible(false);
-  }// Show penalty popup once per user
-  const penaltyKey = SESSION.username && `ggo_penalty_popup_seen_${SESSION.username}`;
+  } // Show penalty popup once per user
+  const penaltyKey =
+    SESSION.username && `ggo_penalty_popup_seen_${SESSION.username}`;
   const shouldShowPenalty = penaltyKey && !localStorage.getItem(penaltyKey);
   if (shouldShowPenalty) {
     showPenaltyPopup();
@@ -810,10 +797,13 @@ function hardRefreshApp() {
     window.location.pathname + "?refresh=" + Date.now() + window.location.hash;
 }
 
-setInterval(() => {
-  if (document.hidden) return;
-  hardRefreshApp();
-}, 5 * 60 * 1000);
+setInterval(
+  () => {
+    if (document.hidden) return;
+    hardRefreshApp();
+  },
+  5 * 60 * 1000,
+);
 
 function handleLogout() {
   localStorage.removeItem("ggo_wc_token");
@@ -838,7 +828,10 @@ function showView(id, btn) {
   // Sync active states on all nav-btns triggering this view
   document.querySelectorAll(".nav-btn").forEach((navBtn) => {
     const onclickStr = navBtn.getAttribute("onclick") || "";
-    if (onclickStr.includes(`showView('${id}'`) || onclickStr.includes(`showView("${id}"`)) {
+    if (
+      onclickStr.includes(`showView('${id}'`) ||
+      onclickStr.includes(`showView("${id}"`)
+    ) {
       navBtn.classList.add("active");
     } else {
       navBtn.classList.remove("active");
@@ -968,9 +961,7 @@ function buildScoreGroups(matchPreds) {
     const score = `${prediction.pred1}-${prediction.pred2}`;
     const entry = groups.get(score) || { score, count: 0, users: [] };
     entry.count += 1;
-    const user = STATE.users.find(
-      (u) => u.username === prediction.username
-    );
+    const user = STATE.users.find((u) => u.username === prediction.username);
 
     const name =
       user?.displayName ||
@@ -982,7 +973,6 @@ function buildScoreGroups(matchPreds) {
     entry.users.push(name);
 
     groups.set(score, entry);
-
   });
 
   return Array.from(groups.values()).sort((a, b) => b.count - a.count);
@@ -1061,8 +1051,9 @@ function renderHome() {
       const scoreGroups = buildScoreGroups(matchPreds);
 
       // ─── NEW: LOOK UP COLORS HERE ───
-      const homeColor = wcTeamColors[fixture.team1] || "var(--wc-blue)";
-      const awayColor = wcTeamColors[fixture.team2] || "var(--wc-red)";
+      const homeColor =
+        wcTeamColors[fixture.team1]?.primary || "var(--wc-blue)";
+      const awayColor = wcTeamColors[fixture.team2]?.primary || "var(--wc-red)";
 
       const result = STATE.results?.[fixture.matchId];
       const isFinished =
@@ -1086,27 +1077,28 @@ function renderHome() {
 
       const popularHtml = scoreGroups.length
         ? scoreGroups
-          .map((group, index) => {
-            const hasStarted =
-              result &&
-              !["NS", "NOT_STARTED", "TBD"].includes(
-                String(result.status || "").toUpperCase(),
-              );
+            .map((group, index) => {
+              const hasStarted =
+                result &&
+                !["NS", "NOT_STARTED", "TBD"].includes(
+                  String(result.status || "").toUpperCase(),
+                );
 
-            // Only highlight the exact score (15 pts)
-            const scoreClass =
-              isFinished && finalScore && group.score === finalScore
-                ? "correct-score"
-                : "";
+              // Only highlight the exact score (15 pts)
+              const scoreClass =
+                isFinished && finalScore && group.score === finalScore
+                  ? "correct-score"
+                  : "";
 
-            return `
+              return `
           <div class="popular-score ${index === 0 ? "popular-score-top" : ""} ${scoreClass}">
             <div class="popular-score-main">
               <span class="score-badge">${escapeHtml(group.score)}</span>
               <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
             </div>
 
-            ${hasStarted
+            ${
+              hasStarted
                 ? `
               <div class="popular-score-names">
                 ${group.users
@@ -1115,11 +1107,11 @@ function renderHome() {
               </div>
             `
                 : ""
-              }
+            }
           </div>
         `;
-          })
-          .join("")
+            })
+            .join("")
         : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
       return `
@@ -1189,15 +1181,14 @@ function renderHome() {
   const hasAnyFixtures =
     windowBuckets.today.length ||
     windowBuckets.yesterday.length ||
-
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
-      buildDaySection("Today", windowBuckets.today),
-      buildDaySection("Yesterday", windowBuckets.yesterday),
+        buildDaySection("Today", windowBuckets.today),
+        buildDaySection("Yesterday", windowBuckets.yesterday),
 
-      buildDaySection("Tomorrow", windowBuckets.tomorrow),
-    ].join("")
+        buildDaySection("Tomorrow", windowBuckets.tomorrow),
+      ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
     ? `
@@ -1307,10 +1298,10 @@ async function requestSync() {
       hadError && !hasAnyData
         ? "Sync failed"
         : `Live - ${STATE.lastSync.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Africa/Cairo",
-        })}`;
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Africa/Cairo",
+          })}`;
   }
 
   updateAdminBadge();
@@ -1720,21 +1711,21 @@ function readResultScore(result, side) {
   const directKeys =
     side === "home"
       ? [
-        "score1",
-        "team1Score",
-        "homeScore",
-        "home_score",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "score1",
+          "team1Score",
+          "homeScore",
+          "home_score",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "score2",
-        "team2Score",
-        "awayScore",
-        "away_score",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "score2",
+          "team2Score",
+          "awayScore",
+          "away_score",
+          "awayGoals",
+          "goalsAway",
+        ];
 
   for (const key of directKeys) {
     if (
@@ -1751,21 +1742,21 @@ function readResultScore(result, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
 
     for (const path of paths) {
       let value = nested;
@@ -2041,14 +2032,14 @@ function renderPredictionCard(match, idx) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-        match.stage,
-        pred.pen_winner,
-        result.penalty_winner,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+          match.stage,
+          pred.pen_winner,
+          result.penalty_winner,
+        )
       : null;
   const ptsTier = (() => {
     if (points === null) return "";
@@ -2100,15 +2091,16 @@ function renderPredictionCard(match, idx) {
           <span class="mc-scoreline-label">Your Pick</span>
           <span class="mc-scoreline-pick">${predictionScore}</span>
         </div>
-        ${hasPred
-      ? `
+        ${
+          hasPred
+            ? `
           <div class="mc-scoreline-divider"></div>
           <div class="mc-scoreline-points">
             <span class="mc-scoreline-pts ${ptsTier}">${points ?? 0} pts</span>
           </div>
         `
-      : ""
-    }
+            : ""
+        }
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -2130,15 +2122,16 @@ function renderPredictionCard(match, idx) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-      ${hasRes
-      ? ``
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+      ${
+        hasRes
+          ? ``
+          : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+      }
         </div>
 
         <div class="mc-middle">
@@ -2148,30 +2141,32 @@ function renderPredictionCard(match, idx) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-        ${hasRes
-      ? ``
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+        ${
+          hasRes
+            ? ``
+            : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+        }
         </div>
       </div>
 
       ${statusLineHtml ? `<div class="mc-footer">${statusLineHtml}</div>` : ""}
 
       <!-- ★ Add loading overlay -->
-      ${isSaving
-      ? `
+      ${
+        isSaving
+          ? `
         <div class="mc-loading-overlay">
           <span class="spinner"></span>
           <span>Saving…</span>
         </div>
       `
-      : ""
-    }
+          : ""
+      }
     </article>
   `;
 }
@@ -2312,8 +2307,8 @@ function renderGroupTable(groupName, standings) {
         </thead>
         <tbody>
           ${sorted
-      .map(
-        (row) => `
+            .map(
+              (row) => `
             <tr>
               <td class="team-rank">${row.position}</td>
               <td data-label="Team">${getFlagImg(row.team_name)} ${escapeHtml(row.team_name)}</td>
@@ -2325,8 +2320,8 @@ function renderGroupTable(groupName, standings) {
               <td><strong>${row.points ?? 0}</strong></td>
             </tr>
           `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -2393,8 +2388,8 @@ function renderThirdPlaceTable() {
         </thead>
         <tbody>
           ${rows
-      .map(
-        (row, index) => `
+            .map(
+              (row, index) => `
               <tr class="${row.qualifies ? "" : "eliminated"} ${index === cutoffIndex ? "cutoff-row" : ""}">
                 <td data-label="#">${row.rank}</td>
                 <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
@@ -2406,8 +2401,8 @@ function renderThirdPlaceTable() {
                 <td data-label="Status">${row.qualifies ? "Qualifies" : "Out"}</td>
               </tr>
             `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
       <div class="third-place-legend">
@@ -2575,14 +2570,14 @@ function openMatchDrawer(matchId) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-        null,
-        pred.pen_winner,
-        result.penalty_winner,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+          null,
+          pred.pen_winner,
+          result.penalty_winner,
+        )
       : null;
 
   const ptsCls =
@@ -2709,14 +2704,14 @@ function renderResults() {
       const points =
         hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-            pred.pred1,
-            pred.pred2,
-            result.score1,
-            result.score2,
-            fixture.stage,
-            pred.pen_winner,
-            result.penalty_winner,
-          )
+              pred.pred1,
+              pred.pred2,
+              result.score1,
+              result.score2,
+              fixture.stage,
+              pred.pen_winner,
+              result.penalty_winner,
+            )
           : null;
 
       return `
@@ -2951,10 +2946,11 @@ function renderBracket() {
               Final
             </div>
 
-            ${finalMatch
-      ? renderBracketMatch(finalMatch)
-      : `<div class="bracket-placeholder">TBD</div>`
-    }
+            ${
+              finalMatch
+                ? renderBracketMatch(finalMatch)
+                : `<div class="bracket-placeholder">TBD</div>`
+            }
 
           </div>
 
@@ -2964,10 +2960,11 @@ function renderBracket() {
               3rd Place
             </div>
 
-            ${thirdMatch
-      ? renderBracketMatch(thirdMatch)
-      : `<div class="bracket-placeholder">TBD</div>`
-    }
+            ${
+              thirdMatch
+                ? renderBracketMatch(thirdMatch)
+                : `<div class="bracket-placeholder">TBD</div>`
+            }
 
           </div>
 
@@ -3428,15 +3425,15 @@ function renderPenaltyWinnerAudit() {
   });
   container.innerHTML = needsReview.length
     ? needsReview
-      .map(
-        (f) => `
+        .map(
+          (f) => `
         <div class="admin-pen-row">
           <span>${escapeHtml(f.team1)} ${STATE.results[f.matchId].score1}-${STATE.results[f.matchId].score2} ${escapeHtml(f.team2)} (match ${f.matchId})</span>
           <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team1')">${escapeHtml(f.team1)} won pens</button>
           <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team2')">${escapeHtml(f.team2)} won pens</button>
         </div>`,
-      )
-      .join("")
+        )
+        .join("")
     : "<p>No knockout draws missing a penalty winner.</p>";
 }
 
@@ -3611,8 +3608,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-      .map(
-        (request) => `
+        .map(
+          (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -3625,8 +3622,8 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-      )
-      .join("")}
+        )
+        .join("")}
     </div>
   `;
 }
@@ -4695,20 +4692,26 @@ function isFinalResult(result) {
   const status = String(result.status || "").toUpperCase();
   return ["FT", "AET", "PEN", "COMPLETED", "FINAL"].includes(status);
 }
-
 function getTeamColor(team) {
-  return wcTeamColors[team] || "#1d2633";
+  return wcTeamColors[team]?.primary || "#1d2633";
 }
 
+function getTeamSecondary(team) {
+  return (
+    wcTeamColors[team]?.secondary || wcTeamColors[team]?.primary || "#1d2633"
+  );
+}
 function getMatchGradient(home, away) {
   const c1 = getTeamColor(home);
+  const c1b = getTeamSecondary(home);
   const c2 = getTeamColor(away);
+  const c2b = getTeamSecondary(away);
 
   return `linear-gradient(
     135deg,
-    ${c1}22 0%,
-    ${c1}12 30%,
-    ${c2}12 70%,
-    ${c2}22 100%
+    ${c1}55 0%,
+    ${c1b}30 25%,
+    ${c2b}30 75%,
+    ${c2}55 100%
   )`;
 }
