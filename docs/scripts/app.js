@@ -1179,15 +1179,15 @@ function renderHome() {
   }
 
   const hasAnyFixtures =
-    windowBuckets.today.length ||
     windowBuckets.yesterday.length ||
+    windowBuckets.today.length ||
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
         buildDaySection("Today", windowBuckets.today),
-        buildDaySection("Yesterday", windowBuckets.yesterday),
-
         buildDaySection("Tomorrow", windowBuckets.tomorrow),
+
+        buildDaySection("Yesterday", windowBuckets.yesterday),
       ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
@@ -4305,6 +4305,17 @@ function calculateMatchPoints(
         ? 5 * multiplier
         : 0;
     }
+  }
+  if (
+    isKnockout &&
+    !actualPenWinner &&
+    pred1 === pred2 &&
+    actual1 !== actual2
+  ) {
+    const actualWinner = actual1 > actual2 ? "team1" : "team2";
+    return String(penWinner || "").toLowerCase() === actualWinner
+      ? 5 * multiplier
+      : 0;
   }
 
   if (pred1 === actual1 && pred2 === actual2) return 15 * multiplier;
