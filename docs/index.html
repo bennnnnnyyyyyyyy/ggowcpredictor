@@ -995,6 +995,51 @@
   <!-- ════════════════════════════════════════
        SCAFFOLD JS - wire-up only, no data yet
   ════════════════════════════════════════ -->
+
+  <!-- R16 Vote Modal -->
+  <div id="r16-vote-modal" class="vote-modal hidden" role="dialog" aria-modal="true" aria-labelledby="vote-modal-title">
+    <div class="vote-card">
+      <div class="vote-modal-icon">🗳️</div>
+      <h2 id="vote-modal-title">Community Vote</h2>
+      <p class="vote-modal-desc">
+        Should the <strong>Round of 16</strong> multiplier remain
+        <strong>2.5×</strong> or increase to <strong>3×</strong>?
+      </p>
+      <div class="vote-options">
+        <label class="vote-option" id="vote-label-25">
+          <input type="radio" name="r16vote" value="2.5" id="vote-25">
+          <span class="vote-option-inner">
+            <span class="vote-option-val">2.5×</span>
+            <span class="vote-option-label">Keep as is</span>
+          </span>
+        </label>
+        <label class="vote-option" id="vote-label-3">
+          <input type="radio" name="r16vote" value="3" id="vote-3">
+          <span class="vote-option-inner">
+            <span class="vote-option-val">3×</span>
+            <span class="vote-option-label">Increase it</span>
+          </span>
+        </label>
+      </div>
+      <div id="vote-results" class="vote-results hidden">
+        <div class="vote-bar-label">
+          <span>2.5×</span><span id="vote-pct-25">0%</span>
+        </div>
+        <div class="vote-bar-track">
+          <div class="vote-bar-fill vote-bar-25" id="vote-bar-25" style="width:0%"></div>
+        </div>
+        <div class="vote-bar-label">
+          <span>3×</span><span id="vote-pct-3">0%</span>
+        </div>
+        <div class="vote-bar-track">
+          <div class="vote-bar-fill vote-bar-3" id="vote-bar-3" style="width:0%"></div>
+        </div>
+        <p class="vote-total" id="vote-total-text"></p>
+      </div>
+      <button class="vote-submit-btn" id="vote-submit-btn" onclick="submitR16Vote()">Cast Vote</button>
+      <button class="vote-skip-btn" onclick="skipR16Vote()">Maybe later</button>
+    </div>
+  </div>
 </body>
 <link rel="stylesheet" href="style.css" id="app-stylesheet" />
 <script>document.write('<script src="scripts/app.js?v=' + Date.now() + '"><\/script>');</script>
