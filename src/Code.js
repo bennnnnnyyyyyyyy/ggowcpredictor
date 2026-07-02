@@ -5,3 +5,4 @@
 // - doPost(e): Handle POST requests
 // - scheduledLiveScoresUpdate(): Called by Apps Script trigger
 // - scheduledLeaderboardUpdate(): Called by Apps Script trigger
+console.log("hello")
