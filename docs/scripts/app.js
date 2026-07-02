@@ -1908,6 +1908,8 @@ function renderPredictions() {
   const stageOf = (f) => f.stage || getStageFromRound(f.round || "") || "group";
 
   const visibleFixtures = STATE.fixtures.filter((fixture) => {
+    if (activeMatchFilter === "open") return !isLocked(fixture);
+
     if (activeMatchFilter === "live") {
       const result = STATE.results[fixture.matchId];
       return result && isLiveStatus(result.status);
@@ -1926,7 +1928,13 @@ function renderPredictions() {
         "Fixtures are not loaded yet.",
         "Run the app from a local server or seed Firestore fixtures.",
       );
-    } else if (activeMatchFilter === "live") {
+    } else if (activeMatchFilter === "open") {
+      container.innerHTML = emptyState(
+        "No open matches right now.",
+        "Check back when a game is in progress.",
+      );
+    }
+    else if (activeMatchFilter === "live") {
       container.innerHTML = emptyState(
         "No live matches right now.",
         "Check back when a game is in progress.",
