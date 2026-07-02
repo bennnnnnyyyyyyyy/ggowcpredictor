@@ -4843,3 +4843,40 @@ async function openVoteModal() {
 
   modal.classList.remove("hidden");
 }
+function getNextLockingFixture() {
+  const now = Date.now();
+  return (STATE.fixtures || []).find(
+    (fix) => fix.kickoffDate && fix.kickoffDate.getTime() - 60000 > now,
+  );
+}
+
+function updateNextLockWidget() {
+  const widget = document.getElementById("next-lock-widget");
+  if (!widget) return;
+
+  const fix = getNextLockingFixture();
+  if (!fix) {
+    widget.style.display = "none";
+    return;
+  }
+
+  const lockTime = fix.kickoffDate.getTime() - 60000;
+  const msLeft = lockTime - Date.now();
+  if (msLeft <= 0) {
+    updateNextLockWidget(); // this fixture just locked, recompute immediately
+    return;
+  }
+
+  document.getElementById("next-lock-team1").innerHTML = getFlagImg(fix.team1);
+  document.getElementById("next-lock-team2").innerHTML = getFlagImg(fix.team2);
+
+  const h = Math.floor(msLeft / 3600000);
+  const m = Math.floor((msLeft % 3600000) / 60000);
+  const s = Math.floor((msLeft % 60000) / 1000);
+  document.getElementById("next-lock-timer").textContent =
+    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+
+  widget.style.display = "flex";
+}
+
+setInterval(updateNextLockWidget, 1000);

@@ -345,6 +345,37 @@ header {
   letter-spacing: 0.5px;
 }
 
+.next-lock-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: var(--font-ggo-display);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.next-lock-team {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.next-lock-vs {
+  opacity: 0.6;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.next-lock-timer {
+  color: var(--wc-red);
+  font-variant-numeric: tabular-nums;
+}
+
 .wc-badge {
   display: flex;
   align-items: center;
