@@ -859,6 +859,7 @@ function showView(id, btn) {
   if (id === "calendar") toggleCalendarModal(true);
   if (id === "admin") renderAdmin();
   if (id === "rules") renderRulesPage();
+
 }
 
 function getLocalDateKey(date = new Date()) {
@@ -4696,38 +4697,44 @@ function getMatchGradient(home, away) {
     ${c2}55 100%
   )`;
 }
-
 // ── R16 VOTE ──────────────────────────────────────────────────
 
 async function checkR16Vote() {
-  // Snooze: skip if user dismissed within last 24h
+  // Need logged in user
+  if (!SESSION.username) return;
+
+  // Always show header button
+  showVoteHeaderButton();
+
+  // Skip popup if snoozed
   const snoozed = localStorage.getItem("r16vote_snooze");
   if (snoozed && Date.now() < Number(snoozed)) return;
 
-  // Already voted this session
+  // Already confirmed locally
   if (localStorage.getItem("r16vote_done")) return;
 
-  // Need a logged-in user
-  if (!SESSION.username) return;
-
-  // Check if they already voted in Supabase
   try {
     const rows = await supabaseSelect(
       "r16_votes",
       "username",
       `username=eq.${encodeURIComponent(SESSION.username)}`
     );
+
     if (rows && rows.length > 0) {
+      // Already voted
       localStorage.setItem("r16vote_done", "1");
-      return; // already voted
+      return;
     }
+
+    // Has NOT voted → show popup
+    document
+      .getElementById("r16-vote-modal")
+      .classList.remove("hidden");
+
   } catch (e) {
     console.warn("r16 vote check failed", e);
   }
-
-  document.getElementById("r16-vote-modal").classList.remove("hidden");
 }
-
 async function submitR16Vote() {
   const vote = document.querySelector('input[name="r16vote"]:checked');
   if (!vote) return;
@@ -4742,6 +4749,7 @@ async function submitR16Vote() {
       "username"
     );
     localStorage.setItem("r16vote_done", "1");
+    showVoteHeaderButton();
   } catch (e) {
     console.error("r16 vote submit failed", e);
     if (btn) btn.disabled = false;
@@ -4777,7 +4785,43 @@ async function submitR16Vote() {
 }
 
 function skipR16Vote() {
-  // Snooze for 24 hours
-  localStorage.setItem("r16vote_snooze", String(Date.now() + 24 * 60 * 60 * 1000));
-  document.getElementById("r16-vote-modal").classList.add("hidden");
+  localStorage.setItem(
+    "r16vote_snooze",
+    Date.now() + 24 * 60 * 60 * 1000
+  );
+
+  showVoteHeaderButton();
+
+  document.getElementById("r16-vote-modal")
+    .classList.add("hidden");
+}
+
+
+function showVoteHeaderButton() {
+  const btn = document.getElementById("vote-nav-btn");
+  if (btn) btn.style.display = "";
+}
+async function openVoteModal() {
+  const modal = document.getElementById("r16-vote-modal");
+  const rows = await supabaseSelect(
+    "r16_votes",
+    "username",
+    `username=eq.${encodeURIComponent(SESSION.username)}`
+  );
+
+  const voted = rows.length > 0;
+
+  if (voted) {
+    document.querySelector(".vote-options").style.display = "none";
+    document.getElementById("vote-submit-btn").style.display = "none";
+    document.getElementById("vote-results").classList.remove("hidden");
+    document.querySelector(".vote-skip-btn").textContent = "Close";
+  } else {
+    document.querySelector(".vote-options").style.display = "";
+    document.getElementById("vote-submit-btn").style.display = "";
+    document.getElementById("vote-results").classList.add("hidden");
+    document.querySelector(".vote-skip-btn").textContent = "Remind Me Later";
+  }
+
+  modal.classList.remove("hidden");
 }

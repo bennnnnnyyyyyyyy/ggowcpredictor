@@ -109,6 +109,11 @@
             <p>Prediction Game</p>
           </div>
         </div>
+        <button id="vote-nav-btn" style="display:none" onclick="openVoteModal()">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 4h2v16H3zm4 1h12l-3 4 3 4H7z" />
+          </svg>
+        </button>
         <div class="user-pill" id="user-pill">
           <a id="user-profile-link" href="profile.html" class="user-pill-link" title="View your profile">
             <div class="user-avatar" id="user-avatar">?</div>
@@ -118,6 +123,7 @@
             X
           </button>
         </div>
+
         <div class="sync-container desktop-sync-only">
           <div class="sync-status">
             <span class="status-dot" id="sync-dot"></span>
