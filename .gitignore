@@ -23,6 +23,7 @@ ggowcpredictor db  (1).xlsx
 *.har
 scripts/_check_*.js
 .agents/
+.vscode/
 .gemini/
 codexchange scoring.md
 contextforleaderboardissue.md
