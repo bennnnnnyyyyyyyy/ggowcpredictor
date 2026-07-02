@@ -4757,20 +4757,9 @@ async function submitR16Vote() {
   }
 
   // Show live results
+  // Show live results
   try {
-    const votes = await supabaseSelect("r16_votes", "vote");
-    const total = votes.length;
-    const v25 = votes.filter((v) => v.vote === 2.5).length;
-    const v3 = votes.filter((v) => v.vote === 3).length;
-    const pct = (n) => total > 0 ? Math.round((n / total) * 100) : 0;
-
-    document.getElementById("vote-bar-25").style.width = pct(v25) + "%";
-    document.getElementById("vote-bar-3").style.width = pct(v3) + "%";
-    document.getElementById("vote-pct-25").textContent = pct(v25) + "%";
-    document.getElementById("vote-pct-3").textContent = pct(v3) + "%";
-    document.getElementById("vote-total-text").textContent =
-      `${total} vote${total !== 1 ? "s" : ""} total`;
-    document.getElementById("vote-results").classList.remove("hidden");
+    await loadR16Results();
 
     // Hide the option picker and submit button after voting
     document.querySelector(".vote-options").style.display = "none";
@@ -4782,6 +4771,22 @@ async function submitR16Vote() {
     console.warn("r16 results fetch failed", e);
     document.getElementById("r16-vote-modal").classList.add("hidden");
   }
+}
+
+async function loadR16Results() {
+  const votes = await supabaseSelect("r16_votes", "vote");
+  const total = votes.length;
+  const v25 = votes.filter((v) => v.vote === 2.5).length;
+  const v3 = votes.filter((v) => v.vote === 3).length;
+  const pct = (n) => (total > 0 ? Math.round((n / total) * 100) : 0);
+
+  document.getElementById("vote-bar-25").style.width = pct(v25) + "%";
+  document.getElementById("vote-bar-3").style.width = pct(v3) + "%";
+  document.getElementById("vote-pct-25").textContent = pct(v25) + "%";
+  document.getElementById("vote-pct-3").textContent = pct(v3) + "%";
+  document.getElementById("vote-total-text").textContent =
+    `${total} vote${total !== 1 ? "s" : ""} total`;
+  document.getElementById("vote-results").classList.remove("hidden");
 }
 
 function skipR16Vote() {
@@ -4814,8 +4819,13 @@ async function openVoteModal() {
   if (voted) {
     document.querySelector(".vote-options").style.display = "none";
     document.getElementById("vote-submit-btn").style.display = "none";
-    document.getElementById("vote-results").classList.remove("hidden");
     document.querySelector(".vote-skip-btn").textContent = "Close";
+    try {
+      await loadR16Results();
+    } catch (e) {
+      console.warn("r16 results fetch failed", e);
+      document.getElementById("vote-results").classList.remove("hidden");
+    }
   } else {
     document.querySelector(".vote-options").style.display = "";
     document.getElementById("vote-submit-btn").style.display = "";
