@@ -1184,10 +1184,10 @@ function renderHome() {
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
+        buildDaySection("Yesterday", windowBuckets.yesterday),
+
         buildDaySection("Today", windowBuckets.today),
         buildDaySection("Tomorrow", windowBuckets.tomorrow),
-
-        buildDaySection("Yesterday", windowBuckets.yesterday),
       ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
@@ -2892,94 +2892,89 @@ function renderBracket() {
   const finalMatch = matchMap["104"] ?? null;
   const thirdMatch = matchMap["103"] ?? null;
 
-  const renderRound = (round, side) => {
+  const rounds = [
+    { label: "Round of 32", ids: r32Ids.map(String) },
+    { label: "Round of 16", ids: r16Ids.map(String) },
+    { label: "Quarter-final", ids: qfIds.map(String) },
+    { label: "Semi-final", ids: sfIds.map(String) },
+  ];
+
+  // Connector heights double each round, mirroring the reference bracket
+  const CONNECTOR_BASE = 109;
+  const connectorHeightFor = (roundIndex) =>
+    CONNECTOR_BASE * Math.pow(2, roundIndex - 1);
+
+  const renderConnector = (roundIndex) => {
+    if (roundIndex === 0) return ""; // first round has no incoming connector
+    const h = connectorHeightFor(roundIndex);
+    return `
+      <div class="flow-connector" style="height:${h}px">
+        <span class="fc-vert"></span>
+        <span class="fc-top"></span>
+        <span class="fc-bottom"></span>
+        <span class="fc-out"></span>
+        <span class="fc-dot"></span>
+      </div>
+    `;
+  };
+
+  const renderRound = (round, roundIndex) => {
     let html = `
-      <div class="bracket-round ${side}" data-round="${escapeHtml(round.label)}">
+      <div class="bracket-round flow" data-round="${escapeHtml(round.label)}">
         <div class="bracket-round-label">${escapeHtml(round.label)}</div>
-        <div class="bracket-grid">
+        <div class="bracket-grid flow">
     `;
 
     round.ids.forEach((id, i) => {
       const match = matchMap[id];
       if (!match) return;
-
       html += `
-        <div
-          class="bracket-slot"
-          style="grid-row:${round.rows[i]}"
-          data-row="${round.rows[i]}"
-        >
-          <div class="bracket-slot-inner">
-            ${renderBracketMatch(match)}
+        <div class="bracket-slot flow" style="--i:${i}">
+          <div class="flow-match-slot">
+            ${renderConnector(roundIndex)}
+            <div class="bracket-slot-inner">
+              ${renderBracketMatch(match)}
+            </div>
           </div>
         </div>
       `;
     });
 
-    html += `
-        </div>
-      </div>
-    `;
-
+    html += `</div></div>`;
     return html;
   };
 
   let html = `
     <div class="bracket-scroll-wrapper">
-      <div class="bracket-layout">
-
-        <div class="bracket-side left">
+      <div class="bracket-layout flow">
   `;
 
-  leftRounds.forEach((r) => {
-    html += renderRound(r, "left");
+  rounds.forEach((r, idx) => {
+    html += renderRound(r, idx);
   });
 
   html += `
-        </div>
-
-        <div class="bracket-center">
-
-          <div class="bracket-final">
-
-            <div class="bracket-round-label">
-              Final
+        <div class="bracket-round flow final-column" data-round="Final" style="--i:0">
+          <div class="bracket-round-label">Finals</div>
+          <div class="flow-match-slot">
+            ${renderConnector(rounds.length)}
+            <div class="bracket-final">
+              ${
+                finalMatch
+                  ? renderBracketMatch(finalMatch)
+                  : `<div class="bracket-placeholder">TBD</div>`
+              }
             </div>
-
-            ${
-              finalMatch
-                ? renderBracketMatch(finalMatch)
-                : `<div class="bracket-placeholder">TBD</div>`
-            }
-
           </div>
-
           <div class="bracket-third">
-
-            <div class="bracket-round-label">
-              3rd Place
-            </div>
-
+            <div class="bracket-round-label small">3rd Place</div>
             ${
               thirdMatch
                 ? renderBracketMatch(thirdMatch)
                 : `<div class="bracket-placeholder">TBD</div>`
             }
-
           </div>
-
         </div>
-
-        <div class="bracket-side right">
-  `;
-
-  rightRounds.forEach((r) => {
-    html += renderRound(r, "right");
-  });
-
-  html += `
-        </div>
-
       </div>
     </div>
   `;
@@ -2990,25 +2985,7 @@ function renderBracket() {
   syncBracketLayoutMode();
 
   const wrapper = bracket.querySelector(".bracket-scroll-wrapper");
-  const layout = bracket.querySelector(".bracket-layout");
-  if (!wrapper || !layout) return;
-
-  const isMobileTabs = window.innerWidth < 1000;
-
-  if (!isMobileTabs) {
-    const containerWidth =
-      (bracket.parentElement?.clientWidth || window.innerWidth) - 40;
-    const DESIGN_WIDTH = 1760;
-    const scale = Math.min(1, containerWidth / DESIGN_WIDTH);
-    layout.style.transform = `scale(${scale})`;
-    layout.style.transformOrigin = "left top";
-    wrapper.style.height = `${Math.round(1350 * scale + 120)}px`;
-  } else {
-    layout.style.transform = "";
-    layout.style.transformOrigin = "";
-    wrapper.style.height = "";
-  }
-  wrapper.scrollLeft = 0;
+  if (wrapper) wrapper.scrollLeft = 0;
 }
 function renderBracketTabs() {
   const tabsEl = document.getElementById("bracket-tabs");
