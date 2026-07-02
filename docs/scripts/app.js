@@ -1180,13 +1180,10 @@ function renderHome() {
   }
 
   const hasAnyFixtures =
-    windowBuckets.yesterday.length ||
     windowBuckets.today.length ||
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
-      buildDaySection("Yesterday", windowBuckets.yesterday),
-
       buildDaySection("Today", windowBuckets.today),
       buildDaySection("Tomorrow", windowBuckets.tomorrow),
     ].join("")
