@@ -7094,3 +7094,17 @@ body {
     display: none !important;
   }
 }
+/* Ensure the wrapper allows scrolling if the screen is too small */
+.bracket-scroll-wrapper {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto; /* Allows horizontal scrolling instead of cutting off */
+  width: 100%;
+}
+
+/* Force the bracket to scale to fit the width of the container */
+.bracket-layout {
+  transform-origin: top center;
+  /* Adjust this scale value or use media queries for responsive sizing */
+  transform: scale(0.9);
+}
