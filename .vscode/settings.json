@@ -1,9 +1,19 @@
 {
     "liveServer.settings.port": 5501,
     "cSpell.words": [
+        "apikey",
+        "colour",
+        "EEST",
+        "Estadio",
+        "firebasestorage",
         "firestore",
         "Firestore",
+        "Foxborough",
+        "ggowcpredictor",
+        "inputmode",
+        "matchday",
         "matchid",
+        "Stylesheet",
         "supabase",
         "Supabase",
         "worldcup"

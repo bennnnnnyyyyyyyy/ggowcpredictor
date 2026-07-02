@@ -1,3 +1,8 @@
+scripts/_check_*.js
+.agents/
+.gemini/
+.vscode/
+
 .env
 .env.local
 .dev.vars
@@ -18,13 +23,11 @@ wrangler-*.log
 live.html
 ggowcpredictor db  (1).xlsx
 
-# Debug & Temp
+
 *.log
 *.har
-scripts/_check_*.js
-.agents/
-.vscode/
-.gemini/
+
+
 codexchange scoring.md
 contextforleaderboardissue.md
 
@@ -38,3 +41,5 @@ backup.cjs
 #js
 
 kladerboard backup.js
+
+
