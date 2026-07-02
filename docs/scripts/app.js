@@ -4843,11 +4843,49 @@ async function openVoteModal() {
 
   modal.classList.remove("hidden");
 }
+let nextLockFixtureId = null;
+let liveFixtureId = null;
+
 function getNextLockingFixture() {
   const now = Date.now();
   return (STATE.fixtures || []).find(
     (fix) => fix.kickoffDate && fix.kickoffDate.getTime() - 60000 > now,
   );
+}
+
+function getLiveFixture() {
+  return (STATE.fixtures || []).find((fix) => {
+    const result = STATE.results[fix.matchId];
+    return result && isLiveStatus(result.status);
+  });
+}
+
+function updateLiveGameWidget() {
+  const widget = document.getElementById("live-game-widget");
+  if (!widget) return false;
+
+  const fix = getLiveFixture();
+  if (!fix) {
+    widget.style.display = "none";
+    liveFixtureId = null;
+    return false;
+  }
+
+  const result = STATE.results[fix.matchId];
+
+  if (fix.matchId !== liveFixtureId) {
+    document.getElementById("live-team1").innerHTML = getFlagImg(fix.team1);
+    document.getElementById("live-team2").innerHTML = getFlagImg(fix.team2);
+    liveFixtureId = fix.matchId;
+  }
+
+  document.getElementById("live-score").textContent =
+    `${result.score1 ?? 0}-${result.score2 ?? 0}`;
+  document.getElementById("live-status").textContent =
+    String(result.status || "LIVE").toUpperCase();
+
+  widget.style.display = "flex";
+  return true;
 }
 
 function updateNextLockWidget() {
@@ -4857,18 +4895,23 @@ function updateNextLockWidget() {
   const fix = getNextLockingFixture();
   if (!fix) {
     widget.style.display = "none";
+    nextLockFixtureId = null;
     return;
   }
 
   const lockTime = fix.kickoffDate.getTime() - 60000;
   const msLeft = lockTime - Date.now();
   if (msLeft <= 0) {
-    updateNextLockWidget(); // this fixture just locked, recompute immediately
+    nextLockFixtureId = null;
+    updateNextLockWidget();
     return;
   }
 
-  document.getElementById("next-lock-team1").innerHTML = getFlagImg(fix.team1);
-  document.getElementById("next-lock-team2").innerHTML = getFlagImg(fix.team2);
+  if (fix.matchId !== nextLockFixtureId) {
+    document.getElementById("next-lock-team1").innerHTML = getFlagImg(fix.team1);
+    document.getElementById("next-lock-team2").innerHTML = getFlagImg(fix.team2);
+    nextLockFixtureId = fix.matchId;
+  }
 
   const h = Math.floor(msLeft / 3600000);
   const m = Math.floor((msLeft % 3600000) / 60000);
@@ -4879,4 +4922,9 @@ function updateNextLockWidget() {
   widget.style.display = "flex";
 }
 
-setInterval(updateNextLockWidget, 1000);
+function updateHeaderMatchWidgets() {
+  updateLiveGameWidget();
+  updateNextLockWidget();
+}
+
+setInterval(updateHeaderMatchWidgets, 1000);

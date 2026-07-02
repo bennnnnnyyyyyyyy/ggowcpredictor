@@ -345,6 +345,14 @@ header {
   letter-spacing: 0.5px;
 }
 
+.header-match-widgets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 1%;
+  flex-wrap: wrap;
+}
+
 .next-lock-widget {
   display: flex;
   align-items: center;
@@ -354,16 +362,30 @@ header {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.15);
   font-family: var(--font-ggo-display);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   white-space: nowrap;
-  margin-left: 5%;
+}
+
+.next-lock-label {
+  opacity: 0.55;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 2px;
 }
 
 .next-lock-team {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.next-lock-team .inline-flag-img {
+  width: 36px;
+  height: 28px;
+  border-radius: 2px;
+  object-fit: cover;
 }
 
 .next-lock-vs {
@@ -375,6 +397,76 @@ header {
 .next-lock-timer {
   color: var(--wc-red);
   font-variant-numeric: tabular-nums;
+}
+
+.live-game-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 60, 60, 0.1);
+  border: 1px solid rgba(255, 60, 60, 0.4);
+  font-family: var(--font-ggo-display);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wc-red);
+  animation: live-pulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes live-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+.live-score {
+  font-variant-numeric: tabular-nums;
+  color: var(--wc-red);
+}
+
+.live-status {
+  opacity: 0.7;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+  .header-match-widgets {
+    order: 10;
+    width: 100%;
+    justify-content: center;
+    margin: 6px 0 0;
+  }
+
+  .next-lock-widget,
+  .live-game-widget {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  /* On small screens, hide the countdown pill while a game is live
+     so the header doesn't get crowded — the live score matters more. */
+  .live-game-widget:not([style*="display: none"])~.next-lock-widget {
+    display: none !important;
+  }
 }
 
 .wc-badge {

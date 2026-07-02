@@ -38,10 +38,8 @@
         <span class="trophy">
           <img class="resized-logo" src="assets/images/GGO-GREY.png" alt="GGO Logo" />
         </span>
-        <h2>GGO <span>WC</span> 2026</h2>
-        <p>Prediction Game</p>
+        <h2>GGO </h2>
       </div>
-
       <div class="login-divider"></div>
 
       <div id="login-error" class="login-error">
@@ -114,11 +112,21 @@
             <path d="M3 4h2v16H3zm4 1h12l-3 4 3 4H7z" />
           </svg>
         </button>
-        <div class="next-lock-widget" id="next-lock-widget" style="display:none">
-          <span class="next-lock-team" id="next-lock-team1"></span>
-          <span class="next-lock-vs">vs</span>
-          <span class="next-lock-team" id="next-lock-team2"></span>
-          <span class="next-lock-timer" id="next-lock-timer">--:--:--</span>
+        <div class="header-match-widgets" id="header-match-widgets">
+          <div class="live-game-widget" id="live-game-widget" style="display:none">
+            <span class="live-dot"></span>
+            <span class="next-lock-team" id="live-team1"></span>
+            <span class="live-score" id="live-score">0-0</span>
+            <span class="next-lock-team" id="live-team2"></span>
+            <span class="live-status" id="live-status">LIVE</span>
+          </div>
+          <div class="next-lock-widget" id="next-lock-widget" style="display:none">
+            <span class="next-lock-label">Next lock</span>
+            <span class="next-lock-team" id="next-lock-team1"></span>
+            <span class="next-lock-vs">vs</span>
+            <span class="next-lock-team" id="next-lock-team2"></span>
+            <span class="next-lock-timer" id="next-lock-timer">--:--:--</span>
+          </div>
         </div>
         <div class="user-pill" id="user-pill">
           <a id="user-profile-link" href="profile.html" class="user-pill-link" title="View your profile">
