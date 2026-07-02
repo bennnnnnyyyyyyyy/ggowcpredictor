@@ -1190,18 +1190,22 @@ function renderHome() {
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
     ? `
-    <div class="win-meter-track" aria-hidden="true">
-      <span class="win-home" style="width:${(tierSplit.exact / totalScored) * 100}%" title="Exact"></span>
-      <span class="win-draw" style="width:${(tierSplit.good / totalScored) * 100}%" title="Good"></span>
-      <span class="win-away" style="width:${(tierSplit.partial / totalScored) * 100}%" title="Partial"></span>
-      <span class="win-zero" style="width:${(tierSplit.zero / totalScored) * 100}%" title="Miss"></span>
-    </div>
-    <div class="win-meter-legend">
-      <span><strong>${tierSplit.exact}</strong> winners</span>
-      <span><strong>${tierSplit.good}</strong> good</span>
-      <span><strong>${tierSplit.partial}</strong> partial</span>
-      <span><strong>${tierSplit.zero}</strong> miss</span>
-    </div>
+    <div class="header-match-widgets" id="header-match-widgets">
+            <div class="live-game-widget" id="live-game-widget" style="display:none">
+              <span class="live-dot"></span>
+              <span class="next-lock-team" id="live-team1"></span>
+              <span class="live-score" id="live-score">0-0</span>
+              <span class="next-lock-team" id="live-team2"></span>
+              <span class="live-status" id="live-status">LIVE</span>
+            </div>
+            <div class="next-lock-widget" id="next-lock-widget" style="display:none">
+              <span class="next-lock-label">Next lock</span>
+              <span class="next-lock-team" id="next-lock-team1"></span>
+              <span class="next-lock-vs">vs</span>
+              <span class="next-lock-team" id="next-lock-team2"></span>
+              <span class="next-lock-timer" id="next-lock-timer">--:--:--</span>
+            </div>
+          </div>
   `
     : `<div class="empty-state compact"><p>No results scored in this window yet.</p></div>`;
 }

@@ -360,7 +360,6 @@ header {
   padding: 6px 12px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
   font-family: var(--font-ggo-display);
   font-size: 15px;
   font-weight: 700;
@@ -406,7 +405,6 @@ header {
   padding: 6px 12px;
   border-radius: 999px;
   background: rgba(255, 60, 60, 0.1);
-  border: 1px solid rgba(255, 60, 60, 0.4);
   font-family: var(--font-ggo-display);
   font-size: 15px;
   font-weight: 700;
@@ -420,6 +418,17 @@ header {
   background: var(--wc-red);
   animation: live-pulse 1.4s ease-in-out infinite;
   flex-shrink: 0;
+}
+
+@media (max-width:768px) {
+  .live-game-widget {
+    display: none;
+  }
+
+  .next-lock-widget {
+    margin-left: 1%;
+
+  }
 }
 
 @keyframes live-pulse {
@@ -448,26 +457,6 @@ header {
   letter-spacing: 0.5px;
 }
 
-@media (max-width: 768px) {
-  .header-match-widgets {
-    order: 10;
-    width: 100%;
-    justify-content: center;
-    margin: 6px 0 0;
-  }
-
-  .next-lock-widget,
-  .live-game-widget {
-    font-size: 12px;
-    padding: 4px 10px;
-  }
-
-  /* On small screens, hide the countdown pill while a game is live
-     so the header doesn't get crowded — the live score matters more. */
-  .live-game-widget:not([style*="display: none"])~.next-lock-widget {
-    display: none !important;
-  }
-}
 
 .wc-badge {
   display: flex;
@@ -5408,8 +5397,7 @@ main {
 .home-hero {
   background: linear-gradient(135deg,
       rgba(6, 14, 20, 0.98) 0%,
-      rgba(0, 40, 24, 0.85) 100%);
-  border: 1px solid rgba(0, 209, 94, 0.18);
+      rgba(0, 0, 0, 0.85) 100%);
   border-radius: 12px;
   padding: 24px 20px 20px;
   margin-bottom: 24px;
