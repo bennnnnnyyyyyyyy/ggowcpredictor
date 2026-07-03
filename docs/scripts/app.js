@@ -1180,13 +1180,16 @@ function renderHome() {
   }
 
   const hasAnyFixtures =
+        windowBuckets.yesterday.length ||
     windowBuckets.today.length ||
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
-      buildDaySection("Today", windowBuckets.today),
-      buildDaySection("Tomorrow", windowBuckets.tomorrow),
-    ].join("")
+        buildDaySection("Yesterday", windowBuckets.yesterday),
+
+        buildDaySection("Today", windowBuckets.today),
+        buildDaySection("Tomorrow", windowBuckets.tomorrow),
+].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
     ? `
