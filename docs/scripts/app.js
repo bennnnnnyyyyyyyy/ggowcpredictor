@@ -1483,10 +1483,8 @@ async function loadResults() {
     };
   }
 }
-
 async function loadAllPredictions() {
   try {
-    const localAll = readLocalObject("ggo_wc_predictions_all") || {};
     const PAGE = 1000;
     let supabaseAll = [];
     let offset = 0;
@@ -1506,19 +1504,14 @@ async function loadAllPredictions() {
       if (page.length < PAGE) break;
       offset += PAGE;
     }
-    const merged = { ...localAll };
 
+    const merged = {};
     supabaseAll.forEach((prediction) => {
       const matchId = String(prediction.match_id ?? prediction.matchId);
       const id = String(prediction.id || "");
       const key =
         id || String(prediction.username || "unknown") + "_" + matchId;
-      const normalized = normalizePrediction({
-        ...prediction,
-        id: key,
-        matchId,
-      });
-      merged[key] = normalized;
+      merged[key] = normalizePrediction({ ...prediction, id: key, matchId });
     });
 
     STATE.allPredictions = merged;
