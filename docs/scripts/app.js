@@ -4776,122 +4776,125 @@ let championSelectedTeam = null;
 async function openChampionPickModal() {
   const modal = document.getElementById("champion-pick-modal");
   if (!modal) return;
-
-  const info = getChampionPickStageAndPoints();
-
-  // Check if user already picked
-  let existingPick = null;
   try {
-    const rows = await supabaseSelect(
-      "champion_picks",
-      "team,stage,points_value",
-      `username=eq.${encodeURIComponent(SESSION.username)}`,
-    );
-    if (rows && rows.length > 0) existingPick = rows[0];
-  } catch (e) {
-    console.warn("champion pick load failed", e);
-  }
+    const info = getChampionPickStageAndPoints();
 
-  const badge = document.getElementById("champion-points-badge");
-  const optionsDiv = document.getElementById("champion-vote-options");
-  const submitBtn = document.getElementById("champion-submit-btn");
-  const skipBtn = modal.querySelector(".vote-skip-btn");
-  const resultsDiv = document.getElementById("champion-pick-results");
-  const selectedLabel = document.getElementById("champion-selected-label");
-
-  championSelectedTeam = null;
-
-  if (existingPick) {
-    // Already picked — show results
-    if (badge)
-      badge.textContent = `Your pick: ${existingPick.team} · ${existingPick.points_value} pts if correct`;
-    if (optionsDiv) optionsDiv.style.display = "none";
-    if (submitBtn) submitBtn.style.display = "none";
-    if (skipBtn) {
-      skipBtn.textContent = "Close";
-      skipBtn.onclick = () => modal.classList.add("hidden");
+    // Check if user already picked
+    let existingPick = null;
+    try {
+      const rows = await supabaseSelect(
+        "champion_picks",
+        "team,stage,points_value",
+        `username=eq.${encodeURIComponent(SESSION.username)}`,
+      );
+      if (rows && rows.length > 0) existingPick = rows[0];
+    } catch (e) {
+      console.warn("champion pick load failed", e);
     }
-    await loadChampionPickResults(existingPick.team);
-  } else if (info.isClosed) {
-    // Window closed — show results only
-    if (badge) badge.textContent = "Prediction window closed";
-    if (optionsDiv) optionsDiv.style.display = "none";
-    if (submitBtn) submitBtn.style.display = "none";
-    if (skipBtn) {
-      skipBtn.textContent = "Close";
-      skipBtn.onclick = () => modal.classList.add("hidden");
-    }
-    await loadChampionPickResults(null);
-  } else {
-    // Open for picking
-    if (badge) badge.textContent = `+${info.points} pts if correct`;
 
-    if (championCountdownInterval) clearInterval(championCountdownInterval);
-    const countdownEl = document.getElementById("champion-countdown");
-    const updateCountdown = () => {
-      if (!countdownEl) return;
-      const diff = info.cutoff - Date.now();
-      if (diff <= 0) {
-        countdownEl.textContent = "Locking now...";
-        clearInterval(championCountdownInterval);
-        return;
+    const badge = document.getElementById("champion-points-badge");
+    const optionsDiv = document.getElementById("champion-vote-options");
+    const submitBtn = document.getElementById("champion-submit-btn");
+    const skipBtn = modal.querySelector(".vote-skip-btn");
+    const resultsDiv = document.getElementById("champion-pick-results");
+    const selectedLabel = document.getElementById("champion-selected-label");
+
+    championSelectedTeam = null;
+
+    if (existingPick) {
+      // Already picked — show results
+      if (badge)
+        badge.textContent = `Your pick: ${existingPick.team} · ${existingPick.points_value} pts if correct`;
+      if (optionsDiv) optionsDiv.style.display = "none";
+      if (submitBtn) submitBtn.style.display = "none";
+      if (skipBtn) {
+        skipBtn.textContent = "Close";
+        skipBtn.onclick = () => modal.classList.add("hidden");
       }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      countdownEl.textContent = `⏳ Locks in ${d}d ${h}h ${m}m`;
-    };
-    updateCountdown();
-    championCountdownInterval = setInterval(updateCountdown, 60000);
+      await loadChampionPickResults(existingPick.team);
+    } else if (info.isClosed) {
+      // Window closed — show results only
+      if (badge) badge.textContent = "Prediction window closed";
+      if (optionsDiv) optionsDiv.style.display = "none";
+      if (submitBtn) submitBtn.style.display = "none";
+      if (skipBtn) {
+        skipBtn.textContent = "Close";
+        skipBtn.onclick = () => modal.classList.add("hidden");
+      }
+      await loadChampionPickResults(null);
+    } else {
+      // Open for picking
+      if (badge) badge.textContent = `+${info.points} pts if correct`;
 
-    const grid = document.getElementById("champion-team-grid");
-    if (grid) {
-      grid.innerHTML = "";
-      const teams = getTeamsForChampionPick(info.stage);
-      for (const t of teams) {
-        const card = document.createElement("div");
-        card.className = "champion-flag-card";
-        card.dataset.team = t;
-        const flagImg =
-          getFlagImg(t) ||
-          `<div class="flag-placeholder">${escapeHtml(t.slice(0, 3).toUpperCase())}</div>`;
-        card.innerHTML = `
+      if (championCountdownInterval) clearInterval(championCountdownInterval);
+      const countdownEl = document.getElementById("champion-countdown");
+      const updateCountdown = () => {
+        if (!countdownEl) return;
+        const diff = info.cutoff - Date.now();
+        if (diff <= 0) {
+          countdownEl.textContent = "Locking now...";
+          clearInterval(championCountdownInterval);
+          return;
+        }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        countdownEl.textContent = `⏳ Locks in ${d}d ${h}h ${m}m`;
+      };
+      updateCountdown();
+      championCountdownInterval = setInterval(updateCountdown, 60000);
+
+      const grid = document.getElementById("champion-team-grid");
+      if (grid) {
+        grid.innerHTML = "";
+        const teams = getTeamsForChampionPick(info.stage);
+        for (const t of teams) {
+          const card = document.createElement("div");
+          card.className = "champion-flag-card";
+          card.dataset.team = t;
+          const flagImg =
+            getFlagImg(t) ||
+            `<div class="flag-placeholder">${escapeHtml(t.slice(0, 3).toUpperCase())}</div>`;
+          card.innerHTML = `
           ${flagImg}
           <span class="flag-label">${escapeHtml(t)}</span>
         `;
-        card.onclick = () => {
-          grid
-            .querySelectorAll(".champion-flag-card")
-            .forEach((c) => c.classList.remove("selected"));
-          card.classList.add("selected");
-          championSelectedTeam = t;
-          if (selectedLabel) {
-            selectedLabel.innerHTML = `Selected: <strong>${escapeHtml(t)}</strong>`;
-            selectedLabel.classList.remove("hidden");
-          }
-        };
-        grid.appendChild(card);
+          card.onclick = () => {
+            grid
+              .querySelectorAll(".champion-flag-card")
+              .forEach((c) => c.classList.remove("selected"));
+            card.classList.add("selected");
+            championSelectedTeam = t;
+            if (selectedLabel) {
+              selectedLabel.innerHTML = `Selected: <strong>${escapeHtml(t)}</strong>`;
+              selectedLabel.classList.remove("hidden");
+            }
+          };
+          grid.appendChild(card);
+        }
+      }
+
+      if (selectedLabel) {
+        selectedLabel.classList.add("hidden");
+        selectedLabel.innerHTML = "";
+      }
+
+      if (optionsDiv) optionsDiv.style.display = "";
+      if (submitBtn) {
+        submitBtn.style.display = "";
+        submitBtn.disabled = false;
+      }
+      if (resultsDiv) resultsDiv.classList.add("hidden");
+      if (skipBtn) {
+        skipBtn.textContent = "Remind Me Later";
+        skipBtn.onclick = skipChampionPick;
       }
     }
-
-    if (selectedLabel) {
-      selectedLabel.classList.add("hidden");
-      selectedLabel.innerHTML = "";
-    }
-
-    if (optionsDiv) optionsDiv.style.display = "";
-    if (submitBtn) {
-      submitBtn.style.display = "";
-      submitBtn.disabled = false;
-    }
-    if (resultsDiv) resultsDiv.classList.add("hidden");
-    if (skipBtn) {
-      skipBtn.textContent = "Remind Me Later";
-      skipBtn.onclick = skipChampionPick;
-    }
+  } catch (e) {
+    console.warn("champion pick modal render failed", e);
+  } finally {
+    modal.classList.remove("hidden");
   }
-
-  modal.classList.remove("hidden");
 }
 
 async function submitChampionPick() {
