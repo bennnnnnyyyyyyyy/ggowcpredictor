@@ -1078,11 +1078,16 @@ function renderHome() {
       const popularHtml = scoreGroups.length
         ? scoreGroups
             .map((group, index) => {
+              const kickedOff =
+                fixture.kickoffDate instanceof Date &&
+                !Number.isNaN(fixture.kickoffDate.getTime()) &&
+                Date.now() >= fixture.kickoffDate.getTime();
               const hasStarted =
-                result &&
-                !["NS", "NOT_STARTED", "TBD"].includes(
-                  String(result.status || "").toUpperCase(),
-                );
+                kickedOff ||
+                (result &&
+                  !["NS", "NOT_STARTED", "TBD"].includes(
+                    String(result.status || "").toUpperCase(),
+                  ));
 
               // Only highlight the exact score (15 pts)
               const scoreClass =
