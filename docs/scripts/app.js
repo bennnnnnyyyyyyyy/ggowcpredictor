@@ -1039,6 +1039,8 @@ function renderHome() {
   function buildMatchCardHtml(fixture, idx) {
     {
       const matchPreds = groupedByMatch.get(String(fixture.matchId)) || [];
+      const homeTeam = resolveSlot(fixture.team1) || fixture.team1;
+      const awayTeam = resolveSlot(fixture.team2) || fixture.team2;
       const homeWins = matchPreds.filter((p) => p.pred1 > p.pred2).length;
       const draws = matchPreds.filter((p) => p.pred1 === p.pred2).length;
       const awayWins = matchPreds.filter((p) => p.pred2 > p.pred1).length;
@@ -1052,9 +1054,8 @@ function renderHome() {
       const scoreGroups = buildScoreGroups(matchPreds);
 
       // ─── NEW: LOOK UP COLORS HERE ───
-      const homeColor =
-        wcTeamColors[fixture.team1]?.primary || "var(--wc-blue)";
-      const awayColor = wcTeamColors[fixture.team2]?.primary || "var(--wc-red)";
+      const homeColor = wcTeamColors[homeTeam]?.primary || "var(--wc-blue)";
+      const awayColor = wcTeamColors[awayTeam]?.primary || "var(--wc-red)";
 
       const result = STATE.results?.[fixture.matchId];
       const isFinished =
@@ -1136,7 +1137,7 @@ function renderHome() {
                   <span class="match-status-badge ${getMatchStatusInfo(fixture).cssClass}">${escapeHtml(getMatchStatusInfo(fixture).label)}</span>
                   ${fixture.group ? `<span class="match-group-label">${escapeHtml(fixture.group)}</span>` : ""}
                 </div>
-                  <h4>${getFlagImg(fixture.team1)} ${escapeHtml(fixture.team1 || "TBD")} ${finalScore ? `<span class="final-score-chip">${escapeHtml(finalScore)}</span>` : "<span>vs</span>"} ${escapeHtml(fixture.team2 || "TBD")} ${getFlagImg(fixture.team2)}</h4>
+                  <h4>${getFlagImg(homeTeam)} ${escapeHtml(homeTeam || "TBD")} ${finalScore ? `<span class="final-score-chip">${escapeHtml(finalScore)}</span>` : "<span>vs</span>"} ${escapeHtml(awayTeam || "TBD")} ${getFlagImg(awayTeam)}</h4>
                 </div>
                 <div class="pick-count"><strong>${matchPreds.length}</strong><span>picks</span></div>
               </div>
@@ -1148,9 +1149,9 @@ function renderHome() {
               </div>
 
               <div class="match-percent-labels">
-                <span><strong>${homePct}%</strong>${escapeHtml(fixture.team1 || "Home")}</span>
+                <span><strong>${homePct}%</strong>${escapeHtml(homeTeam || "Home")}</span>
                 <span><strong>${drawPct}%</strong>Draw</span>
-                <span><strong>${awayPct}%</strong>${escapeHtml(fixture.team2 || "Away")}</span>
+                <span><strong>${awayPct}%</strong>${escapeHtml(awayTeam || "Away")}</span>
               </div>
 
               <div
@@ -4848,9 +4849,9 @@ let liveFixtureId = null;
 
 function getNextLockingFixture() {
   const now = Date.now();
-  return (STATE.fixtures || []).find(
-    (fix) => fix.kickoffDate && fix.kickoffDate.getTime() - 60000 > now,
-  );
+  return (STATE.fixtures || [])
+    .filter((fix) => fix.kickoffDate && fix.kickoffDate.getTime() - 60000 > now)
+    .sort((a, b) => a.kickoffDate.getTime() - b.kickoffDate.getTime())[0];
 }
 
 function getLiveFixture() {
@@ -4874,8 +4875,12 @@ function updateLiveGameWidget() {
   const result = STATE.results[fix.matchId];
 
   if (fix.matchId !== liveFixtureId) {
-    document.getElementById("live-team1").innerHTML = getFlagImg(fix.team1);
-    document.getElementById("live-team2").innerHTML = getFlagImg(fix.team2);
+    document.getElementById("live-team1").innerHTML = getFlagImg(
+      resolveSlot(fix.team1) || fix.team1,
+    );
+    document.getElementById("live-team2").innerHTML = getFlagImg(
+      resolveSlot(fix.team2) || fix.team2,
+    );
     liveFixtureId = fix.matchId;
   }
 
@@ -4910,10 +4915,10 @@ function updateNextLockWidget() {
 
   if (fix.matchId !== nextLockFixtureId) {
     document.getElementById("next-lock-team1").innerHTML = getFlagImg(
-      fix.team1,
+      resolveSlot(fix.team1) || fix.team1,
     );
     document.getElementById("next-lock-team2").innerHTML = getFlagImg(
-      fix.team2,
+      resolveSlot(fix.team2) || fix.team2,
     );
     nextLockFixtureId = fix.matchId;
   }

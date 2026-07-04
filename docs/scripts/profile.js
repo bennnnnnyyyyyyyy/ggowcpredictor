@@ -409,10 +409,6 @@ function formatPts(pts, statusType) {
   let ptsClass = "";
   if (pts === 30)
     ptsClass = "pts-30"; // exact ×2 (R32)
-  else if (pts === 37.5)
-    ptsClass = "pts-37-5"; // exact ×2.5 (R16, legacy)
-  else if (pts === 20)
-    ptsClass = "pts-20"; // good ×2.5 (R16, legacy)
   else if (pts === 45)
     ptsClass = "pts-45"; // exact ×3 (R16)
   else if (pts === 24)
