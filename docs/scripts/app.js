@@ -2788,47 +2788,18 @@ function renderBracket() {
   // Actual count: R32=32, R16=16, QF=8, SF=4, Final=1, Third=1 → total 62...
   // FIFA 2026 actual: R32=32, R16=16, QF=8, SF=4, Final+3rd=2 = 62 matches
   // We auto-detect by total count
-  const total = knockoutIds.length;
+  const stageOf = (id) =>
+    String(matchMap[String(id)]?.stage || "").toLowerCase();
 
-  let r32Ids = [],
-    r16Ids = [],
-    qfIds = [],
-    sfIds = [],
-    finalId = null,
-    thirdId = null;
+  const r32Ids = knockoutIds.filter((id) => stageOf(id) === "r32").map(String);
+  const r16Ids = knockoutIds.filter((id) => stageOf(id) === "r16").map(String);
+  const qfIds = knockoutIds.filter((id) => stageOf(id) === "qf").map(String);
+  const sfIds = knockoutIds.filter((id) => stageOf(id) === "sf").map(String);
 
-  if (total >= 62) {
-    // Full WC2026 bracket
-    r32Ids = knockoutIds.slice(0, 32);
-    r16Ids = knockoutIds.slice(32, 48);
-    qfIds = knockoutIds.slice(48, 56);
-    sfIds = knockoutIds.slice(56, 60);
-    thirdId = knockoutIds[60] !== undefined ? String(knockoutIds[60]) : null;
-    finalId = knockoutIds[61] !== undefined ? String(knockoutIds[61]) : null;
-  } else if (total >= 30) {
-    r32Ids = knockoutIds.slice(0, total - 18);
-    r16Ids = knockoutIds.slice(total - 18, total - 10);
-    qfIds = knockoutIds.slice(total - 10, total - 6);
-    sfIds = knockoutIds.slice(total - 6, total - 4);
-    thirdId =
-      knockoutIds[total - 4] !== undefined
-        ? String(knockoutIds[total - 4])
-        : null;
-    finalId =
-      knockoutIds[total - 1] !== undefined
-        ? String(knockoutIds[total - 1])
-        : null;
-  } else {
-    // Fallback: use original hardcoded IDs
-    r32Ids = [
-      74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87,
-    ].map(String);
-    r16Ids = [89, 90, 93, 94, 91, 92, 95, 96].map(String);
-    qfIds = [97, 98, 99, 100].map(String);
-    sfIds = [101, 102].map(String);
-    finalId = "104";
-    thirdId = "103";
-  }
+  const thirdMatchId = knockoutIds.find((id) => stageOf(id) === "third");
+  const finalMatchId = knockoutIds.find((id) => stageOf(id) === "final");
+  const thirdId = thirdMatchId !== undefined ? String(thirdMatchId) : null;
+  const finalId = finalMatchId !== undefined ? String(finalMatchId) : null;
 
   // Split left/right halves
   const r32Left = r32Ids.slice(0, r32Ids.length / 2).map(String);
@@ -2845,54 +2816,6 @@ function renderBracket() {
   const R16_ROWS = [2, 6, 10, 14];
   const QF_ROWS = [4, 12];
   const SF_ROWS = [8];
-
-  // ── Explicit bracket layout using confirmed Supabase matchIds ──
-  // Left side: odd R32s feed left half; Right side: even R32s feed right half.
-  const leftRounds = [
-    {
-      label: "Round of 32",
-      rows: [1, 3, 5, 7, 9, 11, 13, 15],
-      ids: ["73", "75", "77", "79", "81", "83", "85", "87"],
-    },
-    {
-      label: "Round of 16",
-      rows: [2, 6, 10, 14],
-      ids: ["90", "91", "93", "94"],
-    },
-    {
-      label: "Quarter-final",
-      rows: [4, 12],
-      ids: ["97", "98"],
-    },
-    {
-      label: "Semi-final",
-      rows: [8],
-      ids: ["101"],
-    },
-  ];
-
-  const rightRounds = [
-    {
-      label: "Semi-final",
-      rows: [8],
-      ids: ["102"],
-    },
-    {
-      label: "Quarter-final",
-      rows: [4, 12],
-      ids: ["99", "100"],
-    },
-    {
-      label: "Round of 16",
-      rows: [2, 6, 10, 14],
-      ids: ["89", "92", "95", "96"],
-    },
-    {
-      label: "Round of 32",
-      rows: [1, 3, 5, 7, 9, 11, 13, 15],
-      ids: ["74", "76", "78", "80", "82", "84", "86", "88"],
-    },
-  ];
 
   const finalMatch = matchMap["104"] ?? null;
   const thirdMatch = matchMap["103"] ?? null;
