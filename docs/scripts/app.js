@@ -2790,25 +2790,60 @@ function renderBracket() {
   const stageOf = (id) =>
     String(matchMap[String(id)]?.stage || "").toLowerCase();
 
-  const r32Ids = knockoutIds.filter((id) => stageOf(id) === "r32").map(String);
-  const r16Ids = knockoutIds.filter((id) => stageOf(id) === "r16").map(String);
-  const qfIds = knockoutIds.filter((id) => stageOf(id) === "qf").map(String);
-  const sfIds = knockoutIds.filter((id) => stageOf(id) === "sf").map(String);
-
   const thirdMatchId = knockoutIds.find((id) => stageOf(id) === "third");
   const finalMatchId = knockoutIds.find((id) => stageOf(id) === "final");
   const thirdId = thirdMatchId !== undefined ? String(thirdMatchId) : null;
   const finalId = finalMatchId !== undefined ? String(finalMatchId) : null;
 
-  // Split left/right halves
-  const r32Left = r32Ids.slice(0, r32Ids.length / 2).map(String);
-  const r32Right = r32Ids.slice(r32Ids.length / 2).map(String);
-  const r16Left = r16Ids.slice(0, r16Ids.length / 2).map(String);
-  const r16Right = r16Ids.slice(r16Ids.length / 2).map(String);
-  const qfLeft = qfIds.slice(0, qfIds.length / 2).map(String);
-  const qfRight = qfIds.slice(qfIds.length / 2).map(String);
-  const sfLeft = sfIds.slice(0, 1).map(String);
-  const sfRight = sfIds.slice(1).map(String);
+  // Build true left-to-right order by walking the feed tree from the Final
+  // backward, using each match's raw "Wxx"/"Lxx" team codes to find its two
+  // feeder matches. Post-order DFS puts each match right after both of its
+  // feeders are placed, which naturally groups feeder pairs adjacent to
+  // each other in every round.
+  const getFeederIds = (id) => {
+    const m = matchMap[String(id)];
+    if (!m) return [];
+    return [m.team1, m.team2]
+      .map((v) => {
+        const ref = String(v || "")
+          .trim()
+          .match(/^[WL](\d+)$/i);
+        return ref ? ref[1] : null;
+      })
+      .filter(Boolean);
+  };
+
+  const buckets = { r32: [], r16: [], qf: [] };
+  const sfOrdered = [];
+  const visited = new Set();
+
+  const visit = (id) => {
+    if (!id || visited.has(id)) return;
+    visited.add(id);
+    getFeederIds(id).forEach(visit);
+    const stage = stageOf(id);
+    if (stage === "sf") sfOrdered.push(id);
+    else if (buckets[stage]) buckets[stage].push(id);
+  };
+
+  if (finalId) visit(finalId);
+
+  // Safety net: if the tree walk didn't reach every match for a round
+  // (e.g. incomplete/legacy data), fall back to the old ascending sort
+  // for that round only, instead of silently dropping matches.
+  const allR32 = knockoutIds.filter((id) => stageOf(id) === "r32").map(String);
+  const allR16 = knockoutIds.filter((id) => stageOf(id) === "r16").map(String);
+  const allQf = knockoutIds.filter((id) => stageOf(id) === "qf").map(String);
+  const allSf = knockoutIds.filter((id) => stageOf(id) === "sf").map(String);
+
+  const r32Ids =
+    buckets.r32.length === allR32.length ? buckets.r32.map(String) : allR32;
+  const r16Ids =
+    buckets.r16.length === allR16.length ? buckets.r16.map(String) : allR16;
+  const qfIds =
+    buckets.qf.length === allQf.length ? buckets.qf.map(String) : allQf;
+  const sfIds =
+    sfOrdered.length === allSf.length ? sfOrdered.map(String) : allSf;
 
   // Grid row assignments (visual spacing)
   const R32_ROWS = [1, 3, 5, 7, 9, 11, 13, 15];
