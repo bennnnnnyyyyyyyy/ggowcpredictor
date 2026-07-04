@@ -4688,13 +4688,20 @@ function getChampionPickStageAndPoints() {
   const sfStart = firstSF?.kickoffDate?.getTime() ?? Infinity;
 
   if (now < qfStart)
-    return { stage: "r16", label: "Round of 16", points: 200, isClosed: false };
+    return {
+      stage: "r16",
+      label: "Round of 16",
+      points: 200,
+      isClosed: false,
+      cutoff: qfStart,
+    };
   if (now < sfStart)
     return {
       stage: "qf",
       label: "Quarter-final",
       points: 100,
       isClosed: false,
+      cutoff: sfStart,
     };
   return { isClosed: true };
 }
@@ -4749,7 +4756,7 @@ async function checkChampionPick() {
       `username=eq.${encodeURIComponent(SESSION.username)}`,
     );
     if (rows && rows.length > 0) {
-      localStorage.setItem("champion_pick_done", "1");
+      localStorage.setItem(`champion_pick_done_${SESSION.username}`, "1");
       return;
     }
     // Not picked yet — show popup
@@ -4813,6 +4820,24 @@ async function openChampionPickModal() {
   } else {
     // Open for picking
     if (badge) badge.textContent = `+${info.points} pts if correct`;
+
+    if (championCountdownInterval) clearInterval(championCountdownInterval);
+    const countdownEl = document.getElementById("champion-countdown");
+    const updateCountdown = () => {
+      if (!countdownEl) return;
+      const diff = info.cutoff - Date.now();
+      if (diff <= 0) {
+        countdownEl.textContent = "Locking now...";
+        clearInterval(championCountdownInterval);
+        return;
+      }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      countdownEl.textContent = `⏳ Locks in ${d}d ${h}h ${m}m`;
+    };
+    updateCountdown();
+    championCountdownInterval = setInterval(updateCountdown, 60000);
 
     const grid = document.getElementById("champion-team-grid");
     if (grid) {
@@ -4887,7 +4912,7 @@ async function submitChampionPick() {
       ],
       "username",
     );
-    localStorage.setItem("champion_pick_done", "1");
+    localStorage.setItem(`champion_pick_done_${SESSION.username}`, "1");
   } catch (e) {
     console.error("champion pick submit failed", e);
     if (btn) btn.disabled = false;
@@ -4954,7 +4979,7 @@ async function loadChampionPickResults(yourTeam) {
 
 function skipChampionPick() {
   localStorage.setItem(
-    "champion_pick_snooze",
+    `champion_pick_snooze_${SESSION.username}`,
     Date.now() + 24 * 60 * 60 * 1000,
   );
   showVoteHeaderButton();
