@@ -408,7 +408,9 @@ function buildLeaderboard(
     (f) => String(f.stage || "").toLowerCase() === "final",
   );
   if (finalFixture) {
-    const finalMatchId = String(finalFixture.matchId || finalFixture.id || "").replace(/^match_/, "");
+    const finalMatchId = String(
+      finalFixture.matchId || finalFixture.id || "",
+    ).replace(/^match_/, "");
     const finalResult = results[finalMatchId]; // only present if FINAL_STATUSES
     if (finalResult) {
       // Determine actual champion team name
@@ -417,9 +419,13 @@ function buildLeaderboard(
         championTeam = finalFixture.team1;
       } else if (finalResult.score2 > finalResult.score1) {
         championTeam = finalFixture.team2;
-      } else if (String(finalResult.penalty_winner || "").toLowerCase() === "team1") {
+      } else if (
+        String(finalResult.penalty_winner || "").toLowerCase() === "team1"
+      ) {
         championTeam = finalFixture.team1;
-      } else if (String(finalResult.penalty_winner || "").toLowerCase() === "team2") {
+      } else if (
+        String(finalResult.penalty_winner || "").toLowerCase() === "team2"
+      ) {
         championTeam = finalFixture.team2;
       }
 
@@ -428,7 +434,12 @@ function buildLeaderboard(
         for (const pick of championPickRows) {
           const username = String(pick.username || "").trim();
           if (!username) continue;
-          if (String(pick.team || "").toLowerCase().trim() !== normalizedChampion) continue;
+          if (
+            String(pick.team || "")
+              .toLowerCase()
+              .trim() !== normalizedChampion
+          )
+            continue;
           const bonus = Number(pick.points_value) || 0;
           if (!bonus) continue;
           // Create entry for users who only submitted champion picks (no predictions)
@@ -494,12 +505,20 @@ function buildLeaderboard(
 // ─── Live Score Fetching & Syncing ──────────────────────────────────────────
 
 async function syncLiveResults(env) {
-  const [fixtureRows, apiMatches] = await Promise.all([
-    loadCollection(env, "fixtures"),
-    fetchPrimaryOrBackupMatches(env),
-  ]);
+  const [fixtureRows, apiMatches, resultRows, groupStandingRows] =
+    await Promise.all([
+      loadCollection(env, "fixtures"),
+      fetchPrimaryOrBackupMatches(env),
+      loadCollection(env, "results"),
+      loadCollection(env, "group_standings"),
+    ]);
 
-  const fixtureLookups = buildFixtureLookups(fixtureRows);
+  const resolveTeams = buildSlotResolver(
+    fixtureRows,
+    resultRows,
+    groupStandingRows,
+  );
+  const fixtureLookups = buildFixtureLookups(fixtureRows, resolveTeams);
   const matchedUpdates = [];
   const fixtureApiUpdates = [];
 
@@ -1625,9 +1644,10 @@ function cleanTeamName(name) {
   return clean;
 }
 
-function buildFixtureLookups(fixtureRows) {
+function buildFixtureLookups(fixtureRows, resolveTeams) {
   const byApiId = new Map();
   const byTeams = new Map();
+  const resolve = resolveTeams || ((v) => v);
 
   for (const fixture of fixtureRows) {
     const matchId = normalizeMatchId(fixture.matchId || fixture.id);
@@ -1637,8 +1657,11 @@ function buildFixtureLookups(fixtureRows) {
       byApiId.set(String(fixture.apiFixtureId), fixture);
     }
 
-    const home = cleanTeamName(fixture.team1);
-    const away = cleanTeamName(fixture.team2);
+    // Knockout fixtures store bracket slot codes ("W73", "L88", "1A", "3A/B/C/D/F")
+    // in team1/team2 until they're manually resolved. Resolve them here so live
+    // matching still works even if the fixtures table hasn't been updated yet.
+    const home = cleanTeamName(resolve(fixture.team1));
+    const away = cleanTeamName(resolve(fixture.team2));
     if (home && away) {
       byTeams.set(`${home}__${away}`, { fixture, flipped: false });
       byTeams.set(`${away}__${home}`, { fixture, flipped: true });
@@ -1646,6 +1669,124 @@ function buildFixtureLookups(fixtureRows) {
   }
 
   return { byApiId, byTeams };
+}
+
+// ─── Bracket slot resolution (mirrors app.js's resolveSlot, server-side) ────
+//
+// Knockout fixtures reference other matches/groups via slot codes instead of
+// real team names (e.g. "W73" = winner of match 73, "1A" = winner of Group A,
+// "3A/B/C/D/F" = best 3rd-place team among those groups). Until those codes
+// are resolved to real names, team-name matching against the live API (which
+// always returns real names) fails silently, so live scores never sync for
+// R16+ matches. This resolves a slot code to a real team name using the
+// current fixtures/results/group_standings, recursing through chained
+// references (e.g. a Round of 16 match referencing the winner of a Round of
+// 32 match).
+
+function isSlotCode(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || trimmed === "TBD" || trimmed.includes(" ")) return false;
+  if (trimmed.length > 6) return false;
+  return /^([12][A-L]|[WL]\d+|3[A-L\/]+)$/i.test(trimmed);
+}
+
+function buildSlotResolver(fixtureRows, resultRows, groupStandingRows) {
+  const fixtureById = new Map();
+  for (const f of fixtureRows) {
+    const id = normalizeMatchId(f.matchId || f.id);
+    if (id) fixtureById.set(id, f);
+  }
+
+  const resultByMatchId = new Map();
+  for (const r of resultRows) {
+    const id = normalizeMatchId(r.matchId || r.id);
+    if (id) resultByMatchId.set(id, r);
+  }
+
+  const standingsByGroup = new Map();
+  for (const row of groupStandingRows) {
+    const g = String(row.group_name || row.group || "")
+      .trim()
+      .toUpperCase()
+      .replace(/^GROUP\s*/, "");
+    if (!g) continue;
+    if (!standingsByGroup.has(g)) standingsByGroup.set(g, []);
+    standingsByGroup.get(g).push({
+      position: toRequiredNumber(row.position, 0),
+      team_name: row.team_name || row.teamName || row.name || "",
+      points: toRequiredNumber(row.points, 0),
+      goal_difference: toRequiredNumber(row.goal_difference, 0),
+      goals_for: toRequiredNumber(row.goals_for, 0),
+    });
+  }
+
+  return function resolveTeamSlot(code, depth = 0) {
+    const trimmed = String(code || "").trim();
+    if (depth > 10 || !isSlotCode(trimmed)) return trimmed;
+
+    // Winner/loser of a prior match: W73, L88
+    const koMatch = trimmed.match(/^([WL])(\d+)$/i);
+    if (koMatch) {
+      const [, side, refId] = koMatch;
+      const refFixture = fixtureById.get(refId);
+      const result = resultByMatchId.get(refId);
+      if (!refFixture || !result) return trimmed;
+
+      const s1 = Number(result.score1);
+      const s2 = Number(result.score2);
+      let winnerIsTeam1 = null;
+      if (Number.isFinite(s1) && Number.isFinite(s2)) {
+        if (s1 > s2) winnerIsTeam1 = true;
+        else if (s2 > s1) winnerIsTeam1 = false;
+      }
+      if (winnerIsTeam1 === null) {
+        const pw = String(result.penalty_winner || "").toLowerCase();
+        if (pw === "team1") winnerIsTeam1 = true;
+        else if (pw === "team2") winnerIsTeam1 = false;
+      }
+      if (winnerIsTeam1 === null) return trimmed;
+
+      const winnerRaw = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
+      const loserRaw = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
+      const raw = side.toUpperCase() === "W" ? winnerRaw : loserRaw;
+      return resolveTeamSlot(raw, depth + 1);
+    }
+
+    // Group position: 1A, 2B
+    const groupMatch = trimmed.match(/^([12])([A-L])$/i);
+    if (groupMatch) {
+      const pos = Number(groupMatch[1]);
+      const table = standingsByGroup.get(groupMatch[2].toUpperCase()) || [];
+      const row = table.find((r) => r.position === pos);
+      return row ? row.team_name || trimmed : trimmed;
+    }
+
+    // Best 3rd-place slot: "3A/B/C/D/F"
+    const thirdMatch = trimmed.match(/^3([A-L\/]+)$/i);
+    if (thirdMatch) {
+      const groupKeys = thirdMatch[1].toUpperCase().split("/").filter(Boolean);
+      let best = null;
+      for (const g of groupKeys) {
+        const table = standingsByGroup.get(g) || [];
+        const thirdRow = table.find((r) => r.position === 3);
+        if (!thirdRow) continue;
+        if (
+          !best ||
+          thirdRow.points > best.points ||
+          (thirdRow.points === best.points &&
+            thirdRow.goal_difference > best.goal_difference) ||
+          (thirdRow.points === best.points &&
+            thirdRow.goal_difference === best.goal_difference &&
+            thirdRow.goals_for > best.goals_for)
+        ) {
+          best = thirdRow;
+        }
+      }
+      return best ? best.team_name || trimmed : trimmed;
+    }
+
+    return trimmed;
+  };
 }
 
 function resolveFixtureMatch(item, lookups) {
