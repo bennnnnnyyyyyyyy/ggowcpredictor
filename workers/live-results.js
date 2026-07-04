@@ -289,6 +289,7 @@ function buildLeaderboard(
   predictionRows,
   userRows,
   fixtureRows = [],
+  championPickRows = [],
 ) {
   const displayNames = {};
   for (const user of userRows) {
@@ -399,6 +400,53 @@ function buildLeaderboard(
     if (pred1 === result.score1 && pred2 === result.score2)
       userMap[username].exactScores++;
     if (points > 0) userMap[username].correctOutcomes++;
+  }
+
+  // ── Champion pick bonus — applied only after the Final is complete ──
+  // Find the final fixture and its result
+  const finalFixture = fixtureRows.find(
+    (f) => String(f.stage || "").toLowerCase() === "final",
+  );
+  if (finalFixture) {
+    const finalMatchId = String(finalFixture.matchId || finalFixture.id || "").replace(/^match_/, "");
+    const finalResult = results[finalMatchId]; // only present if FINAL_STATUSES
+    if (finalResult) {
+      // Determine actual champion team name
+      let championTeam = null;
+      if (finalResult.score1 > finalResult.score2) {
+        championTeam = finalFixture.team1;
+      } else if (finalResult.score2 > finalResult.score1) {
+        championTeam = finalFixture.team2;
+      } else if (String(finalResult.penalty_winner || "").toLowerCase() === "team1") {
+        championTeam = finalFixture.team1;
+      } else if (String(finalResult.penalty_winner || "").toLowerCase() === "team2") {
+        championTeam = finalFixture.team2;
+      }
+
+      if (championTeam) {
+        const normalizedChampion = String(championTeam).toLowerCase().trim();
+        for (const pick of championPickRows) {
+          const username = String(pick.username || "").trim();
+          if (!username) continue;
+          if (String(pick.team || "").toLowerCase().trim() !== normalizedChampion) continue;
+          const bonus = Number(pick.points_value) || 0;
+          if (!bonus) continue;
+          // Create entry for users who only submitted champion picks (no predictions)
+          if (!userMap[username]) {
+            userMap[username] = {
+              username,
+              displayName: displayNames[username] || username,
+              totalPoints: 0,
+              exactScores: 0,
+              correctOutcomes: 0,
+              predicted: 0,
+              scored: 0,
+            };
+          }
+          userMap[username].totalPoints += bonus;
+        }
+      }
+    }
   }
 
   // Sort by points (desc), then exactScores, then correctOutcomes (desc)
@@ -540,20 +588,21 @@ async function syncLiveResults(env) {
 }
 
 async function recalculateLeaderboard(env) {
-  const [resultRows, predictionRows, userRows, fixtureRows] = await Promise.all(
-    [
+  const [resultRows, predictionRows, userRows, fixtureRows, championPickRows] =
+    await Promise.all([
       loadCollection(env, "results"),
       loadCollection(env, "predictions"),
       loadCollection(env, "users"),
       loadCollection(env, "fixtures"),
-    ],
-  );
+      loadCollection(env, "champion_picks"),
+    ]);
 
   const data = buildLeaderboard(
     resultRows,
     predictionRows,
     userRows,
     fixtureRows,
+    championPickRows,
   );
 
   // Persist leaderboard to Supabase
@@ -937,14 +986,21 @@ async function handleProfileGet(env, username) {
 // ─── Main GET /sync endpoint ────────────────────────────────────────────────
 
 async function handleSyncGet(env) {
-  const [fixtureRows, resultRows, userRows, predictionRows, groupStandingRows] =
-    await Promise.all([
-      loadCollection(env, "fixtures"),
-      loadCollection(env, "results"),
-      loadCollection(env, "users"),
-      loadCollection(env, "predictions"),
-      loadCollection(env, "group_standings"),
-    ]);
+  const [
+    fixtureRows,
+    resultRows,
+    userRows,
+    predictionRows,
+    groupStandingRows,
+    championPickRows,
+  ] = await Promise.all([
+    loadCollection(env, "fixtures"),
+    loadCollection(env, "results"),
+    loadCollection(env, "users"),
+    loadCollection(env, "predictions"),
+    loadCollection(env, "group_standings"),
+    loadCollection(env, "champion_picks"),
+  ]);
 
   const fixtures = fixtureRows.map((f) => ({
     matchId: String(f.matchId || f.id || "").replace(/^match_/, ""),
@@ -986,6 +1042,8 @@ async function handleSyncGet(env) {
     resultRows,
     predictionRows,
     userRows,
+    fixtureRows,
+    championPickRows,
   );
 
   return {

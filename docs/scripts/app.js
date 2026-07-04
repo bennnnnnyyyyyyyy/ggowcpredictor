@@ -261,7 +261,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   if (hasSession) {
     showApp();
-    checkR16Vote();
   }
   window.setInterval(() => {
     if (document.hidden) return;
@@ -479,7 +478,6 @@ async function handleLogin(event) {
     localStorage.setItem("ggo_wc_admin", String(SESSION.isAdmin));
     errEl.classList.remove("show");
     showApp();
-    checkR16Vote();
   } catch (error) {
     console.error("Login error:", error);
     showLoginError("Login failed. Check your connection and try again.");
@@ -1311,6 +1309,7 @@ async function requestSync() {
 
   updateAdminBadge();
   if (syncBtn) syncBtn.classList.remove("loading");
+  checkChampionPick();
 }
 async function loadAccountRequests() {
   STATE.accountRequests = [];
@@ -2817,8 +2816,8 @@ function renderBracket() {
   const QF_ROWS = [4, 12];
   const SF_ROWS = [8];
 
-  const finalMatch = matchMap["104"] ?? null;
-  const thirdMatch = matchMap["103"] ?? null;
+  const finalMatch = finalId ? (matchMap[finalId] ?? null) : null;
+  const thirdMatch = thirdId ? (matchMap[thirdId] ?? null) : null;
 
   const rounds = [
     { label: "Round of 32", ids: r32Ids.map(String) },
@@ -4630,135 +4629,307 @@ function getMatchGradient(home, away) {
     ${c2}55 100%
   )`;
 }
-// ── R16 VOTE ──────────────────────────────────────────────────
+// ── CHAMPION PREDICTOR ─────────────────────────────────────────
 
-async function checkR16Vote() {
-  // Need logged in user
+function getChampionPickStageAndPoints() {
+  const now = Date.now();
+  const fixtures = STATE.fixtures || [];
+
+  const firstQF = fixtures
+    .filter(
+      (f) => String(f.stage || "").toLowerCase() === "qf" && f.kickoffDate,
+    )
+    .sort((a, b) => a.kickoffDate - b.kickoffDate)[0];
+
+  const firstSF = fixtures
+    .filter(
+      (f) => String(f.stage || "").toLowerCase() === "sf" && f.kickoffDate,
+    )
+    .sort((a, b) => a.kickoffDate - b.kickoffDate)[0];
+
+  const qfStart = firstQF?.kickoffDate?.getTime() ?? Infinity;
+  const sfStart = firstSF?.kickoffDate?.getTime() ?? Infinity;
+
+  if (now < qfStart)
+    return { stage: "r16", label: "Round of 16", points: 200, isClosed: false };
+  if (now < sfStart)
+    return {
+      stage: "qf",
+      label: "Quarter-final",
+      points: 100,
+      isClosed: false,
+    };
+  return { isClosed: true };
+}
+
+function getTeamsForChampionPick(targetStage) {
+  const fixtures = STATE.fixtures || [];
+  const stageFixtures = fixtures.filter(
+    (f) => String(f.stage || "").toLowerCase() === targetStage,
+  );
+
+  const teams = new Set();
+  for (const f of stageFixtures) {
+    const t1 = resolveSlot(f.team1) || f.team1;
+    const t2 = resolveSlot(f.team2) || f.team2;
+    if (t1 && !isBracketReference(t1) && t1 !== "TBD") teams.add(t1);
+    if (t2 && !isBracketReference(t2) && t2 !== "TBD") teams.add(t2);
+  }
+
+  if (teams.size > 0) return [...teams].sort();
+
+  // Fallback: all 48 teams, de-duplicated by flag code (avoids alias duplicates)
+  const seen = new Set();
+  const result = [];
+  for (const [name, code] of Object.entries(TEAM_FLAG_CODES)) {
+    if (!seen.has(code)) {
+      seen.add(code);
+      // Use a canonical-looking name (title-case from the key)
+      result.push(name.replace(/\b\w/g, (c) => c.toUpperCase()));
+    }
+  }
+  return result.sort();
+}
+
+async function checkChampionPick() {
   if (!SESSION.username) return;
 
-  // Always show header button
   showVoteHeaderButton();
 
-  // Skip popup if snoozed
-  const snoozed = localStorage.getItem("r16vote_snooze");
+  const info = getChampionPickStageAndPoints();
+  if (info.isClosed) return; // past SF start — window closed
+
+  const snoozed = localStorage.getItem("champion_pick_snooze");
   if (snoozed && Date.now() < Number(snoozed)) return;
 
-  // Already confirmed locally
-  if (localStorage.getItem("r16vote_done")) return;
+  if (localStorage.getItem("champion_pick_done")) return;
 
   try {
     const rows = await supabaseSelect(
-      "r16_votes",
+      "champion_picks",
       "username",
       `username=eq.${encodeURIComponent(SESSION.username)}`,
     );
-
     if (rows && rows.length > 0) {
-      // Already voted
-      localStorage.setItem("r16vote_done", "1");
+      localStorage.setItem("champion_pick_done", "1");
       return;
     }
-
-    // Has NOT voted → show popup
-    document.getElementById("r16-vote-modal").classList.remove("hidden");
+    // Not picked yet — show popup
+    await openChampionPickModal();
   } catch (e) {
-    console.warn("r16 vote check failed", e);
+    console.warn("champion pick check failed", e);
   }
 }
-async function submitR16Vote() {
-  const vote = document.querySelector('input[name="r16vote"]:checked');
-  if (!vote) return;
 
-  const btn = document.getElementById("vote-submit-btn");
+let championSelectedTeam = null;
+
+async function openChampionPickModal() {
+  const modal = document.getElementById("champion-pick-modal");
+  if (!modal) return;
+
+  const info = getChampionPickStageAndPoints();
+
+  // Check if user already picked
+  let existingPick = null;
+  try {
+    const rows = await supabaseSelect(
+      "champion_picks",
+      "team,stage,points_value",
+      `username=eq.${encodeURIComponent(SESSION.username)}`,
+    );
+    if (rows && rows.length > 0) existingPick = rows[0];
+  } catch (e) {
+    console.warn("champion pick load failed", e);
+  }
+
+  const badge = document.getElementById("champion-points-badge");
+  const optionsDiv = document.getElementById("champion-vote-options");
+  const submitBtn = document.getElementById("champion-submit-btn");
+  const skipBtn = modal.querySelector(".vote-skip-btn");
+  const resultsDiv = document.getElementById("champion-pick-results");
+  const selectedLabel = document.getElementById("champion-selected-label");
+
+  championSelectedTeam = null;
+
+  if (existingPick) {
+    // Already picked — show results
+    if (badge)
+      badge.textContent = `Your pick: ${existingPick.team} · ${existingPick.points_value} pts if correct`;
+    if (optionsDiv) optionsDiv.style.display = "none";
+    if (submitBtn) submitBtn.style.display = "none";
+    if (skipBtn) {
+      skipBtn.textContent = "Close";
+      skipBtn.onclick = () => modal.classList.add("hidden");
+    }
+    await loadChampionPickResults(existingPick.team);
+  } else if (info.isClosed) {
+    // Window closed — show results only
+    if (badge) badge.textContent = "Prediction window closed";
+    if (optionsDiv) optionsDiv.style.display = "none";
+    if (submitBtn) submitBtn.style.display = "none";
+    if (skipBtn) {
+      skipBtn.textContent = "Close";
+      skipBtn.onclick = () => modal.classList.add("hidden");
+    }
+    await loadChampionPickResults(null);
+  } else {
+    // Open for picking
+    if (badge) badge.textContent = `+${info.points} pts if correct`;
+
+    const grid = document.getElementById("champion-team-grid");
+    if (grid) {
+      grid.innerHTML = "";
+      const teams = getTeamsForChampionPick(info.stage);
+      for (const t of teams) {
+        const card = document.createElement("div");
+        card.className = "champion-flag-card";
+        card.dataset.team = t;
+        const flagImg =
+          getFlagImg(t) ||
+          `<div class="flag-placeholder">${escapeHtml(t.slice(0, 3).toUpperCase())}</div>`;
+        card.innerHTML = `
+          ${flagImg}
+          <span class="flag-label">${escapeHtml(t)}</span>
+        `;
+        card.onclick = () => {
+          grid
+            .querySelectorAll(".champion-flag-card")
+            .forEach((c) => c.classList.remove("selected"));
+          card.classList.add("selected");
+          championSelectedTeam = t;
+          if (selectedLabel) {
+            selectedLabel.innerHTML = `Selected: <strong>${escapeHtml(t)}</strong>`;
+            selectedLabel.classList.remove("hidden");
+          }
+        };
+        grid.appendChild(card);
+      }
+    }
+
+    if (selectedLabel) {
+      selectedLabel.classList.add("hidden");
+      selectedLabel.innerHTML = "";
+    }
+
+    if (optionsDiv) optionsDiv.style.display = "";
+    if (submitBtn) {
+      submitBtn.style.display = "";
+      submitBtn.disabled = false;
+    }
+    if (resultsDiv) resultsDiv.classList.add("hidden");
+    if (skipBtn) {
+      skipBtn.textContent = "Remind Me Later";
+      skipBtn.onclick = skipChampionPick;
+    }
+  }
+
+  modal.classList.remove("hidden");
+}
+
+async function submitChampionPick() {
+  const team = championSelectedTeam;
+  if (!team) return;
+
+  const info = getChampionPickStageAndPoints();
+  if (info.isClosed) return;
+
+  const btn = document.getElementById("champion-submit-btn");
   if (btn) btn.disabled = true;
 
   try {
     await supabaseUpsert(
-      "r16_votes",
-      [{ username: SESSION.username, vote: Number(vote.value) }],
+      "champion_picks",
+      [
+        {
+          username: SESSION.username,
+          team,
+          stage: info.stage,
+          points_value: info.points,
+        },
+      ],
       "username",
     );
-    localStorage.setItem("r16vote_done", "1");
-    showVoteHeaderButton();
+    localStorage.setItem("champion_pick_done", "1");
   } catch (e) {
-    console.error("r16 vote submit failed", e);
+    console.error("champion pick submit failed", e);
     if (btn) btn.disabled = false;
     return;
   }
 
-  // Show live results
-  // Show live results
+  // Show results after submitting
+  const optionsDiv = document.getElementById("champion-vote-options");
+  if (optionsDiv) optionsDiv.style.display = "none";
+  if (btn) btn.style.display = "none";
+  const skipBtn = document.querySelector("#champion-pick-modal .vote-skip-btn");
+  if (skipBtn) {
+    skipBtn.textContent = "Close";
+    skipBtn.onclick = () =>
+      document.getElementById("champion-pick-modal").classList.add("hidden");
+  }
   try {
-    await loadR16Results();
-
-    // Hide the option picker and submit button after voting
-    document.querySelector(".vote-options").style.display = "none";
-    if (btn) btn.style.display = "none";
-    document.querySelector(".vote-skip-btn").textContent = "Close";
-    document.querySelector(".vote-skip-btn").onclick = () =>
-      document.getElementById("r16-vote-modal").classList.add("hidden");
+    await loadChampionPickResults(team);
   } catch (e) {
-    console.warn("r16 results fetch failed", e);
-    document.getElementById("r16-vote-modal").classList.add("hidden");
+    console.warn("champion results load failed", e);
+    document.getElementById("champion-pick-modal").classList.add("hidden");
   }
 }
 
-async function loadR16Results() {
-  const votes = await supabaseSelect("r16_votes", "vote");
-  const total = votes.length;
-  const v25 = votes.filter((v) => v.vote === 2.5).length;
-  const v3 = votes.filter((v) => v.vote === 3).length;
-  const pct = (n) => (total > 0 ? Math.round((n / total) * 100) : 0);
+async function loadChampionPickResults(yourTeam) {
+  const resultsDiv = document.getElementById("champion-pick-results");
+  if (!resultsDiv) return;
 
-  document.getElementById("vote-bar-25").style.width = pct(v25) + "%";
-  document.getElementById("vote-bar-3").style.width = pct(v3) + "%";
-  document.getElementById("vote-pct-25").textContent = pct(v25) + "%";
-  document.getElementById("vote-pct-3").textContent = pct(v3) + "%";
-  document.getElementById("vote-total-text").textContent =
-    `${total} vote${total !== 1 ? "s" : ""} total`;
-  document.getElementById("vote-results").classList.remove("hidden");
+  const rows = await supabaseSelect("champion_picks", "team");
+  const total = rows.length;
+
+  // Count picks per team, sorted desc
+  const counts = {};
+  for (const r of rows) {
+    const t = String(r.team || "").trim();
+    if (t) counts[t] = (counts[t] || 0) + 1;
+  }
+  const sorted = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  if (yourTeam) {
+    resultsDiv.innerHTML = `<span class="champion-your-pick">Your pick: <strong>${escapeHtml(yourTeam)}</strong></span>`;
+  } else {
+    resultsDiv.innerHTML = "";
+  }
+
+  for (const [team, count] of sorted) {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const isTop = sorted[0]?.[0] === team;
+    resultsDiv.innerHTML += `
+      <div class="champion-pick-row">
+        <span>${getFlagImg(team) || ""} ${escapeHtml(team)}</span>
+        <span>${pct}%</span>
+      </div>
+      <div class="champion-pick-bar-track">
+        <div class="champion-pick-bar-fill ${isTop ? "top" : ""}" style="width:${pct}%"></div>
+      </div>
+    `;
+  }
+  resultsDiv.innerHTML += `<p class="vote-total">${total} pick${total !== 1 ? "s" : ""} total</p>`;
+  resultsDiv.classList.remove("hidden");
 }
 
-function skipR16Vote() {
-  localStorage.setItem("r16vote_snooze", Date.now() + 24 * 60 * 60 * 1000);
-
+function skipChampionPick() {
+  localStorage.setItem(
+    "champion_pick_snooze",
+    Date.now() + 24 * 60 * 60 * 1000,
+  );
   showVoteHeaderButton();
-
-  document.getElementById("r16-vote-modal").classList.add("hidden");
+  document.getElementById("champion-pick-modal").classList.add("hidden");
 }
 
 function showVoteHeaderButton() {
   const btn = document.getElementById("vote-nav-btn");
   if (btn) btn.style.display = "";
 }
+
 async function openVoteModal() {
-  const modal = document.getElementById("r16-vote-modal");
-  const rows = await supabaseSelect(
-    "r16_votes",
-    "username",
-    `username=eq.${encodeURIComponent(SESSION.username)}`,
-  );
-
-  const voted = rows.length > 0;
-
-  if (voted) {
-    document.querySelector(".vote-options").style.display = "none";
-    document.getElementById("vote-submit-btn").style.display = "none";
-    document.querySelector(".vote-skip-btn").textContent = "Close";
-    try {
-      await loadR16Results();
-    } catch (e) {
-      console.warn("r16 results fetch failed", e);
-      document.getElementById("vote-results").classList.remove("hidden");
-    }
-  } else {
-    document.querySelector(".vote-options").style.display = "";
-    document.getElementById("vote-submit-btn").style.display = "";
-    document.getElementById("vote-results").classList.add("hidden");
-    document.querySelector(".vote-skip-btn").textContent = "Remind Me Later";
-  }
-
-  modal.classList.remove("hidden");
+  await openChampionPickModal();
 }
 let nextLockFixtureId = null;
 let liveFixtureId = null;

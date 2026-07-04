@@ -531,13 +531,13 @@
                 <div class="multiplier-row" data-stage="r32"><span class="multiplier-stage">Round of 32</span><span
                     class="multiplier-val">×2</span><span class="multiplier-pts">30 / 16 / 10 pts</span></div>
                 <div class="multiplier-row" data-stage="r16"><span class="multiplier-stage">Round of 16</span><span
-                    class="multiplier-val">×2.5</span><span class="multiplier-pts">37.5 / 20 / 12.5 pts</span></div>
-                <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
                     class="multiplier-val">×3</span><span class="multiplier-pts">45 / 24 / 15 pts</span></div>
-                <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
+                <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
                     class="multiplier-val">×4</span><span class="multiplier-pts">60 / 32 / 20 pts</span></div>
-                <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
+                <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
                     class="multiplier-val">×5</span><span class="multiplier-pts">75 / 40 / 25 pts</span></div>
+                <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
+                    class="multiplier-val">×6</span><span class="multiplier-pts">90 / 48 / 30 pts</span></div>
               </div>
             </div>
 
@@ -878,13 +878,13 @@
           <div class="multiplier-row" data-stage="r32"><span class="multiplier-stage">Round of 32</span><span
               class="multiplier-val">×2</span><span class="multiplier-pts">30 / 16 / 10 pts</span></div>
           <div class="multiplier-row" data-stage="r16"><span class="multiplier-stage">Round of 16</span><span
-              class="multiplier-val">×2.5</span><span class="multiplier-pts">37.5 / 20 / 12.5 pts</span></div>
-          <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
               class="multiplier-val">×3</span><span class="multiplier-pts">45 / 24 / 15 pts</span></div>
-          <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
+          <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
               class="multiplier-val">×4</span><span class="multiplier-pts">60 / 32 / 20 pts</span></div>
-          <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
+          <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
               class="multiplier-val">×5</span><span class="multiplier-pts">75 / 40 / 25 pts</span></div>
+          <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
+              class="multiplier-val">×6</span><span class="multiplier-pts">90 / 48 / 30 pts</span></div>
         </div>
 
         <div class="scoring-example-box" style="margin-bottom:1.25rem">
@@ -1005,49 +1005,22 @@
        SCAFFOLD JS - wire-up only, no data yet
   ════════════════════════════════════════ -->
 
-  <!-- R16 Vote Modal -->
-  <div id="r16-vote-modal" class="vote-modal hidden" role="dialog" aria-modal="true" aria-labelledby="vote-modal-title">
+  <!-- Champion Predictor Modal -->
+  <div id="champion-pick-modal" class="vote-modal hidden" role="dialog" aria-modal="true" aria-labelledby="champion-modal-title">
     <div class="vote-card">
-      <div class="vote-modal-icon">🗳️</div>
-      <h2 id="vote-modal-title">Community Vote</h2>
-      <p class="vote-modal-desc">
-        Should the <strong>Round of 16</strong> multiplier remain set
-        <strong>2.5×</strong> or increase to <strong>3× </strong>?
-        <small>(currently 2x for R16)</small>
+      <div class="vote-modal-icon">🏆</div>
+      <h2 id="champion-modal-title">World Champion Pick</h2>
+      <p class="vote-modal-desc" id="champion-modal-desc">
+        Who will win the <strong>2026 World Cup</strong>?<br>
+        <span id="champion-points-badge" class="champion-points-badge"></span>
       </p>
-      <div class="vote-options">
-        <label class="vote-option" id="vote-label-25">
-          <input type="radio" name="r16vote" value="2.5" id="vote-25">
-          <span class="vote-option-inner">
-            <span class="vote-option-val">2.5×</span>
-            <span class="vote-option-label">Current Setting</span>
-          </span>
-        </label>
-        <label class="vote-option" id="vote-label-3">
-          <input type="radio" name="r16vote" value="3" id="vote-3">
-          <span class="vote-option-inner">
-            <span class="vote-option-val">3×</span>
-            <span class="vote-option-label">Increase it</span>
-          </span>
-        </label>
+      <div class="champion-vote-options" id="champion-vote-options">
+        <div id="champion-team-grid" class="champion-team-grid"></div>
+        <div id="champion-selected-label" class="champion-selected-label hidden"></div>
       </div>
-      <div id="vote-results" class="vote-results hidden">
-        <div class="vote-bar-label">
-          <span>2.5×</span><span id="vote-pct-25">0%</span>
-        </div>
-        <div class="vote-bar-track">
-          <div class="vote-bar-fill vote-bar-25" id="vote-bar-25" style="width:0%"></div>
-        </div>
-        <div class="vote-bar-label">
-          <span>3×</span><span id="vote-pct-3">0%</span>
-        </div>
-        <div class="vote-bar-track">
-          <div class="vote-bar-fill vote-bar-3" id="vote-bar-3" style="width:0%"></div>
-        </div>
-        <p class="vote-total" id="vote-total-text"></p>
-      </div>
-      <button class="vote-submit-btn" id="vote-submit-btn" onclick="submitR16Vote()">Cast Vote</button>
-      <button class="vote-skip-btn" onclick="skipR16Vote()">Maybe later</button>
+      <div id="champion-pick-results" class="vote-results hidden"></div>
+      <button class="vote-submit-btn" id="champion-submit-btn" onclick="submitChampionPick()">Lock In Pick</button>
+      <button class="vote-skip-btn" onclick="skipChampionPick()">Remind Me Later</button>
     </div>
   </div>
 </body>
