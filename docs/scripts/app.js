@@ -4735,11 +4735,12 @@ async function checkChampionPick() {
 
   const info = getChampionPickStageAndPoints();
   if (info.isClosed) return; // past SF start — window closed
-
-  const snoozed = localStorage.getItem("champion_pick_snooze");
+  const snoozed = localStorage.getItem(
+    `champion_pick_snooze_${SESSION.username}`,
+  );
   if (snoozed && Date.now() < Number(snoozed)) return;
 
-  if (localStorage.getItem("champion_pick_done")) return;
+  if (localStorage.getItem(`champion_pick_done_${SESSION.username}`)) return;
 
   try {
     const rows = await supabaseSelect(
