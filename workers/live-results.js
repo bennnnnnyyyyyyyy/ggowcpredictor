@@ -258,11 +258,11 @@ async function loadCollection(env, table) {
 const STAGE_MULTIPLIERS = {
   group: 1,
   r32: 2,
-  r16: 2.5,
-  qf: 3,
-  sf: 4,
-  third: 4,
-  final: 5,
+  r16: 3,
+  qf: 4,
+  sf: 5,
+  third: 5,
+  final: 6,
 };
 
 function scoreMatch(p1, p2, a1, a2, stage = "group") {
@@ -359,7 +359,7 @@ function buildLeaderboard(
         // User predicted draw + chose pen winner
         points =
           String(prediction.pen_winner || "").toLowerCase() ===
-            String(result.penalty_winner || "").toLowerCase()
+          String(result.penalty_winner || "").toLowerCase()
             ? 15 * multiplier
             : 0;
       } else {
@@ -775,13 +775,13 @@ async function handleRivalryGet(env, username) {
     twin:
       twinEntry.agreement / twinEntry.shared > 0.2
         ? {
-          username: twinEntry.username,
-          displayName: nameMap[twinEntry.username] || twinEntry.username,
-          agreementPct: Math.round(
-            (twinEntry.agreement / twinEntry.shared) * 100,
-          ),
-          sharedMatches: twinEntry.shared,
-        }
+            username: twinEntry.username,
+            displayName: nameMap[twinEntry.username] || twinEntry.username,
+            agreementPct: Math.round(
+              (twinEntry.agreement / twinEntry.shared) * 100,
+            ),
+            sharedMatches: twinEntry.shared,
+          }
         : null,
   };
 }
@@ -859,20 +859,41 @@ async function handleProfileGet(env, username) {
 
       if (hasPred && actualHome !== null && actualAway !== null) {
         const stage = String(fixture.stage || "").toLowerCase();
-        const isKO = stage !== "group" && stage !== "group_stage" && stage !== "";
+        const isKO =
+          stage !== "group" && stage !== "group_stage" && stage !== "";
         const multiplier = STAGE_MULTIPLIERS[stage] ?? 1;
         const penWinner = result?.penalty_winner || null;
         const userDraw = pred1 === pred2;
 
         if (isKO && penWinner) {
           points = userDraw
-            ? (String(p.pen_winner || "").toLowerCase() === String(penWinner).toLowerCase() ? 15 * multiplier : 0)
-            : ((pred1 > pred2 ? "team1" : "team2") === String(penWinner).toLowerCase() ? 5 * multiplier : 0);
-        } else if (isKO && !penWinner && userDraw && actualHome !== actualAway) {
+            ? String(p.pen_winner || "").toLowerCase() ===
+              String(penWinner).toLowerCase()
+              ? 15 * multiplier
+              : 0
+            : (pred1 > pred2 ? "team1" : "team2") ===
+                String(penWinner).toLowerCase()
+              ? 5 * multiplier
+              : 0;
+        } else if (
+          isKO &&
+          !penWinner &&
+          userDraw &&
+          actualHome !== actualAway
+        ) {
           const actualWinner = actualHome > actualAway ? "team1" : "team2";
-          points = String(p.pen_winner || "").toLowerCase() === actualWinner ? 5 * multiplier : 0;
+          points =
+            String(p.pen_winner || "").toLowerCase() === actualWinner
+              ? 5 * multiplier
+              : 0;
         } else {
-          points = scoreMatch(pred1, pred2, actualHome, actualAway, fixture.stage);
+          points = scoreMatch(
+            pred1,
+            pred2,
+            actualHome,
+            actualAway,
+            fixture.stage,
+          );
         }
       }
 
@@ -950,7 +971,7 @@ async function handleSyncGet(env) {
       homeScorers: r.homeScorers || [],
       awayScorers: r.awayScorers || [],
       penalty_winner: r.penalty_winner || null,
-    }
+    };
   }
 
   const users = userRows
@@ -1086,8 +1107,17 @@ export default {
         const matchId = String(body.matchId || "");
         const score1 = body.score1 !== undefined ? Number(body.score1) : null;
         const score2 = body.score2 !== undefined ? Number(body.score2) : null;
-        if (!matchId || score1 === null || score2 === null || isNaN(score1) || isNaN(score2)) {
-          return corsJson({ error: "matchId, score1, and score2 required" }, 400);
+        if (
+          !matchId ||
+          score1 === null ||
+          score2 === null ||
+          isNaN(score1) ||
+          isNaN(score2)
+        ) {
+          return corsJson(
+            { error: "matchId, score1, and score2 required" },
+            400,
+          );
         }
         await supabaseUpsert(env, "results", [{ matchId, score1, score2 }]);
         return corsJson({ ok: true, matchId, score1, score2 });
@@ -1600,21 +1630,21 @@ function readScore(item, side) {
   const keys =
     side === "home"
       ? [
-        "homeScore",
-        "score1",
-        "team1Score",
-        "home_goal",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "homeScore",
+          "score1",
+          "team1Score",
+          "home_goal",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "awayScore",
-        "score2",
-        "team2Score",
-        "away_goal",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "awayScore",
+          "score2",
+          "team2Score",
+          "away_goal",
+          "awayGoals",
+          "goalsAway",
+        ];
   for (const key of keys) {
     if (item[key] !== undefined && item[key] !== null && item[key] !== "")
       return item[key];
@@ -1624,21 +1654,21 @@ function readScore(item, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
     for (const path of paths) {
       let value = nested;
       let found = true;
@@ -1754,19 +1784,19 @@ function formatGroupStandings(rows) {
 function buildLivescoreKey(item) {
   const home = cleanTeamName(
     item.home_name ||
-    item.home ||
-    item.team1 ||
-    item.localteam_name ||
-    item.localteam ||
-    "",
+      item.home ||
+      item.team1 ||
+      item.localteam_name ||
+      item.localteam ||
+      "",
   );
   const away = cleanTeamName(
     item.away_name ||
-    item.away ||
-    item.team2 ||
-    item.visitorteam_name ||
-    item.visitorteam ||
-    "",
+      item.away ||
+      item.team2 ||
+      item.visitorteam_name ||
+      item.visitorteam ||
+      "",
   );
   if (!home || !away) return "";
   return `${home}__${away}`;

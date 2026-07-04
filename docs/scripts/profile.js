@@ -58,11 +58,11 @@ function initFirebase() {
 const STAGE_MULTIPLIERS = {
   group: 1,
   r32: 2,
-  r16: 2.5,
-  qf: 3,
-  sf: 4,
-  third: 4,
-  final: 5,
+  r16: 3,
+  qf: 4,
+  sf: 5,
+  third: 5,
+  final: 6,
 };
 function calcPoints(
   p1,
@@ -407,15 +407,23 @@ function formatPts(pts, statusType) {
 
   // Map numeric points to the multiplier‑specific CSS class
   let ptsClass = "";
-  if (pts === 30) ptsClass = "pts-30";          // exact ×2 (R32)
-  else if (pts === 37.5) ptsClass = "pts-37-5";  // exact ×2.5 (R16)
-  else if (pts === 20) ptsClass = "pts-20";      // exact ×2.5 (R16)
-  else if (pts === 16) ptsClass = "pts-16";     // good ×2 (R32)
-  else if (pts === 10) ptsClass = "pts-10";     // partial ×2 (R32)
-  else if (pts === 15) ptsClass = "pts-exact";  // exact ×1 (group)
-  else if (pts === 8) ptsClass = "pts-good";    // good ×1 (group)
-  else if (pts === 5) ptsClass = "pts-partial"; // partial ×1 (group)
-  else ptsClass = ptsTierClass(pts);            // fallback for other multipliers
+  if (pts === 30)
+    ptsClass = "pts-30"; // exact ×2 (R32)
+  else if (pts === 37.5)
+    ptsClass = "pts-37-5"; // exact ×2.5 (R16)
+  else if (pts === 20)
+    ptsClass = "pts-20"; // exact ×2.5 (R16)
+  else if (pts === 16)
+    ptsClass = "pts-16"; // good ×2 (R32)
+  else if (pts === 10)
+    ptsClass = "pts-10"; // partial ×2 (R32)
+  else if (pts === 15)
+    ptsClass = "pts-exact"; // exact ×1 (group)
+  else if (pts === 8)
+    ptsClass = "pts-good"; // good ×1 (group)
+  else if (pts === 5)
+    ptsClass = "pts-partial"; // partial ×1 (group)
+  else ptsClass = ptsTierClass(pts); // fallback for other multipliers
 
   return `<span class="pred-pts ${ptsClass}">${pts}<sub>pts</sub></span>`;
 }
@@ -604,8 +612,9 @@ function renderProfile(data) {
     </div>
 
     <!-- Accuracy bar -->
-    ${scored > 0
-      ? `
+    ${
+      scored > 0
+        ? `
     <div class="accuracy-bar-wrap" style="margin-bottom:28px">
       <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Scoring accuracy</span>
       <div class="accuracy-bar-track">
@@ -613,7 +622,7 @@ function renderProfile(data) {
       </div>
       <span class="accuracy-label">${accuracy}%</span>
     </div>`
-      : ""
+        : ""
     }
 
     
