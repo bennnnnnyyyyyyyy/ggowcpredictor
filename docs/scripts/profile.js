@@ -224,6 +224,46 @@ async function fetchProfileFromFirestore(username) {
 
   return buildProfilePayload(user, lb, preds, fixtureMap, resultMap);
 }
+function resolveSlotLocal(code, fixtureMap, resultMap) {
+  if (!code || typeof code !== "string") return code;
+  const trimmed = code.trim();
+  if (!trimmed || trimmed === "TBD") return trimmed;
+
+  const knockoutRef = trimmed.match(/^([WL])(\d+)$/);
+  if (!knockoutRef) return trimmed;
+
+  const [, side, refMatchId] = knockoutRef;
+  const refFixture = fixtureMap[refMatchId];
+  if (!refFixture) return trimmed;
+
+  const refResult = resultMap[refMatchId];
+  if (!refResult) return trimmed;
+
+  const s1 = nullNum(
+    refResult.score1 ?? refResult.homeScore ?? refResult.team1Score,
+  );
+  const s2 = nullNum(
+    refResult.score2 ?? refResult.awayScore ?? refResult.team2Score,
+  );
+  const status = String(refResult.status || "NS").toUpperCase();
+  if (!isFinalStatus(status) || s1 === null || s2 === null) return trimmed;
+
+  let winnerIsTeam1 = null;
+  if (s1 > s2) winnerIsTeam1 = true;
+  else if (s2 > s1) winnerIsTeam1 = false;
+  else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
+    winnerIsTeam1 = true;
+  else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
+    winnerIsTeam1 = false;
+
+  if (winnerIsTeam1 === null) return trimmed;
+
+  const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
+  const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
+  const picked = side === "W" ? winnerTeam : loserTeam;
+  // recurse in case the feeder match's own team is itself a W/L code
+  return resolveSlotLocal(picked, fixtureMap, resultMap) || picked;
+}
 
 function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
   let totalPoints = 0,
