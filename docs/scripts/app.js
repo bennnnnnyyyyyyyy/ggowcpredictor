@@ -4670,11 +4670,14 @@ function getChampionPickStageAndPoints() {
   const now = Date.now();
   const fixtures = STATE.fixtures || [];
 
-  const firstQF = fixtures
-    .filter(
-      (f) => String(f.stage || "").toLowerCase() === "qf" && f.kickoffDate,
-    )
-    .sort((a, b) => a.kickoffDate - b.kickoffDate)[0];
+  // Hard lock for the 200-pt R16 window: kickoff of match 93
+  // (Spain vs Portugal) — Jul 6, 10:00 PM Cairo. Using the fixture's own
+  // kickoffDate instead of a raw timestamp so this stays correct if the
+  // match ever gets rescheduled. Falls back to a hardcoded UTC time only
+  // if match 93 isn't in STATE.fixtures for some reason.
+  const lockFixture = fixtures.find((f) => String(f.matchId) === "93");
+  const HARD_LOCK_FALLBACK = new Date("2026-07-06T19:00:00Z"); // = Jul 6, 10pm Cairo (UTC+3)
+  const qfStart = (lockFixture?.kickoffDate ?? HARD_LOCK_FALLBACK).getTime();
 
   const firstSF = fixtures
     .filter(
@@ -4682,7 +4685,6 @@ function getChampionPickStageAndPoints() {
     )
     .sort((a, b) => a.kickoffDate - b.kickoffDate)[0];
 
-  const qfStart = firstQF?.kickoffDate?.getTime() ?? Infinity;
   const sfStart = firstSF?.kickoffDate?.getTime() ?? Infinity;
 
   if (now < qfStart)
