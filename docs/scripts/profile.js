@@ -316,8 +316,14 @@ function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
 
       return {
         matchId,
-        home: fixture.team1 || "TBD",
-        away: fixture.team2 || "TBD",
+        home:
+          resolveSlotLocal(fixture.team1, fixtureMap, resultMap) ||
+          fixture.team1 ||
+          "TBD",
+        away:
+          resolveSlotLocal(fixture.team2, fixtureMap, resultMap) ||
+          fixture.team2 ||
+          "TBD",
         group: fixture.group || "",
         round: fixture.round || "",
         date: fixture.date || "",

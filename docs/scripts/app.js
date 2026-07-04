@@ -4849,28 +4849,32 @@ async function openChampionPickModal() {
         grid.innerHTML = "";
         const teams = getTeamsForChampionPick(info.stage);
         for (const t of teams) {
-          const card = document.createElement("div");
-          card.className = "champion-flag-card";
-          card.dataset.team = t;
-          const flagImg =
-            getFlagImg(t) ||
-            `<div class="flag-placeholder">${escapeHtml(t.slice(0, 3).toUpperCase())}</div>`;
-          card.innerHTML = `
-          ${flagImg}
-          <span class="flag-label">${escapeHtml(t)}</span>
-        `;
-          card.onclick = () => {
-            grid
-              .querySelectorAll(".champion-flag-card")
-              .forEach((c) => c.classList.remove("selected"));
-            card.classList.add("selected");
-            championSelectedTeam = t;
-            if (selectedLabel) {
-              selectedLabel.innerHTML = `Selected: <strong>${escapeHtml(t)}</strong>`;
-              selectedLabel.classList.remove("hidden");
-            }
-          };
-          grid.appendChild(card);
+          try {
+            const card = document.createElement("div");
+            card.className = "champion-flag-card";
+            card.dataset.team = t;
+            const flagImg =
+              getFlagImg(t) ||
+              `<div class="flag-placeholder">${escapeHtml(t.slice(0, 3).toUpperCase())}</div>`;
+            card.innerHTML = `
+            ${flagImg}
+            <span class="flag-label">${escapeHtml(t)}</span>
+          `;
+            card.onclick = () => {
+              grid
+                .querySelectorAll(".champion-flag-card")
+                .forEach((c) => c.classList.remove("selected"));
+              card.classList.add("selected");
+              championSelectedTeam = t;
+              if (selectedLabel) {
+                selectedLabel.innerHTML = `Selected: <strong>${escapeHtml(t)}</strong>`;
+                selectedLabel.classList.remove("hidden");
+              }
+            };
+            grid.appendChild(card);
+          } catch (e) {
+            console.warn(`Failed to render team card for ${t}`, e);
+          }
         }
       }
 
@@ -4899,7 +4903,11 @@ async function openChampionPickModal() {
 
 async function submitChampionPick() {
   const team = championSelectedTeam;
-  if (!team) return;
+  if (!team) {
+    const errEl = document.getElementById("champion-pick-error");
+    if (errEl) errEl.textContent = "Pick a team first.";
+    return;
+  }
 
   const info = getChampionPickStageAndPoints();
   if (info.isClosed) return;
