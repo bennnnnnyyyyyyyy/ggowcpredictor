@@ -3308,8 +3308,8 @@ function resolveSlot(code) {
     if (!letters.length) return trimmed;
     const candidates = [];
     letters.forEach((l) => {
-      const groupData =
-        STATE.groupStandings[l] || STATE.groupStandings[`Group ${l}`];
+      const gs = STATE.groupStandings || {};
+      const groupData = gs[l] || gs[`Group ${l}`];
       if (groupData) {
         const third = groupData.find((t) => t.position === 3);
         if (third) candidates.push(third);
@@ -4772,6 +4772,7 @@ async function checkChampionPick() {
 }
 
 let championSelectedTeam = null;
+let championCountdownInterval = null;
 
 async function openChampionPickModal() {
   const modal = document.getElementById("champion-pick-modal");
@@ -4847,7 +4848,15 @@ async function openChampionPickModal() {
       const grid = document.getElementById("champion-team-grid");
       if (grid) {
         grid.innerHTML = "";
-        const teams = getTeamsForChampionPick(info.stage);
+        let teams = [];
+        try {
+          teams = getTeamsForChampionPick(info.stage);
+        } catch (e) {
+          console.warn("getTeamsForChampionPick failed, using full list", e);
+          teams = Object.keys(TEAM_FLAG_CODES).map((n) =>
+            n.replace(/\b\w/g, (c) => c.toUpperCase()),
+          );
+        }
         for (const t of teams) {
           try {
             const card = document.createElement("div");

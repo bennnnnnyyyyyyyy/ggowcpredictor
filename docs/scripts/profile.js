@@ -155,17 +155,23 @@ async function fetchProfileFromWorker(username) {
 }
 
 async function fetchProfileFromSupabase(username) {
-  const [users, preds, leaderboard, fixtures, results] = await Promise.all([
-    sbSelect("users", "*", `username=eq.${encodeURIComponent(username)}`),
-    sbSelect(
-      "predictions",
-      "*",
-      `username=eq.${encodeURIComponent(username)}&order=matchId.asc`,
-    ),
-    sbSelect("leaderboard", "*", `username=eq.${encodeURIComponent(username)}`),
-    sbSelect("fixtures", "*"),
-    sbSelect("results", "*"),
-  ]);
+  const [users, preds, leaderboard, fixtures, results, groupStandingRows] =
+    await Promise.all([
+      sbSelect("users", "*", `username=eq.${encodeURIComponent(username)}`),
+      sbSelect(
+        "predictions",
+        "*",
+        `username=eq.${encodeURIComponent(username)}&order=matchId.asc`,
+      ),
+      sbSelect(
+        "leaderboard",
+        "*",
+        `username=eq.${encodeURIComponent(username)}`,
+      ),
+      sbSelect("fixtures", "*"),
+      sbSelect("results", "*"),
+      sbSelect("group_standings", "*"),
+    ]);
 
   const user = users?.[0];
   if (!user) throw new Error("User not found in Supabase");
@@ -182,20 +188,34 @@ async function fetchProfileFromSupabase(username) {
     if (id) resultMap[id] = r;
   });
 
-  return buildProfilePayload(user, lb, preds || [], fixtureMap, resultMap);
+  return buildProfilePayload(
+    user,
+    lb,
+    preds || [],
+    fixtureMap,
+    resultMap,
+    buildGroupStandingsMap(groupStandingRows),
+  );
 }
 
 async function fetchProfileFromFirestore(username) {
   if (!db) throw new Error("Firestore not initialized");
 
-  const [userSnap, predsSnap, currentSnap, fixturesSnap, resultsSnap] =
-    await Promise.all([
-      db.collection("users").doc(username).get(),
-      db.collection("predictions").where("username", "==", username).get(),
-      db.collection("leaderboard").doc("current").get(),
-      db.collection("fixtures").get(),
-      db.collection("results").get(),
-    ]);
+  const [
+    userSnap,
+    predsSnap,
+    currentSnap,
+    fixturesSnap,
+    resultsSnap,
+    groupStandingsSnap,
+  ] = await Promise.all([
+    db.collection("users").doc(username).get(),
+    db.collection("predictions").where("username", "==", username).get(),
+    db.collection("leaderboard").doc("current").get(),
+    db.collection("fixtures").get(),
+    db.collection("results").get(),
+    db.collection("group_standings").get(),
+  ]);
 
   if (!userSnap.exists) throw new Error("User not found in Firestore");
 
@@ -222,50 +242,141 @@ async function fetchProfileFromFirestore(username) {
     if (id) resultMap[id] = r;
   });
 
-  return buildProfilePayload(user, lb, preds, fixtureMap, resultMap);
+  return buildProfilePayload(
+    user,
+    lb,
+    preds,
+    fixtureMap,
+    resultMap,
+    buildGroupStandingsMap(groupStandingsSnap.docs.map((d) => d.data())),
+  );
 }
-function resolveSlotLocal(code, fixtureMap, resultMap) {
+const R32_SEED_MAP = {
+  73: { team1: "South Africa", team2: "Canada" },
+  74: { team1: "Brazil", team2: "Japan" },
+  75: { team1: "Germany", team2: "Paraguay" },
+  76: { team1: "Netherlands", team2: "Morocco" },
+  77: { team1: "Ivory Coast", team2: "Norway" },
+  78: { team1: "France", team2: "Sweden" },
+  79: { team1: "Mexico", team2: "Ecuador" },
+  80: { team1: "England", team2: "DR Congo" },
+  81: { team1: "Belgium", team2: "Senegal" },
+  82: { team1: "USA", team2: "Bosnia & Herzegovina" },
+  83: { team1: "Spain", team2: "Austria" },
+  84: { team1: "Portugal", team2: "Croatia" },
+  85: { team1: "Switzerland", team2: "Algeria" },
+  86: { team1: "Australia", team2: "Egypt" },
+  87: { team1: "Argentina", team2: "Cape Verde" },
+  88: { team1: "Colombia", team2: "Ghana" },
+};
+
+function buildGroupStandingsMap(rows) {
+  const groups = {};
+  (rows || []).forEach((row) => {
+    const groupName = String(row.group_name || row.group || "").trim();
+    if (!groupName) return;
+    if (!groups[groupName]) groups[groupName] = [];
+    groups[groupName].push({
+      team_name: row.team_name || row.teamName || row.name || "TBD",
+      position: Number(row.position) || 0,
+      points: Number(row.points) || 0,
+      goal_difference: Number(row.goal_difference) || 0,
+      goals_for: Number(row.goals_for) || 0,
+    });
+  });
+  Object.keys(groups).forEach((g) =>
+    groups[g].sort((a, b) => a.position - b.position),
+  );
+  return groups;
+}
+function resolveSlotLocal(code, fixtureMap, resultMap, groupStandings) {
   if (!code || typeof code !== "string") return code;
   const trimmed = code.trim();
   if (!trimmed || trimmed === "TBD") return trimmed;
 
   const knockoutRef = trimmed.match(/^([WL])(\d+)$/);
-  if (!knockoutRef) return trimmed;
+  if (knockoutRef) {
+    const [, side, refMatchId] = knockoutRef;
+    const refFixture = fixtureMap[refMatchId];
+    const refResult = resultMap[refMatchId];
+    if (!refFixture || !refResult) return trimmed;
 
-  const [, side, refMatchId] = knockoutRef;
-  const refFixture = fixtureMap[refMatchId];
-  if (!refFixture) return trimmed;
+    const seed = R32_SEED_MAP[Number(refMatchId)];
+    const refTeam1 = seed ? seed.team1 : refFixture.team1;
+    const refTeam2 = seed ? seed.team2 : refFixture.team2;
 
-  const refResult = resultMap[refMatchId];
-  if (!refResult) return trimmed;
+    const s1 = nullNum(
+      refResult.score1 ?? refResult.homeScore ?? refResult.team1Score,
+    );
+    const s2 = nullNum(
+      refResult.score2 ?? refResult.awayScore ?? refResult.team2Score,
+    );
+    const status = String(refResult.status || "NS").toUpperCase();
+    if (!isFinalStatus(status) || s1 === null || s2 === null) return trimmed;
 
-  const s1 = nullNum(
-    refResult.score1 ?? refResult.homeScore ?? refResult.team1Score,
-  );
-  const s2 = nullNum(
-    refResult.score2 ?? refResult.awayScore ?? refResult.team2Score,
-  );
-  const status = String(refResult.status || "NS").toUpperCase();
-  if (!isFinalStatus(status) || s1 === null || s2 === null) return trimmed;
+    let winnerIsTeam1 = null;
+    if (s1 > s2) winnerIsTeam1 = true;
+    else if (s2 > s1) winnerIsTeam1 = false;
+    else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
+      winnerIsTeam1 = true;
+    else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
+      winnerIsTeam1 = false;
 
-  let winnerIsTeam1 = null;
-  if (s1 > s2) winnerIsTeam1 = true;
-  else if (s2 > s1) winnerIsTeam1 = false;
-  else if (String(refResult.penalty_winner || "").toLowerCase() === "team1")
-    winnerIsTeam1 = true;
-  else if (String(refResult.penalty_winner || "").toLowerCase() === "team2")
-    winnerIsTeam1 = false;
+    if (winnerIsTeam1 === null) return trimmed;
 
-  if (winnerIsTeam1 === null) return trimmed;
+    const winnerTeam = winnerIsTeam1 ? refTeam1 : refTeam2;
+    const loserTeam = winnerIsTeam1 ? refTeam2 : refTeam1;
+    const picked = side === "W" ? winnerTeam : loserTeam;
+    return (
+      resolveSlotLocal(picked, fixtureMap, resultMap, groupStandings) || picked
+    );
+  }
 
-  const winnerTeam = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
-  const loserTeam = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
-  const picked = side === "W" ? winnerTeam : loserTeam;
-  // recurse in case the feeder match's own team is itself a W/L code
-  return resolveSlotLocal(picked, fixtureMap, resultMap) || picked;
+  const groupMatch = trimmed.match(/^([12])([A-L])$/i);
+  if (groupMatch) {
+    const gs = groupStandings || {};
+    const pos = Number(groupMatch[1]);
+    const key = groupMatch[2].toUpperCase();
+    const table = gs[key] || gs[`Group ${key}`] || [];
+    const row = table.find((r) => r.position === pos);
+    return row ? row.team_name || trimmed : trimmed;
+  }
+
+  const thirdMatch = trimmed.match(/^3([A-L\/]+)$/i);
+  if (thirdMatch) {
+    const gs = groupStandings || {};
+    const groupKeys = thirdMatch[1].toUpperCase().split("/").filter(Boolean);
+    let best = null;
+    for (const g of groupKeys) {
+      const table = gs[g] || gs[`Group ${g}`] || [];
+      const row = table.find((r) => r.position === 3);
+      if (!row) continue;
+      if (
+        !best ||
+        row.points > best.points ||
+        (row.points === best.points &&
+          row.goal_difference > best.goal_difference) ||
+        (row.points === best.points &&
+          row.goal_difference === best.goal_difference &&
+          row.goals_for > best.goals_for)
+      ) {
+        best = row;
+      }
+    }
+    return best ? best.team_name || trimmed : trimmed;
+  }
+
+  return trimmed;
 }
 
-function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
+function buildProfilePayload(
+  user,
+  lb,
+  preds,
+  fixtureMap,
+  resultMap,
+  groupStandings,
+) {
   let totalPoints = 0,
     exactScores = 0,
     correctOutcomes = 0;
@@ -317,11 +428,21 @@ function buildProfilePayload(user, lb, preds, fixtureMap, resultMap) {
       return {
         matchId,
         home:
-          resolveSlotLocal(fixture.team1, fixtureMap, resultMap) ||
+          resolveSlotLocal(
+            fixture.team1,
+            fixtureMap,
+            resultMap,
+            groupStandings,
+          ) ||
           fixture.team1 ||
           "TBD",
         away:
-          resolveSlotLocal(fixture.team2, fixtureMap, resultMap) ||
+          resolveSlotLocal(
+            fixture.team2,
+            fixtureMap,
+            resultMap,
+            groupStandings,
+          ) ||
           fixture.team2 ||
           "TBD",
         group: fixture.group || "",
