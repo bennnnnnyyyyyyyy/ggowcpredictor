@@ -455,6 +455,7 @@ function buildProfilePayload(
         actualAway,
         points,
         status: String(result?.status || "NS").toUpperCase(),
+        stage: fixture.stage || "",
         statusType,
       };
     })
@@ -548,48 +549,37 @@ function rankChipClass(rank) {
   return "";
 }
 
-function ptsTierClass(pts) {
-  if (pts === null) return "pts-pending";
-  if (pts >= 15) return "pts-exact";
-  if (pts >= 8) return "pts-good";
-  if (pts > 0) return "pts-partial";
-  return "pts-zero";
+function ptsBaseTier(pts, stage) {
+  if (pts === null) return null;
+  if (pts === 0) return "zero";
+  const mult = STAGE_MULTIPLIERS[String(stage || "group").toLowerCase()] ?? 1;
+  const base = pts / mult;
+  if (Math.abs(base - 15) < 0.01) return "exact";
+  if (Math.abs(base - 8) < 0.01) return "good";
+  if (Math.abs(base - 5) < 0.01) return "partial";
+  return base >= 8 ? "good" : "partial";
 }
 
-function stripeClass(pts, statusType) {
+function ptsTierClass(pts, stage) {
+  if (pts === null) return "pts-pending";
+  return `pts-${ptsBaseTier(pts, stage)}`;
+}
+
+function stripeClass(pts, statusType, stage) {
   if (statusType !== "finished" && statusType !== "live")
     return "stripe-pending";
   if (pts === null) return "stripe-pending";
-  if (pts >= 15) return "stripe-exact";
-  if (pts >= 8) return "stripe-good";
-  if (pts > 0) return "stripe-partial";
-  return "stripe-zero";
+  return `stripe-${ptsBaseTier(pts, stage)}`;
 }
-function formatPts(pts, statusType) {
+
+function formatPts(pts, statusType, stage) {
   if (statusType === "upcoming")
     return `<span class="pred-pts pts-pending">Upcoming</span>`;
   if (statusType === "live" && pts === null)
     return `<span class="pred-pts pts-pending">Live</span>`;
   if (pts === null) return `<span class="pred-pts pts-pending">No pick</span>`;
 
-  // Map numeric points to the multiplier‑specific CSS class
-  let ptsClass = "";
-  if (pts === 30)
-    ptsClass = "pts-30"; // exact ×2 (R32)
-  else if (pts === 45)
-    ptsClass = "pts-45"; // exact ×3 (R16)
-  else if (pts === 24)
-    ptsClass = "pts-24"; // good ×3 (R16)
-  else if (pts === 10)
-    ptsClass = "pts-10"; // partial ×2 (R32)
-  else if (pts === 15)
-    ptsClass = "pts-exact"; // exact ×1 (group)
-  else if (pts === 8)
-    ptsClass = "pts-good"; // good ×1 (group)
-  else if (pts === 5)
-    ptsClass = "pts-partial"; // partial ×1 (group)
-  else ptsClass = ptsTierClass(pts); // fallback for other multipliers
-
+  const ptsClass = ptsTierClass(pts, stage);
   return `<span class="pred-pts ${ptsClass}">${pts}<sub>pts</sub></span>`;
 }
 
@@ -677,8 +667,8 @@ function renderProfile(data) {
       .join("");
   }
   function renderPredCard(p, displayName) {
-    const stripe = stripeClass(p.points, p.statusType);
-    const ptsHtml = formatPts(p.points, p.statusType);
+    const stripe = stripeClass(p.points, p.statusType, p.stage);
+    const ptsHtml = formatPts(p.points, p.statusType, p.stage);
     const groupPart = p.group
       ? `<span class="pred-meta-tag"><span class="accent">${esc(p.group)}</span></span>`
       : "";
