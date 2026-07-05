@@ -4752,7 +4752,7 @@ async function checkChampionPick() {
   );
   if (snoozed && Date.now() < Number(snoozed)) return;
 
-  if (localStorage.getItem(`champion_pick_done_${SESSION.username}`)) return;
+  if (localStorage.getItem(`champion_pick_doned_${SESSION.username}`)) return;
 
   try {
     const rows = await supabaseSelect(
@@ -4761,7 +4761,7 @@ async function checkChampionPick() {
       `username=eq.${encodeURIComponent(SESSION.username)}`,
     );
     if (rows && rows.length > 0) {
-      localStorage.setItem(`champion_pick_done_${SESSION.username}`, "1");
+      localStorage.setItem(`champion_pick_doned_${SESSION.username}`, "1");
       return;
     }
     // Not picked yet — show popup
@@ -4937,7 +4937,7 @@ async function submitChampionPick() {
       ],
       "username",
     );
-    localStorage.setItem(`champion_pick_done_${SESSION.username}`, "1");
+    localStorage.setItem(`champion_pick_doned_${SESSION.username}`, "1");
   } catch (e) {
     console.error("champion pick submit failed", e);
     if (btn) btn.disabled = false;
