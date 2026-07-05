@@ -17,6 +17,24 @@
 </head>
 <link rel="stylesheet" href="style.css" id="app-stylesheet" />
 <script>document.getElementById('app-stylesheet').href = 'style.css?v=' + Date.now();</script>
+<script>
+  (function () {
+    const STAGE_STARTS = [
+      new Date("2026-06-11T00:00:00Z"),
+      new Date("2026-06-28T00:00:00Z"),
+      new Date("2026-07-04T00:00:00Z"),
+      new Date("2026-07-09T00:00:00Z"),
+      new Date("2026-07-14T00:00:00Z"),
+      new Date("2026-07-19T00:00:00Z"),
+    ];
+    const now = Date.now();
+    let progress = 0;
+    STAGE_STARTS.forEach((d, i) => {
+      if (now >= d.getTime()) progress = (i + 1) / STAGE_STARTS.length;
+    });
+    document.documentElement.style.setProperty("--gold-progress", progress.toFixed(2));
+  })();
+</script>
 
 <!-- Match Detail Drawer -->
 <div id="match-drawer-overlay" class="match-drawer-overlay" onclick="closeMatchDrawer()"></div>
