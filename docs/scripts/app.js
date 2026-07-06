@@ -1270,7 +1270,7 @@ async function requestSync() {
       loadPredictions(),
       loadAccountRequests(),
     ]);
-  loaderResults.forEach((r, i) => {
+  [gameData, results, leaderboard, standings, allPreds, myPreds, acctReqs].forEach((r, i) => {
     if (r.status === "rejected") {
       hadError = true;
       console.warn(`Loader ${i} failed:`, r.reason);
@@ -1547,6 +1547,8 @@ setInterval(() => {
     if (activeId === "predictions") renderPredictions();
     else if (activeId === "results") renderResults();
     else if (activeId === "standings") renderGroupStandings();
+    updateHeaderMatchWidgets();
+
   }
 }, 30000);
 async function loadPredictions() {
