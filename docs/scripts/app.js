@@ -444,7 +444,7 @@ async function handleLogin(event) {
             };
           }
         }
-      } catch (_) { }
+      } catch (_) {}
     }
 
     // 4. Demo users last resort
@@ -884,8 +884,14 @@ function getTodayFixtures() {
         (a.kickoffDate?.getTime?.() || 0) - (b.kickoffDate?.getTime?.() || 0),
     );
 }
-// add after getTodayFixtures():
-// REPLACE lines 873-892 with:
+const HOME_STALE_HOURS = 3;
+function isMatchStale(fixture) {
+  if (!(fixture.kickoffDate instanceof Date)) return false;
+  return (
+    Date.now() - fixture.kickoffDate.getTime() >
+    HOME_STALE_HOURS * 60 * 60 * 1000
+  );
+}
 function getHomeWindowFixtures() {
   const now = new Date();
 
@@ -903,6 +909,8 @@ function getHomeWindowFixtures() {
   const buckets = { yesterday: [], today: [], tomorrow: [] };
 
   (STATE.fixtures || []).forEach((fixture) => {
+    if (isMatchStale(fixture)) return; // played 3+ hrs ago, drop from Home entirely
+
     const key = getFixtureDateKey(fixture);
     const kickoff = fixture.kickoffDate;
 
@@ -1077,32 +1085,33 @@ function renderHome() {
 
       const popularHtml = scoreGroups.length
         ? scoreGroups
-          .map((group, index) => {
-            const kickedOff =
-              fixture.kickoffDate instanceof Date &&
-              !Number.isNaN(fixture.kickoffDate.getTime()) &&
-              Date.now() >= fixture.kickoffDate.getTime();
-            const hasStarted =
-              kickedOff ||
-              (result &&
-                !["NS", "NOT_STARTED", "TBD"].includes(
-                  String(result.status || "").toUpperCase(),
-                ));
+            .map((group, index) => {
+              const kickedOff =
+                fixture.kickoffDate instanceof Date &&
+                !Number.isNaN(fixture.kickoffDate.getTime()) &&
+                Date.now() >= fixture.kickoffDate.getTime();
+              const hasStarted =
+                kickedOff ||
+                (result &&
+                  !["NS", "NOT_STARTED", "TBD"].includes(
+                    String(result.status || "").toUpperCase(),
+                  ));
 
-            // Only highlight the exact score (15 pts)
-            const scoreClass =
-              isFinished && finalScore && group.score === finalScore
-                ? "correct-score"
-                : "";
+              // Only highlight the exact score (15 pts)
+              const scoreClass =
+                isFinished && finalScore && group.score === finalScore
+                  ? "correct-score"
+                  : "";
 
-            return `
+              return `
           <div class="popular-score ${index === 0 ? "popular-score-top" : ""} ${scoreClass}">
             <div class="popular-score-main">
               <span class="score-badge">${escapeHtml(group.score)}</span>
               <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
             </div>
 
-            ${hasStarted
+            ${
+              hasStarted
                 ? `
               <div class="popular-score-names">
                 ${group.users
@@ -1111,11 +1120,11 @@ function renderHome() {
               </div>
             `
                 : ""
-              }
+            }
           </div>
         `;
-          })
-          .join("")
+            })
+            .join("")
         : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
       return `
@@ -1188,10 +1197,10 @@ function renderHome() {
     windowBuckets.tomorrow.length;
   matchCards.innerHTML = hasAnyFixtures
     ? [
-      buildDaySection("Yesterday", windowBuckets.yesterday),
-      buildDaySection("Today", windowBuckets.today),
-      buildDaySection("Tomorrow", windowBuckets.tomorrow),
-    ].join("")
+        buildDaySection("Yesterday", windowBuckets.yesterday),
+        buildDaySection("Today", windowBuckets.today),
+        buildDaySection("Tomorrow", windowBuckets.tomorrow),
+      ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
     ? `
@@ -1213,6 +1222,9 @@ function renderHome() {
           </div>
   `
     : `<div class="empty-state compact"><p>No results scored in this window yet.</p></div>`;
+
+  renderHomeExtraTiles();
+  renderRaceToTop();
 }
 function ensureAdminNav() {
   const nav = document.getElementById("main-nav");
@@ -1260,27 +1272,49 @@ async function requestSync() {
     }
   };
 
-  const [gameData, results, leaderboard, standings, allPreds, myPreds, acctReqs] =
-    await Promise.allSettled([
-      loadGameData(),
-      loadResults(),
-      loadLeaderboard(),
-      loadGroupStandings(),
-      loadAllPredictions(),
-      loadPredictions(),
-      loadAccountRequests(),
-    ]);
-  [gameData, results, leaderboard, standings, allPreds, myPreds, acctReqs].forEach((r, i) => {
+  const [
+    gameData,
+    results,
+    leaderboard,
+    standings,
+    allPreds,
+    myPreds,
+    acctReqs,
+  ] = await Promise.allSettled([
+    loadGameData(),
+    loadResults(),
+    loadLeaderboard(),
+    loadGroupStandings(),
+    loadAllPredictions(),
+    loadPredictions(),
+    loadAccountRequests(),
+  ]);
+  [
+    gameData,
+    results,
+    leaderboard,
+    standings,
+    allPreds,
+    myPreds,
+    acctReqs,
+  ].forEach((r, i) => {
     if (r.status === "rejected") {
       hadError = true;
       console.warn(`Loader ${i} failed:`, r.reason);
     }
   });
   if (!STATE.fixtures.length) {
-    try { await loadFixtures(); } catch (e) { hadError = true; console.warn("Fixture fallback failed.", e); }
+    try {
+      await loadFixtures();
+    } catch (e) {
+      hadError = true;
+      console.warn("Fixture fallback failed.", e);
+    }
   }
 
-  const activeViewId = document.querySelector(".view.active")?.id?.replace("view-", "");
+  const activeViewId = document
+    .querySelector(".view.active")
+    ?.id?.replace("view-", "");
   const renderers = {
     home: renderHome,
     predictions: renderPredictions,
@@ -1312,10 +1346,10 @@ async function requestSync() {
       hadError && !hasAnyData
         ? "Sync failed"
         : `Live - ${STATE.lastSync.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Africa/Cairo",
-        })}`;
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Africa/Cairo",
+          })}`;
   }
 
   updateAdminBadge();
@@ -1507,7 +1541,10 @@ async function loadAllPredictions() {
     let offset = 0;
     while (true) {
       const response = await fetch(
-        getSupabaseUrl("predictions", `select=*&order=submittedAt.asc${sinceFilter}`),
+        getSupabaseUrl(
+          "predictions",
+          `select=*&order=submittedAt.asc${sinceFilter}`,
+        ),
         {
           headers: supabaseHeaders({
             "Range-Unit": "items",
@@ -1527,7 +1564,8 @@ async function loadAllPredictions() {
     newRows.forEach((prediction) => {
       const matchId = String(prediction.match_id ?? prediction.matchId);
       const id = String(prediction.id || "");
-      const key = id || String(prediction.username || "unknown") + "_" + matchId;
+      const key =
+        id || String(prediction.username || "unknown") + "_" + matchId;
       merged[key] = normalizePrediction({ ...prediction, id: key, matchId });
     });
 
@@ -1543,12 +1581,13 @@ async function loadAllPredictions() {
 setInterval(() => {
   if (document.hidden) return;
   if (document.getElementById("app")?.style.display !== "none") {
-    const activeId = document.querySelector(".view.active")?.id?.replace("view-", "");
+    const activeId = document
+      .querySelector(".view.active")
+      ?.id?.replace("view-", "");
     if (activeId === "predictions") renderPredictions();
     else if (activeId === "results") renderResults();
     else if (activeId === "standings") renderGroupStandings();
     updateHeaderMatchWidgets();
-
   }
 }, 30000);
 async function loadPredictions() {
@@ -1723,21 +1762,21 @@ function readResultScore(result, side) {
   const directKeys =
     side === "home"
       ? [
-        "score1",
-        "team1Score",
-        "homeScore",
-        "home_score",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "score1",
+          "team1Score",
+          "homeScore",
+          "home_score",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "score2",
-        "team2Score",
-        "awayScore",
-        "away_score",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "score2",
+          "team2Score",
+          "awayScore",
+          "away_score",
+          "awayGoals",
+          "goalsAway",
+        ];
 
   for (const key of directKeys) {
     if (
@@ -1754,21 +1793,21 @@ function readResultScore(result, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
 
     for (const path of paths) {
       let value = nested;
@@ -2053,14 +2092,14 @@ function renderPredictionCard(match, idx) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-        match.stage,
-        pred.pen_winner,
-        result.penalty_winner,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+          match.stage,
+          pred.pen_winner,
+          result.penalty_winner,
+        )
       : null;
   const ptsTier = (() => {
     if (points === null) return "";
@@ -2112,15 +2151,16 @@ function renderPredictionCard(match, idx) {
           <span class="mc-scoreline-label">Your Pick</span>
           <span class="mc-scoreline-pick">${predictionScore}</span>
         </div>
-        ${hasPred
-      ? `
+        ${
+          hasPred
+            ? `
           <div class="mc-scoreline-divider"></div>
           <div class="mc-scoreline-points">
             <span class="mc-scoreline-pts ${ptsTier}">${points ?? 0} pts</span>
           </div>
         `
-      : ""
-    }
+            : ""
+        }
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -2142,15 +2182,16 @@ function renderPredictionCard(match, idx) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-      ${hasRes
-      ? ``
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+      ${
+        hasRes
+          ? ``
+          : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+      }
         </div>
 
         <div class="mc-middle">
@@ -2160,30 +2201,32 @@ function renderPredictionCard(match, idx) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-        ${hasRes
-      ? ``
-      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+        ${
+          hasRes
+            ? ``
+            : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             oninput="handleScoreChange('${match.matchId}')">`
-    }
+        }
         </div>
       </div>
 
       ${statusLineHtml ? `<div class="mc-footer">${statusLineHtml}</div>` : ""}
 
       <!-- ★ Add loading overlay -->
-      ${isSaving
-      ? `
+      ${
+        isSaving
+          ? `
         <div class="mc-loading-overlay">
           <span class="spinner"></span>
           <span>Saving…</span>
         </div>
       `
-      : ""
-    }
+          : ""
+      }
     </article>
   `;
 }
@@ -2324,8 +2367,8 @@ function renderGroupTable(groupName, standings) {
         </thead>
         <tbody>
           ${sorted
-      .map(
-        (row) => `
+            .map(
+              (row) => `
             <tr>
               <td class="team-rank">${row.position}</td>
               <td data-label="Team">${getFlagImg(row.team_name)} ${escapeHtml(row.team_name)}</td>
@@ -2337,8 +2380,8 @@ function renderGroupTable(groupName, standings) {
               <td><strong>${row.points ?? 0}</strong></td>
             </tr>
           `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -2405,8 +2448,8 @@ function renderThirdPlaceTable() {
         </thead>
         <tbody>
           ${rows
-      .map(
-        (row, index) => `
+            .map(
+              (row, index) => `
               <tr class="${row.qualifies ? "" : "eliminated"} ${index === cutoffIndex ? "cutoff-row" : ""}">
                 <td data-label="#">${row.rank}</td>
                 <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
@@ -2418,8 +2461,8 @@ function renderThirdPlaceTable() {
                 <td data-label="Status">${row.qualifies ? "Qualifies" : "Out"}</td>
               </tr>
             `,
-      )
-      .join("")}
+            )
+            .join("")}
         </tbody>
       </table>
       <div class="third-place-legend">
@@ -2434,7 +2477,21 @@ const _lbPrevRanks = {};
 function renderLeaderboard() {
   const tbody = document.getElementById("leaderboard-body");
   if (!tbody) return;
+  // ADD right before the `const rows = ...` line
+  const liveDeltas = getLiveProjectedDeltas();
+  const hasLiveGames = liveDeltas.size > 0;
 
+  let projectedRankByUser = null;
+  if (hasLiveGames) {
+    const projected = (STATE.leaderboard || [])
+      .map((p) => ({
+        username: p.username,
+        projectedPoints:
+          (p.totalPoints || 0) + (liveDeltas.get(p.username) || 0),
+      }))
+      .sort((a, b) => b.projectedPoints - a.projectedPoints);
+    projectedRankByUser = new Map(projected.map((p, i) => [p.username, i + 1]));
+  }
   const rows = STATE.leaderboard.length
     ? STATE.leaderboard
     : buildLocalLeaderboard();
@@ -2470,13 +2527,16 @@ function renderLeaderboard() {
 
       // ── Rank change arrow ──
       const prevRank = _lbPrevRanks[username];
-      let arrowHtml = `<span class="rank-arrow rank-arrow-neutral">–</span>`;
-      if (prevRank !== undefined && prevRank !== rank) {
-        const moved = prevRank - rank; // positive = climbed
-        arrowHtml =
-          moved > 0
-            ? `<span class="rank-arrow rank-arrow-up" title="Up ${moved}">▲${moved}</span>`
-            : `<span class="rank-arrow rank-arrow-down" title="Down ${Math.abs(moved)}">▼${Math.abs(moved)}</span>`;
+      let liveArrowHtml = "";
+      if (projectedRankByUser) {
+        const projRank = projectedRankByUser.get(username) || rank;
+        if (projRank !== rank) {
+          const moved = rank - projRank; // positive = would climb if games ended now
+          liveArrowHtml =
+            moved > 0
+              ? `<span class="rank-arrow rank-arrow-live-up" title="Would climb ${moved} if live games ended now">🔴▲${moved}</span>`
+              : `<span class="rank-arrow rank-arrow-live-down" title="Would drop ${Math.abs(moved)} if live games ended now">🔴▼${Math.abs(moved)}</span>`;
+        }
       }
 
       const onclickAttr = username
@@ -2489,7 +2549,7 @@ function renderLeaderboard() {
           <td data-label="Rank">
             <div class="rank-cell">
               <span class="rank-badge ${rankClass(rank)}">${rank}</span>
-              ${arrowHtml}
+              ${liveArrowHtml}
             </div>
           </td>
           <td data-label="Player">
@@ -2587,14 +2647,14 @@ function openMatchDrawer(matchId) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-        pred.pred1,
-        pred.pred2,
-        result.score1,
-        result.score2,
-        null,
-        pred.pen_winner,
-        result.penalty_winner,
-      )
+          pred.pred1,
+          pred.pred2,
+          result.score1,
+          result.score2,
+          null,
+          pred.pen_winner,
+          result.penalty_winner,
+        )
       : null;
 
   const ptsCls =
@@ -2721,14 +2781,14 @@ function renderResults() {
       const points =
         hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-            pred.pred1,
-            pred.pred2,
-            result.score1,
-            result.score2,
-            fixture.stage,
-            pred.pen_winner,
-            result.penalty_winner,
-          )
+              pred.pred1,
+              pred.pred2,
+              result.score1,
+              result.score2,
+              fixture.stage,
+              pred.pen_winner,
+              result.penalty_winner,
+            )
           : null;
 
       return `
@@ -2934,18 +2994,20 @@ function renderBracket() {
           <div class="flow-match-slot">
             ${renderConnector(rounds.length)}
             <div class="bracket-final">
-              ${finalMatch
-      ? renderBracketMatch(finalMatch)
-      : `<div class="bracket-placeholder">TBD</div>`
-    }
+              ${
+                finalMatch
+                  ? renderBracketMatch(finalMatch)
+                  : `<div class="bracket-placeholder">TBD</div>`
+              }
             </div>
           </div>
           <div class="bracket-third">
             <div class="bracket-round-label small">3rd Place</div>
-            ${thirdMatch
-      ? renderBracketMatch(thirdMatch)
-      : `<div class="bracket-placeholder">TBD</div>`
-    }
+            ${
+              thirdMatch
+                ? renderBracketMatch(thirdMatch)
+                : `<div class="bracket-placeholder">TBD</div>`
+            }
           </div>
         </div>
       </div>
@@ -2962,9 +3024,12 @@ function renderBracket() {
     const rounds = bracket.querySelectorAll(".bracket-round");
     let targetRound = null;
     rounds.forEach((r) => {
-      if (r.querySelector(".bracket-match.final, .bracket-match.live")) targetRound = r;
+      if (r.querySelector(".bracket-match.final, .bracket-match.live"))
+        targetRound = r;
     });
-    wrapper.scrollLeft = targetRound ? Math.max(0, targetRound.offsetLeft - 20) : 0;
+    wrapper.scrollLeft = targetRound
+      ? Math.max(0, targetRound.offsetLeft - 20)
+      : 0;
   }
 }
 function renderBracketTabs() {
@@ -3134,7 +3199,9 @@ function renderBracketMatch(match) {
     "team2",
   );
 
-  const isSfPlus = ["sf", "final", "third"].includes(String(match.stage || "").toLowerCase());
+  const isSfPlus = ["sf", "final", "third"].includes(
+    String(match.stage || "").toLowerCase(),
+  );
   return `
   <article class="bracket-match ${getBracketMatchStateClass(result)}${isSfPlus ? " sf-plus" : ""}">
       <div class="bracket-match-meta">
@@ -3383,15 +3450,15 @@ function renderPenaltyWinnerAudit() {
   });
   container.innerHTML = needsReview.length
     ? needsReview
-      .map(
-        (f) => `
+        .map(
+          (f) => `
         <div class="admin-pen-row">
           <span>${escapeHtml(f.team1)} ${STATE.results[f.matchId].score1}-${STATE.results[f.matchId].score2} ${escapeHtml(f.team2)} (match ${f.matchId})</span>
           <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team1')">${escapeHtml(f.team1)} won pens</button>
           <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team2')">${escapeHtml(f.team2)} won pens</button>
         </div>`,
-      )
-      .join("")
+        )
+        .join("")
     : "<p>No knockout draws missing a penalty winner.</p>";
 }
 
@@ -3566,8 +3633,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-      .map(
-        (request) => `
+        .map(
+          (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -3580,8 +3647,8 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-      )
-      .join("")}
+        )
+        .join("")}
     </div>
   `;
 }
@@ -4221,6 +4288,34 @@ function hasResult(result) {
   if (status === "NS" || status === "") return false;
   return isLiveStatus(status) || isFinalStatus(status);
 }
+function renderRaceToTop() {
+  const container = document.getElementById("home-race-top3");
+  if (!container) return;
+  const top3 = (STATE.leaderboard || []).slice(0, 3);
+  if (top3.length < 2) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const leaderPts = top3[0].totalPoints || 0;
+  container.innerHTML = `
+    <h3 class="race-title">🏁 Race to the Top</h3>
+    ${top3
+      .map((p, i) => {
+        const gap = leaderPts - (p.totalPoints || 0);
+        const name = p.displayName || p.username || "Player";
+        return `
+        <div class="race-row rank-${i + 1}">
+          <span class="race-rank">#${i + 1}</span>
+          <span class="race-name">${escapeHtml(name)}</span>
+          <span class="race-points">${p.totalPoints || 0} pts</span>
+          <span class="race-gap">${i === 0 ? "Leader" : `-${gap} pts`}</span>
+        </div>
+      `;
+      })
+      .join("")}
+  `;
+}
 /**
  * Client-side scoring - mirrors canonical scoreMatch on the backend.
  * Points: exact=15, correct result plus close goal difference=8,
@@ -4304,7 +4399,137 @@ const STAGE_MULTIPLIERS = {
   third: 5,
   final: 6,
 };
+function getLiveFixtures() {
+  return (STATE.fixtures || []).filter((fix) => {
+    const result = STATE.results[fix.matchId];
+    return result && isLiveStatus(result.status);
+  });
+}
 
+// Points each user would gain right now if every live match ended at its current score
+function getLiveProjectedDeltas() {
+  const deltas = new Map();
+  const liveFixtures = getLiveFixtures();
+  if (!liveFixtures.length) return deltas;
+
+  const allPreds = Object.values(STATE.allPredictions || {});
+  liveFixtures.forEach((fixture) => {
+    const result = STATE.results[fixture.matchId];
+    if (!result || result.score1 == null || result.score2 == null) return;
+    allPreds
+      .filter((p) => String(p.matchId) === String(fixture.matchId))
+      .forEach((p) => {
+        const pts = calculateMatchPoints(
+          p.pred1,
+          p.pred2,
+          result.score1,
+          result.score2,
+          fixture.stage,
+          p.pen_winner,
+          result.penalty_winner,
+        );
+        deltas.set(p.username, (deltas.get(p.username) || 0) + pts);
+      });
+  });
+  return deltas;
+}
+
+// Most recent hot streak (consecutive scoring picks) and cold streak (consecutive zeros)
+function getUserStreaks(streakLength = 3) {
+  const finished = (STATE.fixtures || [])
+    .filter((f) => {
+      const r = STATE.results[f.matchId];
+      return r && isFinalStatus(r.status);
+    })
+    .sort(
+      (a, b) =>
+        (b.kickoffDate?.getTime() || 0) - (a.kickoffDate?.getTime() || 0),
+    );
+
+  const allPreds = Object.values(STATE.allPredictions || {});
+  const byUser = new Map();
+
+  finished.forEach((fixture) => {
+    const result = STATE.results[fixture.matchId];
+    allPreds
+      .filter((p) => String(p.matchId) === String(fixture.matchId))
+      .forEach((p) => {
+        const pts = calculateMatchPoints(
+          p.pred1,
+          p.pred2,
+          result.score1,
+          result.score2,
+          fixture.stage,
+          p.pen_winner,
+          result.penalty_winner,
+        );
+        const list = byUser.get(p.username) || [];
+        list.push(pts > 0);
+        byUser.set(p.username, list);
+      });
+  });
+
+  let hottest = null,
+    coldest = null;
+  byUser.forEach((hits, username) => {
+    if (!hits.length) return;
+    const isHot = hits[0] === true;
+    let streak = 0;
+    for (const h of hits) {
+      if (h === isHot) streak++;
+      else break;
+    }
+    if (
+      isHot &&
+      streak >= streakLength &&
+      (!hottest || streak > hottest.streak)
+    )
+      hottest = { username, streak };
+    if (
+      !isHot &&
+      streak >= streakLength &&
+      (!coldest || streak > coldest.streak)
+    )
+      coldest = { username, streak };
+  });
+  return { hottest, coldest };
+}
+function renderHomeExtraTiles() {
+  const hotColdEl = document.getElementById("home-hot-cold-tile");
+  const sweatingEl = document.getElementById("home-sweating-tile");
+  if (!hotColdEl && !sweatingEl) return;
+
+  if (hotColdEl) {
+    const { hottest, coldest } = getUserStreaks(3);
+    hotColdEl.innerHTML = `
+      ${hottest ? `<div class="streak-row hot">🔥 <strong>${escapeHtml(getUserDisplayName(hottest.username))}</strong> — ${hottest.streak} in a row</div>` : ""}
+      ${coldest ? `<div class="streak-row cold">🥶 <strong>${escapeHtml(getUserDisplayName(coldest.username))}</strong> — ${coldest.streak} misses in a row</div>` : ""}
+      ${!hottest && !coldest ? `<div class="streak-row empty">No streaks yet</div>` : ""}
+    `;
+  }
+
+  if (sweatingEl) {
+    const liveFixtures = getLiveFixtures();
+    if (!liveFixtures.length) {
+      sweatingEl.innerHTML = `<div class="sweating-empty">No live games right now</div>`;
+    } else {
+      const deltas = getLiveProjectedDeltas();
+      const inTheMoney = [...deltas.entries()]
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1]);
+      const sweating = [...deltas.entries()].filter(([, v]) => v === 0);
+      sweatingEl.innerHTML = `
+        <div class="sweating-good">✅ ${inTheMoney.length} on track (top: ${
+          inTheMoney
+            .slice(0, 3)
+            .map(([u]) => escapeHtml(getUserDisplayName(u)))
+            .join(", ") || "—"
+        })</div>
+        <div class="sweating-bad">😬 ${sweating.length} sweating it out</div>
+      `;
+    }
+  }
+}
 function getCurrentActiveStage() {
   const fixtures = STATE.fixtures || [];
   if (!fixtures.length) return "group";
@@ -4765,7 +4990,6 @@ async function checkChampionPick() {
     `champion_pick_snooze_${SESSION.username}`,
   );
   if (snoozed && Date.now() < Number(snoozed)) return;
-
 
   try {
     const rows = await supabaseSelect(
