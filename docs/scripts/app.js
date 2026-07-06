@@ -233,21 +233,6 @@ const STADIUMS_BY_GROUND = {
     stadium: "BC Place",
     timeZone: "America/Vancouver",
   },
-  "Boston (Foxborough)": {
-    city: "Foxborough",
-    stadium: "Gillette Stadium",
-    timeZone: "America/New_York",
-  },
-  "Dallas (Arlington)": {
-    city: "Arlington",
-    stadium: "AT&T Stadium",
-    timeZone: "America/Chicago",
-  },
-  "Miami (Miami Gardens)": {
-    city: "Miami Gardens",
-    stadium: "Hard Rock Stadium",
-    timeZone: "America/New_York",
-  },
 };
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
@@ -859,10 +844,10 @@ function showView(id, btn) {
   nextView.classList.add("active");
   nextView.classList.remove("animating-in");
 
-  // Restart animation
-  void nextView.offsetWidth;
-
-  nextView.classList.add("animating-in");
+  // Restart animation without forcing a synchronous layout
+  requestAnimationFrame(() => {
+    nextView.classList.add("animating-in");
+  });
 
   if (id === "home") renderHome();
   if (id === "results") renderResults();
@@ -997,7 +982,7 @@ function renderHome() {
   const matchCards = document.getElementById("home-today-games");
   const winBar = document.getElementById("home-win-bar");
   const count = document.getElementById("today-match-count");
-  if (!summary || !matchCards || !winBar || !count) return;
+  if (!summary || !matchCards || !winBar) return;
 
   const windowBuckets = getHomeWindowFixtures();
   const fixtures = [
@@ -1211,7 +1196,22 @@ function renderHome() {
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
     ? `
-    
+    <div class="header-match-widgets" id="header-match-widgets">
+            <div class="live-game-widget" id="live-game-widget" style="display:none">
+              <span class="live-dot"></span>
+              <span class="next-lock-team" id="live-team1"></span>
+              <span class="live-score" id="live-score">0-0</span>
+              <span class="next-lock-team" id="live-team2"></span>
+              <span class="live-status" id="live-status">LIVE</span>
+            </div>
+            <div class="next-lock-widget" id="next-lock-widget" style="display:none">
+              <span class="next-lock-label">Next lock</span>
+              <span class="next-lock-team" id="next-lock-team1"></span>
+              <span class="next-lock-vs">vs</span>
+              <span class="next-lock-team" id="next-lock-team2"></span>
+              <span class="next-lock-timer" id="next-lock-timer">--:--:--</span>
+            </div>
+          </div>
   `
     : `<div class="empty-state compact"><p>No results scored in this window yet.</p></div>`;
 }
@@ -1890,7 +1890,7 @@ async function savePrediction(matchId, pred1, pred2, penWinner = null) {
 
     const savedTeam1 = resolveSlot(fixture.team1) || fixture.team1;
     const savedTeam2 = resolveSlot(fixture.team2) || fixture.team2;
-    showToast(`Saved: ${savedTeam1} ${score1}–${score2} ${fixture.team2}`);
+    showToast(`Saved: ${savedTeam1} ${score1}–${score2} ${savedTeam2}`);
   } catch (error) {
     console.error("Save failed:", error);
     showToast("Save failed – please try again.", "error");
@@ -2023,18 +2023,12 @@ function renderPredictions() {
 
 function renderPredictionCard(match, idx) {
   // Resolve slot codes (W74, W77 etc) to real team names if results exist
-  const team1raw = isBracketReference(match.team1)
-    ? resolveSlot(match.team1)
+  const team1 = isBracketReference(match.team1)
+    ? resolveSlot(match.team1) || match.team1
     : match.team1;
-  const team2raw = isBracketReference(match.team2)
-    ? resolveSlot(match.team2)
+  const team2 = isBracketReference(match.team2)
+    ? resolveSlot(match.team2) || match.team2
     : match.team2;
-  const team1Tbd =
-    !team1raw || (team1raw === match.team1 && isBracketReference(match.team1));
-  const team2Tbd =
-    !team2raw || (team2raw === match.team2 && isBracketReference(match.team2));
-  const team1 = team1Tbd ? "TBD" : team1raw;
-  const team2 = team2Tbd ? "TBD" : team2raw;
   match = { ...match, team1, team2 };
 
   const pred = STATE.predictions[match.matchId] || {};
@@ -2136,8 +2130,8 @@ function renderPredictionCard(match, idx) {
       </div>
 
       <div class="mc-body">
-        <div class="mc-team${team1Tbd ? " is-tbd" : ""}">
-          <div class="team-mark">${team1Tbd ? "" : getFlagImg(match.team1)}</div>
+        <div class="mc-team">
+          <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
       ${
         hasRes
@@ -2155,8 +2149,8 @@ function renderPredictionCard(match, idx) {
           ${resultScoreHtml}
         </div>
 
-        <div class="mc-team${team2Tbd ? " is-tbd" : ""}">
-          <div class="team-mark">${team2Tbd ? "" : getFlagImg(match.team2)}</div>
+        <div class="mc-team">
+          <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
         ${
           hasRes
@@ -4747,13 +4741,20 @@ function getTeamsForChampionPick(targetStage) {
   }
   return result.sort();
 }
+
 async function checkChampionPick() {
   if (!SESSION.username) return;
 
   showVoteHeaderButton();
 
   const info = getChampionPickStageAndPoints();
-  if (info.isClosed) return;
+  if (info.isClosed) return; // past SF start — window closed
+  const snoozed = localStorage.getItem(
+    `champion_pick_snooze_${SESSION.username}`,
+  );
+  if (snoozed && Date.now() < Number(snoozed)) return;
+
+  if (localStorage.getItem(`champion_pick_doned_${SESSION.username}`)) return;
 
   try {
     const rows = await supabaseSelect(
@@ -4761,8 +4762,12 @@ async function checkChampionPick() {
       "username",
       `username=eq.${encodeURIComponent(SESSION.username)}`,
     );
-    if (rows && rows.length > 0) return; // user is there — don't show
-    await openChampionPickModal(); // not there — show it
+    if (rows && rows.length > 0) {
+      localStorage.setItem(`champion_pick_doned_${SESSION.username}`, "1");
+      return;
+    }
+    // Not picked yet — show popup
+    await openChampionPickModal();
   } catch (e) {
     console.warn("champion pick check failed", e);
   }
@@ -5008,7 +5013,7 @@ function skipChampionPick() {
   document.getElementById("champion-pick-modal").classList.add("hidden");
 }
 
-function showChampionPickHeaderButton() {
+function showVoteHeaderButton() {
   const btn = document.getElementById("vote-nav-btn");
   if (btn) btn.style.display = "";
 }
@@ -5016,6 +5021,9 @@ function showChampionPickHeaderButton() {
 async function openVoteModal() {
   await openChampionPickModal();
 }
+let nextLockFixtureId = null;
+let liveFixtureId = null;
+
 function getNextLockingFixture() {
   const now = Date.now();
   return (STATE.fixtures || [])
