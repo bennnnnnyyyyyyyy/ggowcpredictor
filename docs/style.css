@@ -5315,7 +5315,7 @@ main {
 
   .bracket-slot {
     display: block !important;
-    width: 100% !important;
+    width: 70% !important;
   }
 
   .bracket-slot-inner {
@@ -7503,6 +7503,7 @@ body {
   color: #ff184c;
   text-shadow: 0 0 10px #ff184c;
 }
+
 .champion-vote-options {
   display: block;
   margin-bottom: 24px;
@@ -7523,9 +7524,11 @@ body {
 .champion-team-grid::-webkit-scrollbar {
   width: 5px;
 }
+
 .champion-team-grid::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .champion-team-grid::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.18);
   border-radius: 4px;
@@ -7574,6 +7577,7 @@ body {
       0 0 0 1px rgba(245, 197, 24, 0.6),
       0 0 16px rgba(245, 197, 24, 0.3);
   }
+
   50% {
     box-shadow:
       0 0 0 2px rgba(245, 197, 24, 0.9),

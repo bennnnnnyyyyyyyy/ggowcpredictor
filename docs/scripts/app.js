@@ -233,6 +233,21 @@ const STADIUMS_BY_GROUND = {
     stadium: "BC Place",
     timeZone: "America/Vancouver",
   },
+  "Boston (Foxborough)": {
+    city: "Foxborough",
+    stadium: "Gillette Stadium",
+    timeZone: "America/New_York",
+  },
+  "Dallas (Arlington)": {
+    city: "Arlington",
+    stadium: "AT&T Stadium",
+    timeZone: "America/Chicago",
+  },
+  "Miami (Miami Gardens)": {
+    city: "Miami Gardens",
+    stadium: "Hard Rock Stadium",
+    timeZone: "America/New_York",
+  },
 };
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
@@ -1196,22 +1211,7 @@ function renderHome() {
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
     ? `
-    <div class="header-match-widgets" id="header-match-widgets">
-            <div class="live-game-widget" id="live-game-widget" style="display:none">
-              <span class="live-dot"></span>
-              <span class="next-lock-team" id="live-team1"></span>
-              <span class="live-score" id="live-score">0-0</span>
-              <span class="next-lock-team" id="live-team2"></span>
-              <span class="live-status" id="live-status">LIVE</span>
-            </div>
-            <div class="next-lock-widget" id="next-lock-widget" style="display:none">
-              <span class="next-lock-label">Next lock</span>
-              <span class="next-lock-team" id="next-lock-team1"></span>
-              <span class="next-lock-vs">vs</span>
-              <span class="next-lock-team" id="next-lock-team2"></span>
-              <span class="next-lock-timer" id="next-lock-timer">--:--:--</span>
-            </div>
-          </div>
+    
   `
     : `<div class="empty-state compact"><p>No results scored in this window yet.</p></div>`;
 }
@@ -2023,12 +2023,18 @@ function renderPredictions() {
 
 function renderPredictionCard(match, idx) {
   // Resolve slot codes (W74, W77 etc) to real team names if results exist
-  const team1 = isBracketReference(match.team1)
-    ? resolveSlot(match.team1) || match.team1
+  const team1raw = isBracketReference(match.team1)
+    ? resolveSlot(match.team1)
     : match.team1;
-  const team2 = isBracketReference(match.team2)
-    ? resolveSlot(match.team2) || match.team2
+  const team2raw = isBracketReference(match.team2)
+    ? resolveSlot(match.team2)
     : match.team2;
+  const team1Tbd =
+    !team1raw || (team1raw === match.team1 && isBracketReference(match.team1));
+  const team2Tbd =
+    !team2raw || (team2raw === match.team2 && isBracketReference(match.team2));
+  const team1 = team1Tbd ? "TBD" : team1raw;
+  const team2 = team2Tbd ? "TBD" : team2raw;
   match = { ...match, team1, team2 };
 
   const pred = STATE.predictions[match.matchId] || {};
@@ -2130,8 +2136,8 @@ function renderPredictionCard(match, idx) {
       </div>
 
       <div class="mc-body">
-        <div class="mc-team">
-          <div class="team-mark">${getFlagImg(match.team1)}</div>
+        <div class="mc-team${team1Tbd ? " is-tbd" : ""}">
+          <div class="team-mark">${team1Tbd ? "" : getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
       ${
         hasRes
@@ -2149,8 +2155,8 @@ function renderPredictionCard(match, idx) {
           ${resultScoreHtml}
         </div>
 
-        <div class="mc-team">
-          <div class="team-mark">${getFlagImg(match.team2)}</div>
+        <div class="mc-team${team2Tbd ? " is-tbd" : ""}">
+          <div class="team-mark">${team2Tbd ? "" : getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
         ${
           hasRes
@@ -5002,7 +5008,7 @@ function skipChampionPick() {
   document.getElementById("champion-pick-modal").classList.add("hidden");
 }
 
-function showVoteHeaderButton() {
+function showChampionPickHeaderButton() {
   const btn = document.getElementById("vote-nav-btn");
   if (btn) btn.style.display = "";
 }
@@ -5010,9 +5016,6 @@ function showVoteHeaderButton() {
 async function openVoteModal() {
   await openChampionPickModal();
 }
-let nextLockFixtureId = null;
-let liveFixtureId = null;
-
 function getNextLockingFixture() {
   const now = Date.now();
   return (STATE.fixtures || [])
