@@ -1,0 +1,359 @@
+{
+    "success": true,
+    "matched": 98,
+    "updated": 93,
+    "apiFixtureIdsUpdated": 0,
+    "leaderboard": [{
+        "username": "norman.clarke",
+        "displayName": "Norman Clarke",
+        "totalPoints": 737,
+        "exactScores": 12,
+        "correctOutcomes": 61,
+        "predicted": 88,
+        "scored": 88,
+        "rank": 1
+    }, {
+        "username": "jason.foster",
+        "displayName": "Jason Foster",
+        "totalPoints": 695,
+        "exactScores": 13,
+        "correctOutcomes": 52,
+        "predicted": 87,
+        "scored": 86,
+        "rank": 2
+    }, {
+        "username": "russ.dami",
+        "displayName": "Russ Dami",
+        "totalPoints": 657,
+        "exactScores": 11,
+        "correctOutcomes": 51,
+        "predicted": 73,
+        "scored": 70,
+        "rank": 3
+    }, {
+        "username": "william.white",
+        "displayName": "William White",
+        "totalPoints": 654,
+        "exactScores": 11,
+        "correctOutcomes": 59,
+        "predicted": 95,
+        "scored": 90,
+        "rank": 4
+    }, {
+        "username": "caroline.richards",
+        "displayName": "Caroline Richards",
+        "totalPoints": 651,
+        "exactScores": 8,
+        "correctOutcomes": 56,
+        "predicted": 78,
+        "scored": 77,
+        "rank": 5
+    }, {
+        "username": "frank.clarkson",
+        "displayName": "Frank Clarkson",
+        "totalPoints": 636,
+        "exactScores": 11,
+        "correctOutcomes": 54,
+        "predicted": 92,
+        "scored": 88,
+        "rank": 6
+    }, {
+        "username": "bruce.logan",
+        "displayName": "Bruce Logan",
+        "totalPoints": 629,
+        "exactScores": 10,
+        "correctOutcomes": 56,
+        "predicted": 96,
+        "scored": 91,
+        "rank": 7
+    }, {
+        "username": "mike.woods",
+        "displayName": "Mike Woods",
+        "totalPoints": 614,
+        "exactScores": 9,
+        "correctOutcomes": 55,
+        "predicted": 91,
+        "scored": 90,
+        "rank": 8
+    }, {
+        "username": "ray.parker",
+        "displayName": "Ray Parker",
+        "totalPoints": 610,
+        "exactScores": 6,
+        "correctOutcomes": 59,
+        "predicted": 93,
+        "scored": 91,
+        "rank": 9
+    }, {
+        "username": "eva.christian",
+        "displayName": "Eva Christian",
+        "totalPoints": 603,
+        "exactScores": 8,
+        "correctOutcomes": 51,
+        "predicted": 73,
+        "scored": 69,
+        "rank": 10
+    }, {
+        "username": "rickk.nelson",
+        "displayName": "Rick Nelson",
+        "totalPoints": 592,
+        "exactScores": 11,
+        "correctOutcomes": 49,
+        "predicted": 82,
+        "scored": 77,
+        "rank": 11
+    }, {
+        "username": "ben_arthur",
+        "displayName": "Ben Arthur",
+        "totalPoints": 562,
+        "exactScores": 6,
+        "correctOutcomes": 54,
+        "predicted": 94,
+        "scored": 91,
+        "rank": 12
+    }, {
+        "username": "ben.camel",
+        "displayName": "Ben Kamel",
+        "totalPoints": 558,
+        "exactScores": 7,
+        "correctOutcomes": 52,
+        "predicted": 80,
+        "scored": 79,
+        "rank": 13
+    }, {
+        "username": "roben.neves",
+        "displayName": "Roben Neves",
+        "totalPoints": 553,
+        "exactScores": 10,
+        "correctOutcomes": 44,
+        "predicted": 77,
+        "scored": 72,
+        "rank": 14
+    }, {
+        "username": "john.williams",
+        "displayName": "John Williams",
+        "totalPoints": 552,
+        "exactScores": 7,
+        "correctOutcomes": 50,
+        "predicted": 74,
+        "scored": 72,
+        "rank": 15
+    }, {
+        "username": "thomas.smith",
+        "displayName": "Thomas Smith",
+        "totalPoints": 545,
+        "exactScores": 7,
+        "correctOutcomes": 51,
+        "predicted": 87,
+        "scored": 83,
+        "rank": 16
+    }, {
+        "username": "chris.johnson",
+        "displayName": "Chris Johnson",
+        "totalPoints": 534,
+        "exactScores": 4,
+        "correctOutcomes": 55,
+        "predicted": 89,
+        "scored": 88,
+        "rank": 17
+    }, {
+        "username": "jimmy",
+        "displayName": "Jimmy",
+        "totalPoints": 489,
+        "exactScores": 4,
+        "correctOutcomes": 51,
+        "predicted": 85,
+        "scored": 80,
+        "rank": 18
+    }, {
+        "username": "jasmine.green",
+        "displayName": "Jasmine Green",
+        "totalPoints": 475,
+        "exactScores": 4,
+        "correctOutcomes": 42,
+        "predicted": 70,
+        "scored": 65,
+        "rank": 19
+    }, {
+        "username": "joseph.brown",
+        "displayName": "Joseph Brown",
+        "totalPoints": 469,
+        "exactScores": 3,
+        "correctOutcomes": 44,
+        "predicted": 74,
+        "scored": 71,
+        "rank": 20
+    }, {
+        "username": "nora.atkins",
+        "displayName": "Nora Atkins",
+        "totalPoints": 460,
+        "exactScores": 6,
+        "correctOutcomes": 38,
+        "predicted": 69,
+        "scored": 64,
+        "rank": 21
+    }, {
+        "username": "alex.woods",
+        "displayName": "Alex Woods",
+        "totalPoints": 450,
+        "exactScores": 3,
+        "correctOutcomes": 45,
+        "predicted": 77,
+        "scored": 75,
+        "rank": 22
+    }, {
+        "username": "jane",
+        "displayName": "Jane",
+        "totalPoints": 392,
+        "exactScores": 5,
+        "correctOutcomes": 33,
+        "predicted": 58,
+        "scored": 55,
+        "rank": 23
+    }, {
+        "username": "jeremy.welson",
+        "displayName": "Jeremy Wilson",
+        "totalPoints": 388,
+        "exactScores": 7,
+        "correctOutcomes": 32,
+        "predicted": 46,
+        "scored": 46,
+        "rank": 24
+    }, {
+        "username": "cobe.jones",
+        "displayName": "Coby Jones",
+        "totalPoints": 317,
+        "exactScores": 8,
+        "correctOutcomes": 36,
+        "predicted": 56,
+        "scored": 56,
+        "rank": 25
+    }, {
+        "username": "selene",
+        "displayName": "Selene",
+        "totalPoints": 240,
+        "exactScores": 1,
+        "correctOutcomes": 23,
+        "predicted": 64,
+        "scored": 64,
+        "rank": 26
+    }, {
+        "username": "ian.strange",
+        "displayName": "Ian Strange",
+        "totalPoints": 229,
+        "exactScores": 3,
+        "correctOutcomes": 31,
+        "predicted": 58,
+        "scored": 58,
+        "rank": 27
+    }, {
+        "username": "grant.holden",
+        "displayName": "Grant Holden",
+        "totalPoints": 196,
+        "exactScores": 3,
+        "correctOutcomes": 15,
+        "predicted": 23,
+        "scored": 23,
+        "rank": 28
+    }, {
+        "username": "peter.smith",
+        "displayName": "Peter Smith",
+        "totalPoints": 192,
+        "exactScores": 3,
+        "correctOutcomes": 24,
+        "predicted": 40,
+        "scored": 40,
+        "rank": 29
+    }, {
+        "username": "hope.smith",
+        "displayName": "Hope Smith",
+        "totalPoints": 144,
+        "exactScores": 1,
+        "correctOutcomes": 19,
+        "predicted": 40,
+        "scored": 40,
+        "rank": 30
+    }, {
+        "username": "adam.white",
+        "displayName": "Adam White",
+        "totalPoints": 140,
+        "exactScores": 1,
+        "correctOutcomes": 9,
+        "predicted": 12,
+        "scored": 12,
+        "rank": 31
+    }, {
+        "username": "marcy.miller",
+        "displayName": "Marcy Miller",
+        "totalPoints": 128,
+        "exactScores": 1,
+        "correctOutcomes": 16,
+        "predicted": 38,
+        "scored": 38,
+        "rank": 32
+    }, {
+        "username": "andrew.cooper",
+        "displayName": "Andrew Cooper",
+        "totalPoints": 92,
+        "exactScores": 1,
+        "correctOutcomes": 11,
+        "predicted": 18,
+        "scored": 18,
+        "rank": 33
+    }, {
+        "username": "oscar.kamel",
+        "displayName": "Oscar Kamel",
+        "totalPoints": 73,
+        "exactScores": 1,
+        "correctOutcomes": 9,
+        "predicted": 15,
+        "scored": 15,
+        "rank": 34
+    }, {
+        "username": "iris.brown",
+        "displayName": "Iris Brown",
+        "totalPoints": 72,
+        "exactScores": 1,
+        "correctOutcomes": 4,
+        "predicted": 5,
+        "scored": 5,
+        "rank": 35
+    }, {
+        "username": "laura.miller",
+        "displayName": "Laura Miller",
+        "totalPoints": 64,
+        "exactScores": 2,
+        "correctOutcomes": 7,
+        "predicted": 14,
+        "scored": 14,
+        "rank": 36
+    }, {
+        "username": "mia.cooper",
+        "displayName": "Mia Cooper",
+        "totalPoints": 46,
+        "exactScores": 1,
+        "correctOutcomes": 2,
+        "predicted": 2,
+        "scored": 2,
+        "rank": 37
+    }, {
+        "username": "jessie.moore",
+        "displayName": "Jessie Moore",
+        "totalPoints": 26,
+        "exactScores": 0,
+        "correctOutcomes": 2,
+        "predicted": 6,
+        "scored": 6,
+        "rank": 38
+    }, {
+        "username": "stewart.martin.wiz",
+        "displayName": "Stewart Martin",
+        "totalPoints": 24,
+        "exactScores": 0,
+        "correctOutcomes": 1,
+        "predicted": 6,
+        "scored": 1,
+        "rank": 39
+    }],
+    "mode": "manual-sync-scores"
+}
