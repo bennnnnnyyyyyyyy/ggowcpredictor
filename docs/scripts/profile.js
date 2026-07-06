@@ -168,8 +168,8 @@ async function fetchProfileFromSupabase(username) {
         "*",
         `username=eq.${encodeURIComponent(username)}`,
       ),
-      sbSelect("fixtures", "*"),
-      sbSelect("results", "*"),
+      sbSelect("fixtures", "matchId,team1,team2,group,round,date,time,stage"),
+      sbSelect("results", "matchId,score1,score2,status,penalty_winner"),
       sbSelect("group_standings", "*"),
     ]);
 
@@ -767,9 +767,8 @@ function renderProfile(data) {
     </div>
 
     <!-- Accuracy bar -->
-    ${
-      scored > 0
-        ? `
+    ${scored > 0
+      ? `
     <div class="accuracy-bar-wrap" style="margin-bottom:28px">
       <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Scoring accuracy</span>
       <div class="accuracy-bar-track">
@@ -777,7 +776,7 @@ function renderProfile(data) {
       </div>
       <span class="accuracy-label">${accuracy}%</span>
     </div>`
-        : ""
+      : ""
     }
 
     

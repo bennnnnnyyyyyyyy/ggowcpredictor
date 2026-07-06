@@ -44,12 +44,7 @@
 
 
 <body>
-  <!-- Firebase SDK (CDN) -->
-  <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
-  <!-- ════════════════════════════════════════
-       LOGIN SCREEN
-  ════════════════════════════════════════ -->
+  <!-- ═════════════ LOGIN SCREEN ══════════ -->
   <div id="login-screen">
     <div class="login-card">
       <div class="login-logo">
@@ -57,7 +52,8 @@
           <img class="resized-logo" src="assets/images/GGO-GREY.png" alt="GGO Logo" />
         </span>
         <h2>
-          <strong style="font-size: 20px;"></strong> World Cup <strong style="color: var(--wc-gold);"> Predictor</strong>
+          <strong style="font-size: 20px;"></strong> World Cup <strong style="color: var(--wc-gold);">
+            Predictor</strong>
         </h2>
       </div>
       <div class="login-divider"></div>
@@ -123,7 +119,7 @@
           <img src="  assets/images/fifa-world-cup-2026-logo-white.png" alt="FIFA World Cup 2026"
             class="header-logo wc-logo" />
           <div class="logo-text">
-            <h1>GGO <span style="color: var(--wc-gold)">WC </span> 2026 
+            <h1>GGO <span style="color: var(--wc-gold)">WC </span> 2026
             </h1>
             <p>Prediction Game</p>
           </div>
@@ -1021,17 +1017,18 @@
     </div>
   </aside>
   <!-- Champion Predictor Modal -->
-  <div id="champion-pick-modal" class="vote-modal hidden" role="dialog" aria-modal="true" aria-labelledby="champion-modal-title">
+  <div id="champion-pick-modal" class="vote-modal hidden" role="dialog" aria-modal="true"
+    aria-labelledby="champion-modal-title">
     <div class="vote-card">
       <div class="vote-modal-icon">🏆</div>
       <h2 id="champion-modal-title">World Champion Pick</h2>
       <p class="vote-modal-desc" id="champion-modal-desc">
         Who will win the <strong>2026 World Cup</strong>?<br>
-         Locks at 10:00 PM, Monday Jul 6th, then scoring a winner only awards 100<br><small></small>
+        Locks at 10:00 PM, Monday Jul 6th, then scoring a winner only awards 100<br><small></small>
 
         <span id="champion-points-badge" class="champion-points-badge"></span>
         <span id="champion-countdown" class="champion-countdown"></span>
-        <p id="champion-pick-error" class="champion-pick-error"></p>
+      <p id="champion-pick-error" class="champion-pick-error"></p>
       </p>
       <div class="champion-vote-options" id="champion-vote-options">
         <div id="champion-team-grid" class="champion-team-grid"></div>
