@@ -2956,7 +2956,14 @@ function renderBracket() {
   syncBracketLayoutMode();
 
   const wrapper = bracket.querySelector(".bracket-scroll-wrapper");
-  if (wrapper) wrapper.scrollLeft = 0;
+  if (wrapper) {
+    const rounds = bracket.querySelectorAll(".bracket-round");
+    let targetRound = null;
+    rounds.forEach((r) => {
+      if (r.querySelector(".bracket-match.final, .bracket-match.live")) targetRound = r;
+    });
+    wrapper.scrollLeft = targetRound ? Math.max(0, targetRound.offsetLeft - 20) : 0;
+  }
 }
 function renderBracketTabs() {
   const tabsEl = document.getElementById("bracket-tabs");

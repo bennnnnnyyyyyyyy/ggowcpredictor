@@ -4987,8 +4987,8 @@ main {
 }
 
 .vertical-bracket .bracket-layout {
-  grid-template-columns: max-content 240px max-content;
-  min-width: 1700px;
+  grid-template-columns: max-content 200px max-content;
+  min-width: 1400px;
 }
 
 .bracket-round {
