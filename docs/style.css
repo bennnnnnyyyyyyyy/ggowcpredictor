@@ -5251,7 +5251,7 @@ main {
 
   .bracket-slot {
     display: block !important;
-    width: 100% !important;
+    width: 70% !important;
   }
 
   .bracket-slot-inner {
@@ -7404,4 +7404,39 @@ body {
 
 .vote-skip-btn:hover {
   color: rgba(255, 255, 255, 0.6);
+}
+
+.vote-options.champion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 20px;
+}
+
+.champion-grid .vote-option-inner {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.champion-grid .vote-option-label {
+  font-size: 0.85rem;
+  color: #fff;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.mc-team.is-tbd {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  opacity: 0.6;
+}
+
+.mc-team.is-tbd .mc-name {
+  color: var(--muted, #8a94a6);
+  font-style: italic;
 }

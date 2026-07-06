@@ -233,6 +233,21 @@ const STADIUMS_BY_GROUND = {
     stadium: "BC Place",
     timeZone: "America/Vancouver",
   },
+  "Boston (Foxborough)": {
+    city: "Foxborough",
+    stadium: "Gillette Stadium",
+    timeZone: "America/New_York",
+  },
+  "Dallas (Arlington)": {
+    city: "Arlington",
+    stadium: "AT&T Stadium",
+    timeZone: "America/Chicago",
+  },
+  "Miami (Miami Gardens)": {
+    city: "Miami Gardens",
+    stadium: "Hard Rock Stadium",
+    timeZone: "America/New_York",
+  },
 };
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
@@ -261,7 +276,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   if (hasSession) {
     showApp();
-    checkR16Vote();
+    checkChampionPick();
   }
   window.setInterval(() => {
     if (document.hidden) return;
@@ -479,7 +494,7 @@ async function handleLogin(event) {
     localStorage.setItem("ggo_wc_admin", String(SESSION.isAdmin));
     errEl.classList.remove("show");
     showApp();
-    checkR16Vote();
+    checkChampionPick();
   } catch (error) {
     console.error("Login error:", error);
     showLoginError("Login failed. Check your connection and try again.");
@@ -1191,22 +1206,7 @@ function renderHome() {
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
   winBar.innerHTML = totalScored
     ? `
-    <div class="header-match-widgets" id="header-match-widgets">
-            <div class="live-game-widget" id="live-game-widget" style="display:none">
-              <span class="live-dot"></span>
-              <span class="next-lock-team" id="live-team1"></span>
-              <span class="live-score" id="live-score">0-0</span>
-              <span class="next-lock-team" id="live-team2"></span>
-              <span class="live-status" id="live-status">LIVE</span>
-            </div>
-            <div class="next-lock-widget" id="next-lock-widget" style="display:none">
-              <span class="next-lock-label">Next lock</span>
-              <span class="next-lock-team" id="next-lock-team1"></span>
-              <span class="next-lock-vs">vs</span>
-              <span class="next-lock-team" id="next-lock-team2"></span>
-              <span class="next-lock-timer" id="next-lock-timer">--:--:--</span>
-            </div>
-          </div>
+    
   `
     : `<div class="empty-state compact"><p>No results scored in this window yet.</p></div>`;
 }
@@ -2022,12 +2022,12 @@ function renderPredictions() {
 
 function renderPredictionCard(match, idx) {
   // Resolve slot codes (W74, W77 etc) to real team names if results exist
-  const team1 = isBracketReference(match.team1)
-    ? resolveSlot(match.team1) || match.team1
-    : match.team1;
-  const team2 = isBracketReference(match.team2)
-    ? resolveSlot(match.team2) || match.team2
-    : match.team2;
+  const team1raw = isBracketReference(match.team1) ? resolveSlot(match.team1) : match.team1;
+  const team2raw = isBracketReference(match.team2) ? resolveSlot(match.team2) : match.team2;
+  const team1Tbd = !team1raw || team1raw === match.team1 && isBracketReference(match.team1);
+  const team2Tbd = !team2raw || team2raw === match.team2 && isBracketReference(match.team2);
+  const team1 = team1Tbd ? "TBD" : team1raw;
+  const team2 = team2Tbd ? "TBD" : team2raw;
   match = { ...match, team1, team2 };
 
   const pred = STATE.predictions[match.matchId] || {};
@@ -2128,8 +2128,8 @@ function renderPredictionCard(match, idx) {
       </div>
 
       <div class="mc-body">
-        <div class="mc-team">
-          <div class="team-mark">${getFlagImg(match.team1)}</div>
+        <div class="mc-team${team1Tbd ? " is-tbd" : ""}">
+          <div class="team-mark">${team1Tbd ? "" : getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
       ${hasRes
       ? ``
@@ -2146,8 +2146,8 @@ function renderPredictionCard(match, idx) {
           ${resultScoreHtml}
         </div>
 
-        <div class="mc-team">
-          <div class="team-mark">${getFlagImg(match.team2)}</div>
+        <div class="mc-team${team2Tbd ? " is-tbd" : ""}">
+          <div class="team-mark">${team2Tbd ? "" : getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
         ${hasRes
       ? ``
@@ -4327,7 +4327,34 @@ const STAGE_MULTIPLIERS = {
   third: 4,
   final: 5,
 };
+const CHAMPION_PICK_STAGE_VALUE = { r16: 200, qf: 100, sf: 50 };
+const CHAMPION_PICK_SOURCE_STAGE = { r16: "r32", qf: "r16", sf: "qf" };
 
+function getChampionPickCandidates() {
+  const stage = getCurrentActiveStage();
+  const pointsValue = CHAMPION_PICK_STAGE_VALUE[stage];
+  if (!pointsValue) return null;
+
+  const sourceStage = CHAMPION_PICK_SOURCE_STAGE[stage];
+  const fixtures = (STATE.fixtures || []).filter(
+    (f) =>
+      (
+        f.stage || getStageFromRound(f.round || "") || ""
+      ).toLowerCase() === sourceStage,
+  );
+
+  const teams = [];
+  for (const f of fixtures) {
+    const result = STATE.results[f.matchId];
+    if (!result || !isFinalStatus(result.status)) continue;
+    const side = getBracketWinnerSide(result);
+    if (side === "team1") teams.push(resolveSlot(f.team1) || f.team1);
+    else if (side === "team2") teams.push(resolveSlot(f.team2) || f.team2);
+  }
+  if (!teams.length) return null;
+
+  return { stage, pointsValue, teams: [...new Set(teams)] };
+}
 function getCurrentActiveStage() {
   const fixtures = STATE.fixtures || [];
   if (!fixtures.length) return "group";
@@ -4705,140 +4732,192 @@ function getMatchGradient(home, away) {
     ${c2b}30 75%,
     ${c2}55 100%
   )`;
-}
-// ── R16 VOTE ──────────────────────────────────────────────────
+}// ── CHAMPION PICK ─────────────────────────────────────────────
+// One-time, unchangeable pick of the World Cup winner.
+// 16 teams left → 200 pts | 8 teams left → 100 pts | 4 teams left → 50 pts
 
-async function checkR16Vote() {
-  // Need logged in user
+async function checkChampionPick() {
   if (!SESSION.username) return;
 
-  // Always show header button
-  showVoteHeaderButton();
+  showChampionPickHeaderButton();
 
-  // Skip popup if snoozed
-  const snoozed = localStorage.getItem("r16vote_snooze");
+  const snoozed = localStorage.getItem("championpick_snooze");
   if (snoozed && Date.now() < Number(snoozed)) return;
+  if (localStorage.getItem("championpick_done")) return;
 
-  // Already confirmed locally
-  if (localStorage.getItem("r16vote_done")) return;
+  const candidates = getChampionPickCandidates();
+  if (!candidates) return;
 
   try {
     const rows = await supabaseSelect(
-      "r16_votes",
+      "champion_picks",
       "username",
       `username=eq.${encodeURIComponent(SESSION.username)}`,
     );
-
     if (rows && rows.length > 0) {
-      // Already voted
-      localStorage.setItem("r16vote_done", "1");
+      localStorage.setItem("championpick_done", "1");
       return;
     }
-
-    // Has NOT voted → show popup
-    document.getElementById("r16-vote-modal").classList.remove("hidden");
+    openChampionPickModal();
   } catch (e) {
-    console.warn("r16 vote check failed", e);
+    console.warn("champion pick check failed", e);
   }
 }
-async function submitR16Vote() {
-  const vote = document.querySelector('input[name="r16vote"]:checked');
-  if (!vote) return;
 
-  const btn = document.getElementById("vote-submit-btn");
+async function submitChampionPick() {
+  const picked = document.querySelector('input[name="championpick"]:checked');
+  if (!picked) return;
+
+  const candidates = getChampionPickCandidates();
+  if (!candidates) return;
+
+  const btn = document.getElementById("champion-pick-submit-btn");
   if (btn) btn.disabled = true;
 
   try {
     await supabaseUpsert(
-      "r16_votes",
-      [{ username: SESSION.username, vote: Number(vote.value) }],
+      "champion_picks",
+      [
+        {
+          username: SESSION.username,
+          team: picked.value,
+          stage: candidates.stage,
+          points_value: candidates.pointsValue,
+        },
+      ],
       "username",
     );
-    localStorage.setItem("r16vote_done", "1");
-    showVoteHeaderButton();
+    localStorage.setItem("championpick_done", "1");
+    showChampionPickHeaderButton();
   } catch (e) {
-    console.error("r16 vote submit failed", e);
+    console.error("champion pick submit failed", e);
     if (btn) btn.disabled = false;
     return;
   }
 
-  // Show live results
-  // Show live results
   try {
-    await loadR16Results();
-
-    // Hide the option picker and submit button after voting
-    document.querySelector(".vote-options").style.display = "none";
+    await loadChampionPickResults();
+    document.getElementById("champion-pick-options").style.display = "none";
     if (btn) btn.style.display = "none";
     document.querySelector(".vote-skip-btn").textContent = "Close";
     document.querySelector(".vote-skip-btn").onclick = () =>
       document.getElementById("r16-vote-modal").classList.add("hidden");
   } catch (e) {
-    console.warn("r16 results fetch failed", e);
+    console.warn("champion pick results fetch failed", e);
     document.getElementById("r16-vote-modal").classList.add("hidden");
   }
 }
 
-async function loadR16Results() {
-  const votes = await supabaseSelect("r16_votes", "vote");
-  const total = votes.length;
-  const v25 = votes.filter((v) => v.vote === 2.5).length;
-  const v3 = votes.filter((v) => v.vote === 3).length;
+async function loadChampionPickResults() {
+  const picks = await supabaseSelect("champion_picks", "team");
+  const total = picks.length;
+  const counts = {};
+  picks.forEach((p) => {
+    counts[p.team] = (counts[p.team] || 0) + 1;
+  });
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const pct = (n) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
-  document.getElementById("vote-bar-25").style.width = pct(v25) + "%";
-  document.getElementById("vote-bar-3").style.width = pct(v3) + "%";
-  document.getElementById("vote-pct-25").textContent = pct(v25) + "%";
-  document.getElementById("vote-pct-3").textContent = pct(v3) + "%";
-  document.getElementById("vote-total-text").textContent =
-    `${total} vote${total !== 1 ? "s" : ""} total`;
-  document.getElementById("vote-results").classList.remove("hidden");
+  const container = document.getElementById("champion-pick-results");
+  container.innerHTML =
+    sorted
+      .map(
+        ([team, count]) => `
+      <div class="vote-bar-label">
+        <span>${escapeHtml(team)}</span><span>${pct(count)}%</span>
+      </div>
+      <div class="vote-bar-track">
+        <div class="vote-bar-fill" style="width:${pct(count)}%; background:${getTeamColor(team)}"></div>
+      </div>
+    `,
+      )
+      .join("") +
+    `<p class="vote-total">${total} pick${total !== 1 ? "s" : ""} total</p>`;
+
+  container.classList.remove("hidden");
 }
 
-function skipR16Vote() {
-  localStorage.setItem("r16vote_snooze", Date.now() + 24 * 60 * 60 * 1000);
-
-  showVoteHeaderButton();
-
+function skipChampionPick() {
+  localStorage.setItem(
+    "championpick_snooze",
+    Date.now() + 24 * 60 * 60 * 1000,
+  );
+  showChampionPickHeaderButton();
   document.getElementById("r16-vote-modal").classList.add("hidden");
 }
 
-function showVoteHeaderButton() {
+function showChampionPickHeaderButton() {
   const btn = document.getElementById("vote-nav-btn");
   if (btn) btn.style.display = "";
 }
-async function openVoteModal() {
+
+function renderChampionPickOptions(candidates) {
+  const container = document.getElementById("champion-pick-options");
+  container.innerHTML = candidates.teams
+    .sort((a, b) => a.localeCompare(b))
+    .map(
+      (team, i) => `
+      <label class="vote-option" id="champion-pick-label-${i}">
+        <input type="radio" name="championpick" value="${escapeHtml(team)}" id="champion-pick-${i}">
+        <span class="vote-option-inner">
+          ${getFlagImg(team)}
+          <span class="vote-option-label">${escapeHtml(team)}</span>
+        </span>
+      </label>
+    `,
+    )
+    .join("");
+}
+
+async function openChampionPickModal() {
   const modal = document.getElementById("r16-vote-modal");
+  const candidates = getChampionPickCandidates();
+
+  if (!candidates) {
+    document.getElementById("champion-pick-options").innerHTML = "";
+    document.getElementById("champion-pick-results").classList.add("hidden");
+    document.getElementById("champion-pick-desc").textContent =
+      "Champion picks open once the Round of 16 field is set.";
+    document.getElementById("champion-pick-submit-btn").style.display = "none";
+    document.querySelector(".vote-skip-btn").textContent = "Close";
+    document.querySelector(".vote-skip-btn").onclick = () =>
+      modal.classList.add("hidden");
+    modal.classList.remove("hidden");
+    return;
+  }
+
   const rows = await supabaseSelect(
-    "r16_votes",
-    "username",
+    "champion_picks",
+    "team",
     `username=eq.${encodeURIComponent(SESSION.username)}`,
   );
+  const picked = rows.length > 0;
 
-  const voted = rows.length > 0;
+  document.getElementById("champion-pick-desc").innerHTML =
+    `Pick the team you think will win the World Cup. <strong>${candidates.teams.length} teams</strong> remain — lock it in now for <strong>${candidates.pointsValue} points</strong>.<br><small>This pick is permanent and cannot be changed once submitted.</small>`;
 
-  if (voted) {
-    document.querySelector(".vote-options").style.display = "none";
-    document.getElementById("vote-submit-btn").style.display = "none";
+  if (picked) {
+    document.getElementById("champion-pick-options").style.display = "none";
+    document.getElementById("champion-pick-submit-btn").style.display = "none";
     document.querySelector(".vote-skip-btn").textContent = "Close";
     try {
-      await loadR16Results();
+      await loadChampionPickResults();
     } catch (e) {
-      console.warn("r16 results fetch failed", e);
-      document.getElementById("vote-results").classList.remove("hidden");
+      console.warn("champion pick results fetch failed", e);
     }
   } else {
-    document.querySelector(".vote-options").style.display = "";
-    document.getElementById("vote-submit-btn").style.display = "";
-    document.getElementById("vote-results").classList.add("hidden");
+    renderChampionPickOptions(candidates);
+    document.getElementById("champion-pick-options").style.display = "";
+    document.getElementById("champion-pick-submit-btn").style.display = "";
+    document.getElementById("champion-pick-submit-btn").disabled = false;
+    document.getElementById("champion-pick-results").classList.add("hidden");
     document.querySelector(".vote-skip-btn").textContent = "Remind Me Later";
+    document.querySelector(".vote-skip-btn").onclick = skipChampionPick;
   }
 
   modal.classList.remove("hidden");
 }
-let nextLockFixtureId = null;
-let liveFixtureId = null;
-
 function getNextLockingFixture() {
   const now = Date.now();
   return (STATE.fixtures || []).find(
