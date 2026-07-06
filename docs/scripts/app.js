@@ -1291,9 +1291,9 @@ async function requestSync() {
     admin: renderAdmin,
   };
   if (renderers[activeViewId]) {
-    await safeRender(activeViewId, renderers[activeViewId]);
+    await runStep(activeViewId, renderers[activeViewId]);
   } else {
-    await safeRender("Home", () => renderHome());
+    await runStep("Home", () => renderHome());
   }
   const hasAnyData =
     STATE.fixtures.length ||
