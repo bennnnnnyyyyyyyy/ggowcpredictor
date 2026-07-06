@@ -1269,24 +1269,17 @@ async function requestSync() {
       loadAllPredictions(),
       loadPredictions(),
       loadAccountRequests(),
-    ]); if (!STATE.fixtures.length) {
-      await runStep("Fixture fallback", () => loadFixtures());
-    }
-  await runStep("Results sync", () => loadResults());
-  await runStep("Leaderboard sync", () => loadLeaderboard());
-  await runStep("Group standings sync", () => loadGroupStandings());
-  await runStep("All predictions sync", () => loadAllPredictions());
-  await runStep("Prediction sync", () => loadPredictions());
-  await runStep("Account request sync", () => loadAccountRequests());
-
-  const safeRender = async (label, fn) => {
-    try {
-      await fn();
-    } catch (error) {
+    ]);
+  loaderResults.forEach((r, i) => {
+    if (r.status === "rejected") {
       hadError = true;
-      console.warn(`${label} render failed.`, error);
+      console.warn(`Loader ${i} failed:`, r.reason);
     }
-  };
+  });
+  if (!STATE.fixtures.length) {
+    try { await loadFixtures(); } catch (e) { hadError = true; console.warn("Fixture fallback failed.", e); }
+  }
+
   const activeViewId = document.querySelector(".view.active")?.id?.replace("view-", "");
   const renderers = {
     home: renderHome,
@@ -1500,14 +1493,21 @@ async function loadResults() {
     };
   }
 }
+
+// AFTER — delta-fetch: only pull rows newer than last sync:
 async function loadAllPredictions() {
   try {
     const PAGE = 1000;
-    let supabaseAll = [];
+    // On first load STATE.lastSync is null → full pull. After that → delta only.
+    const sinceFilter = STATE.lastSync
+      ? `&submittedAt=gt.${encodeURIComponent(STATE.lastSync.toISOString())}`
+      : "";
+
+    let newRows = [];
     let offset = 0;
     while (true) {
       const response = await fetch(
-        getSupabaseUrl("predictions", `select=*&order=submittedAt.asc`),
+        getSupabaseUrl("predictions", `select=*&order=submittedAt.asc${sinceFilter}`),
         {
           headers: supabaseHeaders({
             "Range-Unit": "items",
@@ -1517,17 +1517,17 @@ async function loadAllPredictions() {
       );
       const page = await response.json();
       if (!Array.isArray(page) || page.length === 0) break;
-      supabaseAll = supabaseAll.concat(page);
+      newRows = newRows.concat(page);
       if (page.length < PAGE) break;
       offset += PAGE;
     }
 
-    const merged = {};
-    supabaseAll.forEach((prediction) => {
+    // Start from existing cache; only replace keys that are newer
+    const merged = STATE.lastSync ? { ...STATE.allPredictions } : {};
+    newRows.forEach((prediction) => {
       const matchId = String(prediction.match_id ?? prediction.matchId);
       const id = String(prediction.id || "");
-      const key =
-        id || String(prediction.username || "unknown") + "_" + matchId;
+      const key = id || String(prediction.username || "unknown") + "_" + matchId;
       merged[key] = normalizePrediction({ ...prediction, id: key, matchId });
     });
 
@@ -1538,6 +1538,7 @@ async function loadAllPredictions() {
     STATE.allPredictions = readLocalObject("ggo_wc_predictions_all") || {};
   }
 }
+
 // Auto-relock check every 30 seconds
 setInterval(() => {
   if (document.hidden) return;
@@ -3124,8 +3125,9 @@ function renderBracketMatch(match) {
     "team2",
   );
 
+  const isSfPlus = ["sf", "final", "third"].includes(String(match.stage || "").toLowerCase());
   return `
-    <article class="bracket-match ${getBracketMatchStateClass(result)}">
+  <article class="bracket-match ${getBracketMatchStateClass(result)}${isSfPlus ? " sf-plus" : ""}">
       <div class="bracket-match-meta">
         <span class="bracket-match-kickoff">${escapeHtml(kickoff)}</span>
         <a class="bracket-match-venue" href="${venue.mapsUrl}" target="_blank" rel="noopener noreferrer">
