@@ -276,7 +276,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   if (hasSession) {
     showApp();
-    checkChampionPick();
   }
   window.setInterval(() => {
     if (document.hidden) return;
@@ -494,7 +493,6 @@ async function handleLogin(event) {
     localStorage.setItem("ggo_wc_admin", String(SESSION.isAdmin));
     errEl.classList.remove("show");
     showApp();
-    checkChampionPick();
   } catch (error) {
     console.error("Login error:", error);
     showLoginError("Login failed. Check your connection and try again.");
@@ -1054,6 +1052,8 @@ function renderHome() {
   function buildMatchCardHtml(fixture, idx) {
     {
       const matchPreds = groupedByMatch.get(String(fixture.matchId)) || [];
+      const homeTeam = resolveSlot(fixture.team1) || fixture.team1;
+      const awayTeam = resolveSlot(fixture.team2) || fixture.team2;
       const homeWins = matchPreds.filter((p) => p.pred1 > p.pred2).length;
       const draws = matchPreds.filter((p) => p.pred1 === p.pred2).length;
       const awayWins = matchPreds.filter((p) => p.pred2 > p.pred1).length;
@@ -1067,9 +1067,8 @@ function renderHome() {
       const scoreGroups = buildScoreGroups(matchPreds);
 
       // ─── NEW: LOOK UP COLORS HERE ───
-      const homeColor =
-        wcTeamColors[fixture.team1]?.primary || "var(--wc-blue)";
-      const awayColor = wcTeamColors[fixture.team2]?.primary || "var(--wc-red)";
+      const homeColor = wcTeamColors[homeTeam]?.primary || "var(--wc-blue)";
+      const awayColor = wcTeamColors[awayTeam]?.primary || "var(--wc-red)";
 
       const result = STATE.results?.[fixture.matchId];
       const isFinished =
@@ -1094,11 +1093,16 @@ function renderHome() {
       const popularHtml = scoreGroups.length
         ? scoreGroups
           .map((group, index) => {
+            const kickedOff =
+              fixture.kickoffDate instanceof Date &&
+              !Number.isNaN(fixture.kickoffDate.getTime()) &&
+              Date.now() >= fixture.kickoffDate.getTime();
             const hasStarted =
-              result &&
-              !["NS", "NOT_STARTED", "TBD"].includes(
-                String(result.status || "").toUpperCase(),
-              );
+              kickedOff ||
+              (result &&
+                !["NS", "NOT_STARTED", "TBD"].includes(
+                  String(result.status || "").toUpperCase(),
+                ));
 
             // Only highlight the exact score (15 pts)
             const scoreClass =
@@ -1150,7 +1154,7 @@ function renderHome() {
                   <span class="match-status-badge ${getMatchStatusInfo(fixture).cssClass}">${escapeHtml(getMatchStatusInfo(fixture).label)}</span>
                   ${fixture.group ? `<span class="match-group-label">${escapeHtml(fixture.group)}</span>` : ""}
                 </div>
-                  <h4>${getFlagImg(fixture.team1)} ${escapeHtml(fixture.team1 || "TBD")} ${finalScore ? `<span class="final-score-chip">${escapeHtml(finalScore)}</span>` : "<span>vs</span>"} ${escapeHtml(fixture.team2 || "TBD")} ${getFlagImg(fixture.team2)}</h4>
+                  <h4>${getFlagImg(homeTeam)} ${escapeHtml(homeTeam || "TBD")} ${finalScore ? `<span class="final-score-chip">${escapeHtml(finalScore)}</span>` : "<span>vs</span>"} ${escapeHtml(awayTeam || "TBD")} ${getFlagImg(awayTeam)}</h4>
                 </div>
                 <div class="pick-count"><strong>${matchPreds.length}</strong><span>picks</span></div>
               </div>
@@ -1162,9 +1166,9 @@ function renderHome() {
               </div>
 
               <div class="match-percent-labels">
-                <span><strong>${homePct}%</strong>${escapeHtml(fixture.team1 || "Home")}</span>
+                <span><strong>${homePct}%</strong>${escapeHtml(homeTeam || "Home")}</span>
                 <span><strong>${drawPct}%</strong>Draw</span>
-                <span><strong>${awayPct}%</strong>${escapeHtml(fixture.team2 || "Away")}</span>
+                <span><strong>${awayPct}%</strong>${escapeHtml(awayTeam || "Away")}</span>
               </div>
 
               <div
@@ -1309,6 +1313,7 @@ async function requestSync() {
 
   updateAdminBadge();
   if (syncBtn) syncBtn.classList.remove("loading");
+  checkChampionPick();
 }
 async function loadAccountRequests() {
   STATE.accountRequests = [];
@@ -1481,10 +1486,8 @@ async function loadResults() {
     };
   }
 }
-
 async function loadAllPredictions() {
   try {
-    const localAll = readLocalObject("ggo_wc_predictions_all") || {};
     const PAGE = 1000;
     let supabaseAll = [];
     let offset = 0;
@@ -1504,19 +1507,14 @@ async function loadAllPredictions() {
       if (page.length < PAGE) break;
       offset += PAGE;
     }
-    const merged = { ...localAll };
 
+    const merged = {};
     supabaseAll.forEach((prediction) => {
       const matchId = String(prediction.match_id ?? prediction.matchId);
       const id = String(prediction.id || "");
       const key =
         id || String(prediction.username || "unknown") + "_" + matchId;
-      const normalized = normalizePrediction({
-        ...prediction,
-        id: key,
-        matchId,
-      });
-      merged[key] = normalized;
+      merged[key] = normalizePrediction({ ...prediction, id: key, matchId });
     });
 
     STATE.allPredictions = merged;
@@ -2057,11 +2055,11 @@ function renderPredictionCard(match, idx) {
     const multiplierMap = {
       group: 1,
       r32: 2,
-      r16: 2.5,
-      qf: 3,
-      sf: 4,
-      third: 4,
-      final: 5,
+      r16: 3,
+      qf: 4,
+      sf: 5,
+      third: 5,
+      final: 6,
     };
     const mult =
       multiplierMap[String(match.stage || "group").toLowerCase()] ?? 1;
@@ -2789,57 +2787,63 @@ function renderBracket() {
   // Actual count: R32=32, R16=16, QF=8, SF=4, Final=1, Third=1 → total 62...
   // FIFA 2026 actual: R32=32, R16=16, QF=8, SF=4, Final+3rd=2 = 62 matches
   // We auto-detect by total count
-  const total = knockoutIds.length;
+  const stageOf = (id) =>
+    String(matchMap[String(id)]?.stage || "").toLowerCase();
 
-  let r32Ids = [],
-    r16Ids = [],
-    qfIds = [],
-    sfIds = [],
-    finalId = null,
-    thirdId = null;
+  const thirdMatchId = knockoutIds.find((id) => stageOf(id) === "third");
+  const finalMatchId = knockoutIds.find((id) => stageOf(id) === "final");
+  const thirdId = thirdMatchId !== undefined ? String(thirdMatchId) : null;
+  const finalId = finalMatchId !== undefined ? String(finalMatchId) : null;
 
-  if (total >= 62) {
-    // Full WC2026 bracket
-    r32Ids = knockoutIds.slice(0, 32);
-    r16Ids = knockoutIds.slice(32, 48);
-    qfIds = knockoutIds.slice(48, 56);
-    sfIds = knockoutIds.slice(56, 60);
-    thirdId = knockoutIds[60] !== undefined ? String(knockoutIds[60]) : null;
-    finalId = knockoutIds[61] !== undefined ? String(knockoutIds[61]) : null;
-  } else if (total >= 30) {
-    r32Ids = knockoutIds.slice(0, total - 18);
-    r16Ids = knockoutIds.slice(total - 18, total - 10);
-    qfIds = knockoutIds.slice(total - 10, total - 6);
-    sfIds = knockoutIds.slice(total - 6, total - 4);
-    thirdId =
-      knockoutIds[total - 4] !== undefined
-        ? String(knockoutIds[total - 4])
-        : null;
-    finalId =
-      knockoutIds[total - 1] !== undefined
-        ? String(knockoutIds[total - 1])
-        : null;
-  } else {
-    // Fallback: use original hardcoded IDs
-    r32Ids = [
-      74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87,
-    ].map(String);
-    r16Ids = [89, 90, 93, 94, 91, 92, 95, 96].map(String);
-    qfIds = [97, 98, 99, 100].map(String);
-    sfIds = [101, 102].map(String);
-    finalId = "104";
-    thirdId = "103";
-  }
+  // Build true left-to-right order by walking the feed tree from the Final
+  // backward, using each match's raw "Wxx"/"Lxx" team codes to find its two
+  // feeder matches. Post-order DFS puts each match right after both of its
+  // feeders are placed, which naturally groups feeder pairs adjacent to
+  // each other in every round.
+  const getFeederIds = (id) => {
+    const m = matchMap[String(id)];
+    if (!m) return [];
+    return [m.team1, m.team2]
+      .map((v) => {
+        const ref = String(v || "")
+          .trim()
+          .match(/^[WL](\d+)$/i);
+        return ref ? ref[1] : null;
+      })
+      .filter(Boolean);
+  };
 
-  // Split left/right halves
-  const r32Left = r32Ids.slice(0, r32Ids.length / 2).map(String);
-  const r32Right = r32Ids.slice(r32Ids.length / 2).map(String);
-  const r16Left = r16Ids.slice(0, r16Ids.length / 2).map(String);
-  const r16Right = r16Ids.slice(r16Ids.length / 2).map(String);
-  const qfLeft = qfIds.slice(0, qfIds.length / 2).map(String);
-  const qfRight = qfIds.slice(qfIds.length / 2).map(String);
-  const sfLeft = sfIds.slice(0, 1).map(String);
-  const sfRight = sfIds.slice(1).map(String);
+  const buckets = { r32: [], r16: [], qf: [] };
+  const sfOrdered = [];
+  const visited = new Set();
+
+  const visit = (id) => {
+    if (!id || visited.has(id)) return;
+    visited.add(id);
+    getFeederIds(id).forEach(visit);
+    const stage = stageOf(id);
+    if (stage === "sf") sfOrdered.push(id);
+    else if (buckets[stage]) buckets[stage].push(id);
+  };
+
+  if (finalId) visit(finalId);
+
+  // Safety net: if the tree walk didn't reach every match for a round
+  // (e.g. incomplete/legacy data), fall back to the old ascending sort
+  // for that round only, instead of silently dropping matches.
+  const allR32 = knockoutIds.filter((id) => stageOf(id) === "r32").map(String);
+  const allR16 = knockoutIds.filter((id) => stageOf(id) === "r16").map(String);
+  const allQf = knockoutIds.filter((id) => stageOf(id) === "qf").map(String);
+  const allSf = knockoutIds.filter((id) => stageOf(id) === "sf").map(String);
+
+  const r32Ids =
+    buckets.r32.length === allR32.length ? buckets.r32.map(String) : allR32;
+  const r16Ids =
+    buckets.r16.length === allR16.length ? buckets.r16.map(String) : allR16;
+  const qfIds =
+    buckets.qf.length === allQf.length ? buckets.qf.map(String) : allQf;
+  const sfIds =
+    sfOrdered.length === allSf.length ? sfOrdered.map(String) : allSf;
 
   // Grid row assignments (visual spacing)
   const R32_ROWS = [1, 3, 5, 7, 9, 11, 13, 15];
@@ -2847,56 +2851,8 @@ function renderBracket() {
   const QF_ROWS = [4, 12];
   const SF_ROWS = [8];
 
-  // ── Explicit bracket layout using confirmed Supabase matchIds ──
-  // Left side: odd R32s feed left half; Right side: even R32s feed right half.
-  const leftRounds = [
-    {
-      label: "Round of 32",
-      rows: [1, 3, 5, 7, 9, 11, 13, 15],
-      ids: ["73", "75", "77", "79", "81", "83", "85", "87"],
-    },
-    {
-      label: "Round of 16",
-      rows: [2, 6, 10, 14],
-      ids: ["90", "91", "93", "94"],
-    },
-    {
-      label: "Quarter-final",
-      rows: [4, 12],
-      ids: ["97", "98"],
-    },
-    {
-      label: "Semi-final",
-      rows: [8],
-      ids: ["101"],
-    },
-  ];
-
-  const rightRounds = [
-    {
-      label: "Semi-final",
-      rows: [8],
-      ids: ["102"],
-    },
-    {
-      label: "Quarter-final",
-      rows: [4, 12],
-      ids: ["99", "100"],
-    },
-    {
-      label: "Round of 16",
-      rows: [2, 6, 10, 14],
-      ids: ["89", "92", "95", "96"],
-    },
-    {
-      label: "Round of 32",
-      rows: [1, 3, 5, 7, 9, 11, 13, 15],
-      ids: ["74", "76", "78", "80", "82", "84", "86", "88"],
-    },
-  ];
-
-  const finalMatch = matchMap["104"] ?? null;
-  const thirdMatch = matchMap["103"] ?? null;
+  const finalMatch = finalId ? (matchMap[finalId] ?? null) : null;
+  const thirdMatch = thirdId ? (matchMap[thirdId] ?? null) : null;
 
   const rounds = [
     { label: "Round of 32", ids: r32Ids.map(String) },
@@ -3345,8 +3301,8 @@ function resolveSlot(code) {
     if (!letters.length) return trimmed;
     const candidates = [];
     letters.forEach((l) => {
-      const groupData =
-        STATE.groupStandings[l] || STATE.groupStandings[`Group ${l}`];
+      const gs = STATE.groupStandings || {};
+      const groupData = gs[l] || gs[`Group ${l}`];
       if (groupData) {
         const third = groupData.find((t) => t.position === 3);
         if (third) candidates.push(third);
@@ -4262,11 +4218,11 @@ function calculateMatchPoints(
   const multiplierMap = {
     group: 1,
     r32: 2,
-    r16: 2.5,
-    qf: 3,
-    sf: 4,
-    third: 4,
-    final: 5,
+    r16: 3,
+    qf: 4,
+    sf: 5,
+    third: 5,
+    final: 6,
   };
   const multiplier = multiplierMap[resultStage] ?? 1;
   const isKnockout = resultStage !== "group" && resultStage !== "";
@@ -4321,40 +4277,13 @@ const STAGE_LABELS = {
 const STAGE_MULTIPLIERS = {
   group: 1,
   r32: 2,
-  r16: 2.5,
-  qf: 3,
-  sf: 4,
-  third: 4,
-  final: 5,
+  r16: 3,
+  qf: 4,
+  sf: 5,
+  third: 5,
+  final: 6,
 };
-const CHAMPION_PICK_STAGE_VALUE = { r16: 200, qf: 100, sf: 50 };
-const CHAMPION_PICK_SOURCE_STAGE = { r16: "r32", qf: "r16", sf: "qf" };
 
-function getChampionPickCandidates() {
-  const stage = getCurrentActiveStage();
-  const pointsValue = CHAMPION_PICK_STAGE_VALUE[stage];
-  if (!pointsValue) return null;
-
-  const sourceStage = CHAMPION_PICK_SOURCE_STAGE[stage];
-  const fixtures = (STATE.fixtures || []).filter(
-    (f) =>
-      (
-        f.stage || getStageFromRound(f.round || "") || ""
-      ).toLowerCase() === sourceStage,
-  );
-
-  const teams = [];
-  for (const f of fixtures) {
-    const result = STATE.results[f.matchId];
-    if (!result || !isFinalStatus(result.status)) continue;
-    const side = getBracketWinnerSide(result);
-    if (side === "team1") teams.push(resolveSlot(f.team1) || f.team1);
-    else if (side === "team2") teams.push(resolveSlot(f.team2) || f.team2);
-  }
-  if (!teams.length) return null;
-
-  return { stage, pointsValue, teams: [...new Set(teams)] };
-}
 function getCurrentActiveStage() {
   const fixtures = STATE.fixtures || [];
   if (!fixtures.length) return "group";
@@ -4732,21 +4661,92 @@ function getMatchGradient(home, away) {
     ${c2b}30 75%,
     ${c2}55 100%
   )`;
-}// ── CHAMPION PICK ─────────────────────────────────────────────
-// One-time, unchangeable pick of the World Cup winner.
-// 16 teams left → 200 pts | 8 teams left → 100 pts | 4 teams left → 50 pts
+}
+// ── CHAMPION PREDICTOR ─────────────────────────────────────────
+
+function getChampionPickStageAndPoints() {
+  const now = Date.now();
+  const fixtures = STATE.fixtures || [];
+
+  // Hard lock for the 200-pt R16 window: kickoff of match 93
+  // (Spain vs Portugal) — Jul 6, 10:00 PM Cairo. Using the fixture's own
+  // kickoffDate instead of a raw timestamp so this stays correct if the
+  // match ever gets rescheduled. Falls back to a hardcoded UTC time only
+  // if match 93 isn't in STATE.fixtures for some reason.
+  const lockFixture = fixtures.find((f) => String(f.matchId) === "93");
+  const HARD_LOCK_FALLBACK = new Date("2026-07-06T19:00:00Z"); // = Jul 6, 10pm Cairo (UTC+3)
+  const qfStart = (lockFixture?.kickoffDate ?? HARD_LOCK_FALLBACK).getTime();
+
+  const firstSF = fixtures
+    .filter(
+      (f) => String(f.stage || "").toLowerCase() === "sf" && f.kickoffDate,
+    )
+    .sort((a, b) => a.kickoffDate - b.kickoffDate)[0];
+
+  const sfStart = firstSF?.kickoffDate?.getTime() ?? Infinity;
+
+  if (now < qfStart)
+    return {
+      stage: "r16",
+      label: "Round of 16",
+      points: 200,
+      isClosed: false,
+      cutoff: qfStart,
+    };
+  if (now < sfStart)
+    return {
+      stage: "qf",
+      label: "Quarter-final",
+      points: 100,
+      isClosed: false,
+      cutoff: sfStart,
+    };
+  return { isClosed: true };
+}
+
+function getTeamsForChampionPick(targetStage) {
+  const fixtures = STATE.fixtures || [];
+  const stageFixtures = fixtures.filter(
+    (f) => String(f.stage || "").toLowerCase() === targetStage,
+  );
+
+  const teams = new Set();
+  for (const f of stageFixtures) {
+    const t1 = resolveSlot(f.team1) || f.team1;
+    const t2 = resolveSlot(f.team2) || f.team2;
+    if (t1 && !isBracketReference(t1) && t1 !== "TBD") teams.add(t1);
+    if (t2 && !isBracketReference(t2) && t2 !== "TBD") teams.add(t2);
+  }
+
+  if (teams.size > 0) return [...teams].sort();
+
+  // Fallback: all 48 teams, de-duplicated by flag code (avoids alias duplicates)
+  const seen = new Set();
+  const result = [];
+  for (const [name, code] of Object.entries(TEAM_FLAG_CODES)) {
+    if (!seen.has(code)) {
+      seen.add(code);
+      // Use a canonical-looking name (title-case from the key)
+      result.push(name.replace(/\b\w/g, (c) => c.toUpperCase()));
+    }
+  }
+  return result.sort();
+}
 
 async function checkChampionPick() {
   if (!SESSION.username) return;
 
-  showChampionPickHeaderButton();
+  showVoteHeaderButton();
 
-  const snoozed = localStorage.getItem("championpick_snooze");
+  const info = getChampionPickStageAndPoints();
+  if (info.isClosed) return; // past SF start — window closed
+  const snoozed = localStorage.getItem(
+    `champion_pick_snooze_${SESSION.username}`,
+  );
   if (snoozed && Date.now() < Number(snoozed)) return;
   if (localStorage.getItem("championpick_done")) return;
 
-  const candidates = getChampionPickCandidates();
-  if (!candidates) return;
+  if (localStorage.getItem(`champion_pick_doned_${SESSION.username}`)) return;
 
   try {
     const rows = await supabaseSelect(
@@ -4755,23 +4755,167 @@ async function checkChampionPick() {
       `username=eq.${encodeURIComponent(SESSION.username)}`,
     );
     if (rows && rows.length > 0) {
-      localStorage.setItem("championpick_done", "1");
+      localStorage.setItem(`champion_pick_doned_${SESSION.username}`, "1");
       return;
     }
-    openChampionPickModal();
+    // Not picked yet — show popup
+    await openChampionPickModal();
   } catch (e) {
     console.warn("champion pick check failed", e);
   }
 }
 
+let championSelectedTeam = null;
+let championCountdownInterval = null;
+
+async function openChampionPickModal() {
+  const modal = document.getElementById("champion-pick-modal");
+  if (!modal) return;
+  try {
+    const info = getChampionPickStageAndPoints();
+
+    // Check if user already picked
+    let existingPick = null;
+    try {
+      const rows = await supabaseSelect(
+        "champion_picks",
+        "team,stage,points_value",
+        `username=eq.${encodeURIComponent(SESSION.username)}`,
+      );
+      if (rows && rows.length > 0) existingPick = rows[0];
+    } catch (e) {
+      console.warn("champion pick load failed", e);
+    }
+
+    const badge = document.getElementById("champion-points-badge");
+    const optionsDiv = document.getElementById("champion-vote-options");
+    const submitBtn = document.getElementById("champion-submit-btn");
+    const skipBtn = modal.querySelector(".vote-skip-btn");
+    const resultsDiv = document.getElementById("champion-pick-results");
+    const selectedLabel = document.getElementById("champion-selected-label");
+
+    championSelectedTeam = null;
+
+    if (existingPick) {
+      // Already picked — show results
+      if (badge)
+        badge.textContent = `Your pick: ${existingPick.team} · ${existingPick.points_value} pts if correct`;
+      if (optionsDiv) optionsDiv.style.display = "none";
+      if (submitBtn) submitBtn.style.display = "none";
+      if (skipBtn) {
+        skipBtn.textContent = "Close";
+        skipBtn.onclick = () => modal.classList.add("hidden");
+      }
+      await loadChampionPickResults(existingPick.team);
+    } else if (info.isClosed) {
+      // Window closed — show results only
+      if (badge) badge.textContent = "Prediction window closed";
+      if (optionsDiv) optionsDiv.style.display = "none";
+      if (submitBtn) submitBtn.style.display = "none";
+      if (skipBtn) {
+        skipBtn.textContent = "Close";
+        skipBtn.onclick = () => modal.classList.add("hidden");
+      }
+      await loadChampionPickResults(null);
+    } else {
+      // Open for picking
+      if (badge) badge.textContent = `+${info.points} pts if correct`;
+
+      if (championCountdownInterval) clearInterval(championCountdownInterval);
+      const countdownEl = document.getElementById("champion-countdown");
+      const updateCountdown = () => {
+        if (!countdownEl) return;
+        const diff = info.cutoff - Date.now();
+        if (diff <= 0) {
+          countdownEl.textContent = "Locking now...";
+          clearInterval(championCountdownInterval);
+          return;
+        }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        countdownEl.textContent = `⏳ Locks in ${d}d ${h}h ${m}m`;
+      };
+      updateCountdown();
+      championCountdownInterval = setInterval(updateCountdown, 60000);
+
+      const grid = document.getElementById("champion-team-grid");
+      if (grid) {
+        grid.innerHTML = "";
+        let teams = [];
+        try {
+          teams = getTeamsForChampionPick(info.stage);
+        } catch (e) {
+          console.warn("getTeamsForChampionPick failed, using full list", e);
+          teams = Object.keys(TEAM_FLAG_CODES).map((n) =>
+            n.replace(/\b\w/g, (c) => c.toUpperCase()),
+          );
+        }
+        for (const t of teams) {
+          try {
+            const card = document.createElement("div");
+            card.className = "champion-flag-card";
+            card.dataset.team = t;
+            const flagImg =
+              getFlagImg(t) ||
+              `<div class="flag-placeholder">${escapeHtml(t.slice(0, 3).toUpperCase())}</div>`;
+            card.innerHTML = `
+            ${flagImg}
+            <span class="flag-label">${escapeHtml(t)}</span>
+          `;
+            card.onclick = () => {
+              grid
+                .querySelectorAll(".champion-flag-card")
+                .forEach((c) => c.classList.remove("selected"));
+              card.classList.add("selected");
+              championSelectedTeam = t;
+              if (selectedLabel) {
+                selectedLabel.innerHTML = `Selected: <strong>${escapeHtml(t)}</strong>`;
+                selectedLabel.classList.remove("hidden");
+              }
+            };
+            grid.appendChild(card);
+          } catch (e) {
+            console.warn(`Failed to render team card for ${t}`, e);
+          }
+        }
+      }
+
+      if (selectedLabel) {
+        selectedLabel.classList.add("hidden");
+        selectedLabel.innerHTML = "";
+      }
+
+      if (optionsDiv) optionsDiv.style.display = "";
+      if (submitBtn) {
+        submitBtn.style.display = "";
+        submitBtn.disabled = false;
+      }
+      if (resultsDiv) resultsDiv.classList.add("hidden");
+      if (skipBtn) {
+        skipBtn.textContent = "Remind Me Later";
+        skipBtn.onclick = skipChampionPick;
+      }
+    }
+  } catch (e) {
+    console.warn("champion pick modal render failed", e);
+  } finally {
+    modal.classList.remove("hidden");
+  }
+}
+
 async function submitChampionPick() {
-  const picked = document.querySelector('input[name="championpick"]:checked');
-  if (!picked) return;
+  const team = championSelectedTeam;
+  if (!team) {
+    const errEl = document.getElementById("champion-pick-error");
+    if (errEl) errEl.textContent = "Pick a team first.";
+    return;
+  }
 
-  const candidates = getChampionPickCandidates();
-  if (!candidates) return;
+  const info = getChampionPickStageAndPoints();
+  if (info.isClosed) return;
 
-  const btn = document.getElementById("champion-pick-submit-btn");
+  const btn = document.getElementById("champion-submit-btn");
   if (btn) btn.disabled = true;
 
   try {
@@ -4780,71 +4924,85 @@ async function submitChampionPick() {
       [
         {
           username: SESSION.username,
-          team: picked.value,
-          stage: candidates.stage,
-          points_value: candidates.pointsValue,
+          team,
+          stage: info.stage,
+          points_value: info.points,
         },
       ],
       "username",
     );
-    localStorage.setItem("championpick_done", "1");
-    showChampionPickHeaderButton();
+    localStorage.setItem(`champion_pick_doned_${SESSION.username}`, "1");
   } catch (e) {
     console.error("champion pick submit failed", e);
     if (btn) btn.disabled = false;
     return;
   }
 
+  // Show results after submitting
+  const optionsDiv = document.getElementById("champion-vote-options");
+  if (optionsDiv) optionsDiv.style.display = "none";
+  if (btn) btn.style.display = "none";
+  const skipBtn = document.querySelector("#champion-pick-modal .vote-skip-btn");
+  if (skipBtn) {
+    skipBtn.textContent = "Close";
+    skipBtn.onclick = () =>
+      document.getElementById("champion-pick-modal").classList.add("hidden");
+  }
   try {
-    await loadChampionPickResults();
-    document.getElementById("champion-pick-options").style.display = "none";
-    if (btn) btn.style.display = "none";
-    document.querySelector(".vote-skip-btn").textContent = "Close";
-    document.querySelector(".vote-skip-btn").onclick = () =>
-      document.getElementById("r16-vote-modal").classList.add("hidden");
+    await loadChampionPickResults(team);
   } catch (e) {
-    console.warn("champion pick results fetch failed", e);
-    document.getElementById("r16-vote-modal").classList.add("hidden");
+    console.warn("champion results load failed", e);
+    document.getElementById("champion-pick-modal").classList.add("hidden");
   }
 }
 
-async function loadChampionPickResults() {
-  const picks = await supabaseSelect("champion_picks", "team");
-  const total = picks.length;
+async function loadChampionPickResults(yourTeam) {
+  const resultsDiv = document.getElementById("champion-pick-results");
+  if (!resultsDiv) return;
+
+  const rows = await supabaseSelect("champion_picks", "team");
+  const total = rows.length;
+
+  // Count picks per team, sorted desc
   const counts = {};
-  picks.forEach((p) => {
-    counts[p.team] = (counts[p.team] || 0) + 1;
-  });
+  for (const r of rows) {
+    const t = String(r.team || "").trim();
+    if (t) counts[t] = (counts[t] || 0) + 1;
+  }
+  const sorted = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
 
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const pct = (n) => (total > 0 ? Math.round((n / total) * 100) : 0);
+  if (yourTeam) {
+    resultsDiv.innerHTML = `<span class="champion-your-pick">Your pick: <strong>${escapeHtml(yourTeam)}</strong></span>`;
+  } else {
+    resultsDiv.innerHTML = "";
+  }
 
-  const container = document.getElementById("champion-pick-results");
-  container.innerHTML =
-    sorted
-      .map(
-        ([team, count]) => `
-      <div class="vote-bar-label">
-        <span>${escapeHtml(team)}</span><span>${pct(count)}%</span>
+  for (const [team, count] of sorted) {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const isTop = sorted[0]?.[0] === team;
+    resultsDiv.innerHTML += `
+      <div class="champion-pick-row">
+        <span>${getFlagImg(team) || ""} ${escapeHtml(team)}</span>
+        <span>${pct}%</span>
       </div>
-      <div class="vote-bar-track">
-        <div class="vote-bar-fill" style="width:${pct(count)}%; background:${getTeamColor(team)}"></div>
+      <div class="champion-pick-bar-track">
+        <div class="champion-pick-bar-fill ${isTop ? "top" : ""}" style="width:${pct}%"></div>
       </div>
-    `,
-      )
-      .join("") +
-    `<p class="vote-total">${total} pick${total !== 1 ? "s" : ""} total</p>`;
-
-  container.classList.remove("hidden");
+    `;
+  }
+  resultsDiv.innerHTML += `<p class="vote-total">${total} pick${total !== 1 ? "s" : ""} total</p>`;
+  resultsDiv.classList.remove("hidden");
 }
 
 function skipChampionPick() {
   localStorage.setItem(
-    "championpick_snooze",
+    `champion_pick_snooze_${SESSION.username}`,
     Date.now() + 24 * 60 * 60 * 1000,
   );
-  showChampionPickHeaderButton();
-  document.getElementById("r16-vote-modal").classList.add("hidden");
+  showVoteHeaderButton();
+  document.getElementById("champion-pick-modal").classList.add("hidden");
 }
 
 function showChampionPickHeaderButton() {
@@ -4852,77 +5010,14 @@ function showChampionPickHeaderButton() {
   if (btn) btn.style.display = "";
 }
 
-function renderChampionPickOptions(candidates) {
-  const container = document.getElementById("champion-pick-options");
-  container.innerHTML = candidates.teams
-    .sort((a, b) => a.localeCompare(b))
-    .map(
-      (team, i) => `
-      <label class="vote-option" id="champion-pick-label-${i}">
-        <input type="radio" name="championpick" value="${escapeHtml(team)}" id="champion-pick-${i}">
-        <span class="vote-option-inner">
-          ${getFlagImg(team)}
-          <span class="vote-option-label">${escapeHtml(team)}</span>
-        </span>
-      </label>
-    `,
-    )
-    .join("");
-}
-
-async function openChampionPickModal() {
-  const modal = document.getElementById("r16-vote-modal");
-  const candidates = getChampionPickCandidates();
-
-  if (!candidates) {
-    document.getElementById("champion-pick-options").innerHTML = "";
-    document.getElementById("champion-pick-results").classList.add("hidden");
-    document.getElementById("champion-pick-desc").textContent =
-      "Champion picks open once the Round of 16 field is set.";
-    document.getElementById("champion-pick-submit-btn").style.display = "none";
-    document.querySelector(".vote-skip-btn").textContent = "Close";
-    document.querySelector(".vote-skip-btn").onclick = () =>
-      modal.classList.add("hidden");
-    modal.classList.remove("hidden");
-    return;
-  }
-
-  const rows = await supabaseSelect(
-    "champion_picks",
-    "team",
-    `username=eq.${encodeURIComponent(SESSION.username)}`,
-  );
-  const picked = rows.length > 0;
-
-  document.getElementById("champion-pick-desc").innerHTML =
-    `Pick the team you think will win the World Cup. <strong>${candidates.teams.length} teams</strong> remain — lock it in now for <strong>${candidates.pointsValue} points</strong>.<br><small>This pick is permanent and cannot be changed once submitted.</small>`;
-
-  if (picked) {
-    document.getElementById("champion-pick-options").style.display = "none";
-    document.getElementById("champion-pick-submit-btn").style.display = "none";
-    document.querySelector(".vote-skip-btn").textContent = "Close";
-    try {
-      await loadChampionPickResults();
-    } catch (e) {
-      console.warn("champion pick results fetch failed", e);
-    }
-  } else {
-    renderChampionPickOptions(candidates);
-    document.getElementById("champion-pick-options").style.display = "";
-    document.getElementById("champion-pick-submit-btn").style.display = "";
-    document.getElementById("champion-pick-submit-btn").disabled = false;
-    document.getElementById("champion-pick-results").classList.add("hidden");
-    document.querySelector(".vote-skip-btn").textContent = "Remind Me Later";
-    document.querySelector(".vote-skip-btn").onclick = skipChampionPick;
-  }
-
-  modal.classList.remove("hidden");
+async function openVoteModal() {
+  await openChampionPickModal();
 }
 function getNextLockingFixture() {
   const now = Date.now();
-  return (STATE.fixtures || []).find(
-    (fix) => fix.kickoffDate && fix.kickoffDate.getTime() - 60000 > now,
-  );
+  return (STATE.fixtures || [])
+    .filter((fix) => fix.kickoffDate && fix.kickoffDate.getTime() - 60000 > now)
+    .sort((a, b) => a.kickoffDate.getTime() - b.kickoffDate.getTime())[0];
 }
 
 function getLiveFixture() {
@@ -4946,8 +5041,12 @@ function updateLiveGameWidget() {
   const result = STATE.results[fix.matchId];
 
   if (fix.matchId !== liveFixtureId) {
-    document.getElementById("live-team1").innerHTML = getFlagImg(fix.team1);
-    document.getElementById("live-team2").innerHTML = getFlagImg(fix.team2);
+    document.getElementById("live-team1").innerHTML = getFlagImg(
+      resolveSlot(fix.team1) || fix.team1,
+    );
+    document.getElementById("live-team2").innerHTML = getFlagImg(
+      resolveSlot(fix.team2) || fix.team2,
+    );
     liveFixtureId = fix.matchId;
   }
 
@@ -4982,10 +5081,10 @@ function updateNextLockWidget() {
 
   if (fix.matchId !== nextLockFixtureId) {
     document.getElementById("next-lock-team1").innerHTML = getFlagImg(
-      fix.team1,
+      resolveSlot(fix.team1) || fix.team1,
     );
     document.getElementById("next-lock-team2").innerHTML = getFlagImg(
-      fix.team2,
+      resolveSlot(fix.team2) || fix.team2,
     );
     nextLockFixtureId = fix.matchId;
   }

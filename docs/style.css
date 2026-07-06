@@ -19,7 +19,7 @@
   --danger: #ff3b5c;
   --font-ggo-display: "Barlow Condensed", "Arial Narrow", sans-serif;
   --font-ggo-body: "DM Sans", "Segoe UI", sans-serif;
-
+  --wc-gold: #b99700;
   /* Spacing Scale */
   --space-xs: clamp(0.25rem, 0.6vw, 0.5rem);
   --space-sm: clamp(0.5rem, 1.2vw, 0.875rem);
@@ -420,14 +420,13 @@ header {
   flex-shrink: 0;
 }
 
-@media (max-width:768px) {
+@media (max-width: 768px) {
   .live-game-widget {
     display: none;
   }
 
   .next-lock-widget {
     margin-left: 1%;
-
   }
 }
 
@@ -456,7 +455,6 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 
 .wc-badge {
   display: flex;
@@ -653,13 +651,13 @@ header {
   justify-content: center;
   border-radius: 10px;
   background: rgba(30, 255, 131, 0.911);
-  border: 1px solid rgba(0, 209, 94, .35);
+  border: 1px solid rgba(0, 209, 94, 0.35);
   cursor: pointer;
-  transition: .2s;
+  transition: 0.2s;
 }
 
 #vote-nav-btn:hover {
-  background: rgba(0, 209, 94, .22);
+  background: rgba(0, 209, 94, 0.22);
 }
 
 #vote-nav-btn svg {
@@ -670,7 +668,6 @@ header {
 
 /* Header vote button */
 .header-btn .fa-poll {
-
   color: var(--wc-gold);
   border-radius: 10px;
   background: rgba(0, 209, 94, 0.14);
@@ -681,7 +678,6 @@ header {
   margin-left: 8px;
   margin-right: 8px;
 }
-
 
 .status-dot {
   display: inline-block;
@@ -6959,7 +6955,6 @@ main {
   margin: 6px 0;
 }
 
-
 /* ════════════════════════════════════════ UI OVERHAUL STYLES ════════════════════════════════════════ */
 
 /* Atmospheric pitch background & textures */
@@ -7249,7 +7244,7 @@ body {
 }
 
 .vote-card h2 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: "Barlow Condensed", sans-serif;
   font-size: 1.8rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -7289,7 +7284,10 @@ body {
   border-radius: 12px;
   border: 2px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
-  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.15s;
 }
 
 .vote-option input:checked+.vote-option-inner {
@@ -7303,7 +7301,7 @@ body {
 }
 
 .vote-option-val {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: "Barlow Condensed", sans-serif;
   font-size: 2rem;
   font-weight: 800;
   color: #fff;
@@ -7369,13 +7367,15 @@ body {
   border: none;
   background: var(--wc-green, #00c060);
   color: #fff;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: "Barlow Condensed", sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
+  transition:
+    background 0.2s,
+    transform 0.15s;
   margin-bottom: 10px;
 }
 
@@ -7406,37 +7406,195 @@ body {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.vote-options.champion-grid {
+/* ════════════════════════════════════════
+   CHAMPION PREDICTOR EXTRAS
+════════════════════════════════════════ */
+.champion-countdown {
+  color: #ff184c;
+  text-shadow: 0 0 10px #ff184c;
+}
+
+.champion-vote-options {
+  display: block;
+  margin-bottom: 24px;
+}
+
+/* Flag card grid */
+.champion-team-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
   max-height: 320px;
   overflow-y: auto;
-  padding-right: 4px;
-  margin-bottom: 20px;
+  padding: 4px 2px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
-.champion-grid .vote-option-inner {
-  flex-direction: row;
-  justify-content: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+.champion-team-grid::-webkit-scrollbar {
+  width: 5px;
 }
 
-.champion-grid .vote-option-label {
+.champion-team-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.champion-team-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+/* Individual flag card */
+.champion-flag-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    transform 0.18s,
+    box-shadow 0.18s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.champion-flag-card:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(245, 197, 24, 0.55);
+  box-shadow: 0 0 10px rgba(245, 197, 24, 0.25);
+  transform: translateY(-2px) scale(1.04);
+}
+
+.champion-flag-card.selected {
+  border-color: #f5c518;
+  background: rgba(245, 197, 24, 0.1);
+  box-shadow:
+    0 0 0 1px rgba(245, 197, 24, 0.6),
+    0 0 16px rgba(245, 197, 24, 0.3);
+  animation: champion-gold-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes champion-gold-pulse {
+
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(245, 197, 24, 0.6),
+      0 0 16px rgba(245, 197, 24, 0.3);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(245, 197, 24, 0.9),
+      0 0 28px rgba(245, 197, 24, 0.5);
+  }
+}
+
+.champion-flag-card img {
+  width: 44px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+  pointer-events: none;
+}
+
+/* Placeholder flag for teams without an img */
+.champion-flag-card .flag-placeholder {
+  width: 44px;
+  height: 30px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.champion-flag-card .flag-label {
+  font-size: 0.64rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.2;
+  max-width: 72px;
+  word-break: break-word;
+  pointer-events: none;
+}
+
+.champion-flag-card.selected .flag-label {
+  color: #f5c518;
+  font-weight: 700;
+}
+
+/* "Selected: {team}" label below the grid */
+.champion-selected-label {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.6);
+  transition: opacity 0.2s;
+}
+
+.champion-selected-label strong {
+  color: #f5c518;
+}
+
+.champion-points-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(0, 192, 96, 0.18);
+  color: var(--wc-green, #00c060);
+  border: 1px solid rgba(0, 192, 96, 0.35);
+}
+
+.champion-pick-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 0.85rem;
-  color: #fff;
-  text-transform: none;
-  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 8px 0 4px;
 }
 
-.mc-team.is-tbd {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  opacity: 0.6;
+.champion-pick-bar-track {
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  margin-bottom: 10px;
 }
 
-.mc-team.is-tbd .mc-name {
-  color: var(--muted, #8a94a6);
-  font-style: italic;
+.champion-pick-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--wc-red, #e63946);
+  transition: width 0.6s ease;
+}
+
+.champion-pick-bar-fill.top {
+  background: linear-gradient(90deg, #f5c518, #e63946);
+}
+
+.champion-your-pick {
+  display: block;
+  text-align: center;
+  margin-bottom: 14px;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.champion-your-pick strong {
+  color: var(--wc-green, #00c060);
 }

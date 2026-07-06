@@ -38,7 +38,10 @@
         <span class="trophy">
           <img class="resized-logo" src="assets/images/GGO-GREY.png" alt="GGO Logo" />
         </span>
-        <h2>GGO </h2>
+        <h2>
+          <strong style="font-size: 20px;"></strong> World Cup <strong style="color: var(--wc-gold);">
+            Predictor</strong>
+        </h2>
       </div>
       <div class="login-divider"></div>
 
@@ -71,7 +74,7 @@
         <p>
           made by
           <a href="https://www.linkedin.com/in/abdelrazieg-mohamed-b02063356/" class="footer-link"
-            style="color: var(--wc-red)" rel="noopener noreferrer">Ben Arthur</a>
+            style="color: var(--wc-gold)" rel="noopener noreferrer">Ben Arthur</a>
         </p>
         <p>All rights reserved © Gulf Global Outsourcing 2026</p>
       </div>
@@ -195,8 +198,8 @@
     <main>
       <div class="knockout-banner" id="knockout-banner" hidden>
         <span class="knockout-banner-fire">🔥</span>
-        <span class="knockout-banner-text">Please Check your predictions for today/s and tomorrow/s games, some
-          predictions have been flipped due to bracket setting fixes </span>
+        <span class="knockout-banner-text">Round of 16 is <strong>LIVE</strong> - 3x points multiplier active for
+          these matches!</span>
         <button class="knockout-banner-close" onclick="dismissBanner()" aria-label="Dismiss">✕</button>
       </div>
 
@@ -549,13 +552,13 @@
                 <div class="multiplier-row" data-stage="r32"><span class="multiplier-stage">Round of 32</span><span
                     class="multiplier-val">×2</span><span class="multiplier-pts">30 / 16 / 10 pts</span></div>
                 <div class="multiplier-row" data-stage="r16"><span class="multiplier-stage">Round of 16</span><span
-                    class="multiplier-val">×2.5</span><span class="multiplier-pts">37.5 / 20 / 12.5 pts</span></div>
-                <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
                     class="multiplier-val">×3</span><span class="multiplier-pts">45 / 24 / 15 pts</span></div>
-                <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
+                <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
                     class="multiplier-val">×4</span><span class="multiplier-pts">60 / 32 / 20 pts</span></div>
-                <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
+                <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
                     class="multiplier-val">×5</span><span class="multiplier-pts">75 / 40 / 25 pts</span></div>
+                <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
+                    class="multiplier-val">×6</span><span class="multiplier-pts">90 / 48 / 30 pts</span></div>
               </div>
             </div>
 
@@ -896,13 +899,13 @@
           <div class="multiplier-row" data-stage="r32"><span class="multiplier-stage">Round of 32</span><span
               class="multiplier-val">×2</span><span class="multiplier-pts">30 / 16 / 10 pts</span></div>
           <div class="multiplier-row" data-stage="r16"><span class="multiplier-stage">Round of 16</span><span
-              class="multiplier-val">×2.5</span><span class="multiplier-pts">37.5 / 20 / 12.5 pts</span></div>
-          <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
               class="multiplier-val">×3</span><span class="multiplier-pts">45 / 24 / 15 pts</span></div>
-          <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
+          <div class="multiplier-row" data-stage="qf"><span class="multiplier-stage">Quarter-final</span><span
               class="multiplier-val">×4</span><span class="multiplier-pts">60 / 32 / 20 pts</span></div>
-          <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
+          <div class="multiplier-row" data-stage="sf"><span class="multiplier-stage">Semi-final</span><span
               class="multiplier-val">×5</span><span class="multiplier-pts">75 / 40 / 25 pts</span></div>
+          <div class="multiplier-row" data-stage="final"><span class="multiplier-stage">Final</span><span
+              class="multiplier-val">×6</span><span class="multiplier-pts">90 / 48 / 30 pts</span></div>
         </div>
 
         <div class="scoring-example-box" style="margin-bottom:1.25rem">
@@ -1018,23 +1021,27 @@
       </button>
     </div>
   </aside>
-
-  <!-- ════════════════════════════════════════
-       SCAFFOLD JS - wire-up only, no data yet
-  ════════════════════════════════════════ -->
-
-  <!-- R16 Vote Modal -->
-  <!-- Champion Pick Modal -->
-  <div id="r16-vote-modal" class="vote-modal hidden" role="dialog" aria-modal="true" aria-labelledby="vote-modal-title">
+  <!-- Champion Predictor Modal -->
+  <div id="champion-pick-modal" class="vote-modal hidden" role="dialog" aria-modal="true"
+    aria-labelledby="champion-modal-title">
     <div class="vote-card">
       <div class="vote-modal-icon">🏆</div>
-      <h2 id="vote-modal-title">Predict the Champion</h2>
-      <p class="vote-modal-desc" id="champion-pick-desc">Loading...</p>
-      <div class="vote-options champion-grid" id="champion-pick-options"></div>
+      <h2 id="champion-modal-title">World Champion Pick</h2>
+      <p class="vote-modal-desc" id="champion-modal-desc">
+        Who will win the <strong>2026 World Cup</strong>?<br>
+        Locks at 10:00 PM, Monday Jul 6th, then scoring a winner only awards 100<br><small></small>
+
+        <span id="champion-points-badge" class="champion-points-badge"></span>
+        <span id="champion-countdown" class="champion-countdown"></span>
+      <p id="champion-pick-error" class="champion-pick-error"></p>
+      </p>
+      <div class="champion-vote-options" id="champion-vote-options">
+        <div id="champion-team-grid" class="champion-team-grid"></div>
+        <div id="champion-selected-label" class="champion-selected-label hidden"></div>
+      </div>
       <div id="champion-pick-results" class="vote-results hidden"></div>
-      <button class="vote-submit-btn" id="champion-pick-submit-btn" onclick="submitChampionPick()">Lock In My
-        Pick</button>
-      <button class="vote-skip-btn" onclick="skipChampionPick()">Maybe later</button>
+      <button class="vote-submit-btn" id="champion-submit-btn" onclick="submitChampionPick()">Lock In Pick</button>
+      <button class="vote-skip-btn" onclick="skipChampionPick()">Remind Me Later</button>
     </div>
   </div>
 </body>

@@ -258,11 +258,11 @@ async function loadCollection(env, table) {
 const STAGE_MULTIPLIERS = {
   group: 1,
   r32: 2,
-  r16: 2.5,
-  qf: 3,
-  sf: 4,
-  third: 4,
-  final: 5,
+  r16: 3,
+  qf: 4,
+  sf: 5,
+  third: 5,
+  final: 6,
 };
 
 function scoreMatch(p1, p2, a1, a2, stage = "group") {
@@ -289,6 +289,7 @@ function buildLeaderboard(
   predictionRows,
   userRows,
   fixtureRows = [],
+  championPickRows = [],
 ) {
   const displayNames = {};
   for (const user of userRows) {
@@ -359,7 +360,7 @@ function buildLeaderboard(
         // User predicted draw + chose pen winner
         points =
           String(prediction.pen_winner || "").toLowerCase() ===
-            String(result.penalty_winner || "").toLowerCase()
+          String(result.penalty_winner || "").toLowerCase()
             ? 15 * multiplier
             : 0;
       } else {
@@ -399,6 +400,64 @@ function buildLeaderboard(
     if (pred1 === result.score1 && pred2 === result.score2)
       userMap[username].exactScores++;
     if (points > 0) userMap[username].correctOutcomes++;
+  }
+
+  // ── Champion pick bonus — applied only after the Final is complete ──
+  // Find the final fixture and its result
+  const finalFixture = fixtureRows.find(
+    (f) => String(f.stage || "").toLowerCase() === "final",
+  );
+  if (finalFixture) {
+    const finalMatchId = String(
+      finalFixture.matchId || finalFixture.id || "",
+    ).replace(/^match_/, "");
+    const finalResult = results[finalMatchId]; // only present if FINAL_STATUSES
+    if (finalResult) {
+      // Determine actual champion team name
+      let championTeam = null;
+      if (finalResult.score1 > finalResult.score2) {
+        championTeam = finalFixture.team1;
+      } else if (finalResult.score2 > finalResult.score1) {
+        championTeam = finalFixture.team2;
+      } else if (
+        String(finalResult.penalty_winner || "").toLowerCase() === "team1"
+      ) {
+        championTeam = finalFixture.team1;
+      } else if (
+        String(finalResult.penalty_winner || "").toLowerCase() === "team2"
+      ) {
+        championTeam = finalFixture.team2;
+      }
+
+      if (championTeam) {
+        const normalizedChampion = String(championTeam).toLowerCase().trim();
+        for (const pick of championPickRows) {
+          const username = String(pick.username || "").trim();
+          if (!username) continue;
+          if (
+            String(pick.team || "")
+              .toLowerCase()
+              .trim() !== normalizedChampion
+          )
+            continue;
+          const bonus = Number(pick.points_value) || 0;
+          if (!bonus) continue;
+          // Create entry for users who only submitted champion picks (no predictions)
+          if (!userMap[username]) {
+            userMap[username] = {
+              username,
+              displayName: displayNames[username] || username,
+              totalPoints: 0,
+              exactScores: 0,
+              correctOutcomes: 0,
+              predicted: 0,
+              scored: 0,
+            };
+          }
+          userMap[username].totalPoints += bonus;
+        }
+      }
+    }
   }
 
   // Sort by points (desc), then exactScores, then correctOutcomes (desc)
@@ -446,12 +505,20 @@ function buildLeaderboard(
 // ─── Live Score Fetching & Syncing ──────────────────────────────────────────
 
 async function syncLiveResults(env) {
-  const [fixtureRows, apiMatches] = await Promise.all([
-    loadCollection(env, "fixtures"),
-    fetchPrimaryOrBackupMatches(env),
-  ]);
+  const [fixtureRows, apiMatches, resultRows, groupStandingRows] =
+    await Promise.all([
+      loadCollection(env, "fixtures"),
+      fetchPrimaryOrBackupMatches(env),
+      loadCollection(env, "results"),
+      loadCollection(env, "group_standings"),
+    ]);
 
-  const fixtureLookups = buildFixtureLookups(fixtureRows);
+  const resolveTeams = buildSlotResolver(
+    fixtureRows,
+    resultRows,
+    groupStandingRows,
+  );
+  const fixtureLookups = buildFixtureLookups(fixtureRows, resolveTeams);
   const matchedUpdates = [];
   const fixtureApiUpdates = [];
 
@@ -540,20 +607,21 @@ async function syncLiveResults(env) {
 }
 
 async function recalculateLeaderboard(env) {
-  const [resultRows, predictionRows, userRows, fixtureRows] = await Promise.all(
-    [
+  const [resultRows, predictionRows, userRows, fixtureRows, championPickRows] =
+    await Promise.all([
       loadCollection(env, "results"),
       loadCollection(env, "predictions"),
       loadCollection(env, "users"),
       loadCollection(env, "fixtures"),
-    ],
-  );
+      loadCollection(env, "champion_picks"),
+    ]);
 
   const data = buildLeaderboard(
     resultRows,
     predictionRows,
     userRows,
     fixtureRows,
+    championPickRows,
   );
 
   // Persist leaderboard to Supabase
@@ -775,13 +843,13 @@ async function handleRivalryGet(env, username) {
     twin:
       twinEntry.agreement / twinEntry.shared > 0.2
         ? {
-          username: twinEntry.username,
-          displayName: nameMap[twinEntry.username] || twinEntry.username,
-          agreementPct: Math.round(
-            (twinEntry.agreement / twinEntry.shared) * 100,
-          ),
-          sharedMatches: twinEntry.shared,
-        }
+            username: twinEntry.username,
+            displayName: nameMap[twinEntry.username] || twinEntry.username,
+            agreementPct: Math.round(
+              (twinEntry.agreement / twinEntry.shared) * 100,
+            ),
+            sharedMatches: twinEntry.shared,
+          }
         : null,
   };
 }
@@ -859,20 +927,41 @@ async function handleProfileGet(env, username) {
 
       if (hasPred && actualHome !== null && actualAway !== null) {
         const stage = String(fixture.stage || "").toLowerCase();
-        const isKO = stage !== "group" && stage !== "group_stage" && stage !== "";
+        const isKO =
+          stage !== "group" && stage !== "group_stage" && stage !== "";
         const multiplier = STAGE_MULTIPLIERS[stage] ?? 1;
         const penWinner = result?.penalty_winner || null;
         const userDraw = pred1 === pred2;
 
         if (isKO && penWinner) {
           points = userDraw
-            ? (String(p.pen_winner || "").toLowerCase() === String(penWinner).toLowerCase() ? 15 * multiplier : 0)
-            : ((pred1 > pred2 ? "team1" : "team2") === String(penWinner).toLowerCase() ? 5 * multiplier : 0);
-        } else if (isKO && !penWinner && userDraw && actualHome !== actualAway) {
+            ? String(p.pen_winner || "").toLowerCase() ===
+              String(penWinner).toLowerCase()
+              ? 15 * multiplier
+              : 0
+            : (pred1 > pred2 ? "team1" : "team2") ===
+                String(penWinner).toLowerCase()
+              ? 5 * multiplier
+              : 0;
+        } else if (
+          isKO &&
+          !penWinner &&
+          userDraw &&
+          actualHome !== actualAway
+        ) {
           const actualWinner = actualHome > actualAway ? "team1" : "team2";
-          points = String(p.pen_winner || "").toLowerCase() === actualWinner ? 5 * multiplier : 0;
+          points =
+            String(p.pen_winner || "").toLowerCase() === actualWinner
+              ? 5 * multiplier
+              : 0;
         } else {
-          points = scoreMatch(pred1, pred2, actualHome, actualAway, fixture.stage);
+          points = scoreMatch(
+            pred1,
+            pred2,
+            actualHome,
+            actualAway,
+            fixture.stage,
+          );
         }
       }
 
@@ -916,14 +1005,21 @@ async function handleProfileGet(env, username) {
 // ─── Main GET /sync endpoint ────────────────────────────────────────────────
 
 async function handleSyncGet(env) {
-  const [fixtureRows, resultRows, userRows, predictionRows, groupStandingRows] =
-    await Promise.all([
-      loadCollection(env, "fixtures"),
-      loadCollection(env, "results"),
-      loadCollection(env, "users"),
-      loadCollection(env, "predictions"),
-      loadCollection(env, "group_standings"),
-    ]);
+  const [
+    fixtureRows,
+    resultRows,
+    userRows,
+    predictionRows,
+    groupStandingRows,
+    championPickRows,
+  ] = await Promise.all([
+    loadCollection(env, "fixtures"),
+    loadCollection(env, "results"),
+    loadCollection(env, "users"),
+    loadCollection(env, "predictions"),
+    loadCollection(env, "group_standings"),
+    loadCollection(env, "champion_picks"),
+  ]);
 
   const fixtures = fixtureRows.map((f) => ({
     matchId: String(f.matchId || f.id || "").replace(/^match_/, ""),
@@ -950,7 +1046,7 @@ async function handleSyncGet(env) {
       homeScorers: r.homeScorers || [],
       awayScorers: r.awayScorers || [],
       penalty_winner: r.penalty_winner || null,
-    }
+    };
   }
 
   const users = userRows
@@ -965,6 +1061,8 @@ async function handleSyncGet(env) {
     resultRows,
     predictionRows,
     userRows,
+    fixtureRows,
+    championPickRows,
   );
 
   return {
@@ -1086,8 +1184,17 @@ export default {
         const matchId = String(body.matchId || "");
         const score1 = body.score1 !== undefined ? Number(body.score1) : null;
         const score2 = body.score2 !== undefined ? Number(body.score2) : null;
-        if (!matchId || score1 === null || score2 === null || isNaN(score1) || isNaN(score2)) {
-          return corsJson({ error: "matchId, score1, and score2 required" }, 400);
+        if (
+          !matchId ||
+          score1 === null ||
+          score2 === null ||
+          isNaN(score1) ||
+          isNaN(score2)
+        ) {
+          return corsJson(
+            { error: "matchId, score1, and score2 required" },
+            400,
+          );
         }
         await supabaseUpsert(env, "results", [{ matchId, score1, score2 }]);
         return corsJson({ ok: true, matchId, score1, score2 });
@@ -1537,9 +1644,10 @@ function cleanTeamName(name) {
   return clean;
 }
 
-function buildFixtureLookups(fixtureRows) {
+function buildFixtureLookups(fixtureRows, resolveTeams) {
   const byApiId = new Map();
   const byTeams = new Map();
+  const resolve = resolveTeams || ((v) => v);
 
   for (const fixture of fixtureRows) {
     const matchId = normalizeMatchId(fixture.matchId || fixture.id);
@@ -1549,8 +1657,11 @@ function buildFixtureLookups(fixtureRows) {
       byApiId.set(String(fixture.apiFixtureId), fixture);
     }
 
-    const home = cleanTeamName(fixture.team1);
-    const away = cleanTeamName(fixture.team2);
+    // Knockout fixtures store bracket slot codes ("W73", "L88", "1A", "3A/B/C/D/F")
+    // in team1/team2 until they're manually resolved. Resolve them here so live
+    // matching still works even if the fixtures table hasn't been updated yet.
+    const home = cleanTeamName(resolve(fixture.team1));
+    const away = cleanTeamName(resolve(fixture.team2));
     if (home && away) {
       byTeams.set(`${home}__${away}`, { fixture, flipped: false });
       byTeams.set(`${away}__${home}`, { fixture, flipped: true });
@@ -1558,6 +1669,124 @@ function buildFixtureLookups(fixtureRows) {
   }
 
   return { byApiId, byTeams };
+}
+
+// ─── Bracket slot resolution (mirrors app.js's resolveSlot, server-side) ────
+//
+// Knockout fixtures reference other matches/groups via slot codes instead of
+// real team names (e.g. "W73" = winner of match 73, "1A" = winner of Group A,
+// "3A/B/C/D/F" = best 3rd-place team among those groups). Until those codes
+// are resolved to real names, team-name matching against the live API (which
+// always returns real names) fails silently, so live scores never sync for
+// R16+ matches. This resolves a slot code to a real team name using the
+// current fixtures/results/group_standings, recursing through chained
+// references (e.g. a Round of 16 match referencing the winner of a Round of
+// 32 match).
+
+function isSlotCode(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || trimmed === "TBD" || trimmed.includes(" ")) return false;
+  if (trimmed.length > 6) return false;
+  return /^([12][A-L]|[WL]\d+|3[A-L\/]+)$/i.test(trimmed);
+}
+
+function buildSlotResolver(fixtureRows, resultRows, groupStandingRows) {
+  const fixtureById = new Map();
+  for (const f of fixtureRows) {
+    const id = normalizeMatchId(f.matchId || f.id);
+    if (id) fixtureById.set(id, f);
+  }
+
+  const resultByMatchId = new Map();
+  for (const r of resultRows) {
+    const id = normalizeMatchId(r.matchId || r.id);
+    if (id) resultByMatchId.set(id, r);
+  }
+
+  const standingsByGroup = new Map();
+  for (const row of groupStandingRows) {
+    const g = String(row.group_name || row.group || "")
+      .trim()
+      .toUpperCase()
+      .replace(/^GROUP\s*/, "");
+    if (!g) continue;
+    if (!standingsByGroup.has(g)) standingsByGroup.set(g, []);
+    standingsByGroup.get(g).push({
+      position: toRequiredNumber(row.position, 0),
+      team_name: row.team_name || row.teamName || row.name || "",
+      points: toRequiredNumber(row.points, 0),
+      goal_difference: toRequiredNumber(row.goal_difference, 0),
+      goals_for: toRequiredNumber(row.goals_for, 0),
+    });
+  }
+
+  return function resolveTeamSlot(code, depth = 0) {
+    const trimmed = String(code || "").trim();
+    if (depth > 10 || !isSlotCode(trimmed)) return trimmed;
+
+    // Winner/loser of a prior match: W73, L88
+    const koMatch = trimmed.match(/^([WL])(\d+)$/i);
+    if (koMatch) {
+      const [, side, refId] = koMatch;
+      const refFixture = fixtureById.get(refId);
+      const result = resultByMatchId.get(refId);
+      if (!refFixture || !result) return trimmed;
+
+      const s1 = Number(result.score1);
+      const s2 = Number(result.score2);
+      let winnerIsTeam1 = null;
+      if (Number.isFinite(s1) && Number.isFinite(s2)) {
+        if (s1 > s2) winnerIsTeam1 = true;
+        else if (s2 > s1) winnerIsTeam1 = false;
+      }
+      if (winnerIsTeam1 === null) {
+        const pw = String(result.penalty_winner || "").toLowerCase();
+        if (pw === "team1") winnerIsTeam1 = true;
+        else if (pw === "team2") winnerIsTeam1 = false;
+      }
+      if (winnerIsTeam1 === null) return trimmed;
+
+      const winnerRaw = winnerIsTeam1 ? refFixture.team1 : refFixture.team2;
+      const loserRaw = winnerIsTeam1 ? refFixture.team2 : refFixture.team1;
+      const raw = side.toUpperCase() === "W" ? winnerRaw : loserRaw;
+      return resolveTeamSlot(raw, depth + 1);
+    }
+
+    // Group position: 1A, 2B
+    const groupMatch = trimmed.match(/^([12])([A-L])$/i);
+    if (groupMatch) {
+      const pos = Number(groupMatch[1]);
+      const table = standingsByGroup.get(groupMatch[2].toUpperCase()) || [];
+      const row = table.find((r) => r.position === pos);
+      return row ? row.team_name || trimmed : trimmed;
+    }
+
+    // Best 3rd-place slot: "3A/B/C/D/F"
+    const thirdMatch = trimmed.match(/^3([A-L\/]+)$/i);
+    if (thirdMatch) {
+      const groupKeys = thirdMatch[1].toUpperCase().split("/").filter(Boolean);
+      let best = null;
+      for (const g of groupKeys) {
+        const table = standingsByGroup.get(g) || [];
+        const thirdRow = table.find((r) => r.position === 3);
+        if (!thirdRow) continue;
+        if (
+          !best ||
+          thirdRow.points > best.points ||
+          (thirdRow.points === best.points &&
+            thirdRow.goal_difference > best.goal_difference) ||
+          (thirdRow.points === best.points &&
+            thirdRow.goal_difference === best.goal_difference &&
+            thirdRow.goals_for > best.goals_for)
+        ) {
+          best = thirdRow;
+        }
+      }
+      return best ? best.team_name || trimmed : trimmed;
+    }
+
+    return trimmed;
+  };
 }
 
 function resolveFixtureMatch(item, lookups) {
@@ -1600,21 +1829,21 @@ function readScore(item, side) {
   const keys =
     side === "home"
       ? [
-        "homeScore",
-        "score1",
-        "team1Score",
-        "home_goal",
-        "homeGoals",
-        "goalsHome",
-      ]
+          "homeScore",
+          "score1",
+          "team1Score",
+          "home_goal",
+          "homeGoals",
+          "goalsHome",
+        ]
       : [
-        "awayScore",
-        "score2",
-        "team2Score",
-        "away_goal",
-        "awayGoals",
-        "goalsAway",
-      ];
+          "awayScore",
+          "score2",
+          "team2Score",
+          "away_goal",
+          "awayGoals",
+          "goalsAway",
+        ];
   for (const key of keys) {
     if (item[key] !== undefined && item[key] !== null && item[key] !== "")
       return item[key];
@@ -1624,21 +1853,21 @@ function readScore(item, side) {
     const paths =
       side === "home"
         ? [
-          ["home"],
-          ["local"],
-          ["team1"],
-          ["fulltime", "home"],
-          ["ft", "home"],
-          ["final", "home"],
-        ]
+            ["home"],
+            ["local"],
+            ["team1"],
+            ["fulltime", "home"],
+            ["ft", "home"],
+            ["final", "home"],
+          ]
         : [
-          ["away"],
-          ["visitor"],
-          ["team2"],
-          ["fulltime", "away"],
-          ["ft", "away"],
-          ["final", "away"],
-        ];
+            ["away"],
+            ["visitor"],
+            ["team2"],
+            ["fulltime", "away"],
+            ["ft", "away"],
+            ["final", "away"],
+          ];
     for (const path of paths) {
       let value = nested;
       let found = true;
@@ -1754,19 +1983,19 @@ function formatGroupStandings(rows) {
 function buildLivescoreKey(item) {
   const home = cleanTeamName(
     item.home_name ||
-    item.home ||
-    item.team1 ||
-    item.localteam_name ||
-    item.localteam ||
-    "",
+      item.home ||
+      item.team1 ||
+      item.localteam_name ||
+      item.localteam ||
+      "",
   );
   const away = cleanTeamName(
     item.away_name ||
-    item.away ||
-    item.team2 ||
-    item.visitorteam_name ||
-    item.visitorteam ||
-    "",
+      item.away ||
+      item.team2 ||
+      item.visitorteam_name ||
+      item.visitorteam ||
+      "",
   );
   if (!home || !away) return "";
   return `${home}__${away}`;
