@@ -25,7 +25,9 @@
 - [ ] Track which source is responsible for each match update.
 - [ ] Prefer stable sources for critical results and standings.
 - [ ] Verify any new API before depending on it in production.
-- [ ] Record major fixes in a short changelog or worklog entry.
+- [ ] Record major fix
+
+ses in a short changelog or worklog entry.
 
 ## Medium
 
