@@ -4741,20 +4741,13 @@ function getTeamsForChampionPick(targetStage) {
   }
   return result.sort();
 }
-
 async function checkChampionPick() {
   if (!SESSION.username) return;
 
   showVoteHeaderButton();
 
   const info = getChampionPickStageAndPoints();
-  if (info.isClosed) return; // past SF start — window closed
-  const snoozed = localStorage.getItem(
-    `champion_pick_snooze_${SESSION.username}`,
-  );
-  if (snoozed && Date.now() < Number(snoozed)) return;
-
-  if (localStorage.getItem(`champion_pick_doned_${SESSION.username}`)) return;
+  if (info.isClosed) return;
 
   try {
     const rows = await supabaseSelect(
@@ -4762,12 +4755,8 @@ async function checkChampionPick() {
       "username",
       `username=eq.${encodeURIComponent(SESSION.username)}`,
     );
-    if (rows && rows.length > 0) {
-      localStorage.setItem(`champion_pick_doned_${SESSION.username}`, "1");
-      return;
-    }
-    // Not picked yet — show popup
-    await openChampionPickModal();
+    if (rows && rows.length > 0) return; // user is there — don't show
+    await openChampionPickModal(); // not there — show it
   } catch (e) {
     console.warn("champion pick check failed", e);
   }
