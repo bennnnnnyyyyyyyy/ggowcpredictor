@@ -1888,7 +1888,9 @@ async function savePrediction(matchId, pred1, pred2, penWinner = null) {
       STATE.predictions,
     );
 
-    showToast(`Saved: ${fixture.team1} ${score1}–${score2} ${fixture.team2}`);
+    const savedTeam1 = resolveSlot(fixture.team1) || fixture.team1;
+    const savedTeam2 = resolveSlot(fixture.team2) || fixture.team2;
+    showToast(`Saved: ${savedTeam1} ${score1}–${score2} ${fixture.team2}`);
   } catch (error) {
     console.error("Save failed:", error);
     showToast("Save failed – please try again.", "error");
