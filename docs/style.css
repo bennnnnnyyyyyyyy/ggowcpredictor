@@ -7217,9 +7217,10 @@ body {
   .logo {
     position: static !important;
     transform: none !important;
+    margin-left: 5px;
   }
 
-  .logo-text h1 {
+  .cham .logo-text h1 {
     font-size: 16px !important;
   }
 
