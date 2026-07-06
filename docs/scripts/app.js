@@ -848,8 +848,8 @@ function showView(id, btn) {
   requestAnimationFrame(() => {
     nextView.classList.add("animating-in");
   });
-
   if (id === "home") renderHome();
+  if (id === "predictions") renderPredictions();   // ← add this
   if (id === "results") renderResults();
   if (id === "bracket") renderBracket();
   if (id === "standings") renderGroupStandings();
