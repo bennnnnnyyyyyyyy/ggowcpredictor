@@ -7056,13 +7056,26 @@ body {
 .match-card,
 .home-match-card-large,
 .result-card {
-  opacity: 0;
-  transform: translateY(16px);
-  animation: slideUpFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: calc(var(--idx, 0) * 0.04s);
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+  .match-card,
+  .home-match-card-large,
+  .result-card {
+    animation: slideUpFade 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    animation-delay: calc(var(--idx, 0) * 0.04s);
+  }
 }
 
 @keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
   to {
     opacity: 1;
     transform: translateY(0);
