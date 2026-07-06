@@ -4766,7 +4766,6 @@ async function checkChampionPick() {
   );
   if (snoozed && Date.now() < Number(snoozed)) return;
 
-  if (localStorage.getItem(`champion_pick_doned_${SESSION.username}`)) return;
 
   try {
     const rows = await supabaseSelect(
