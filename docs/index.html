@@ -57,8 +57,7 @@
           <img class="resized-logo" src="assets/images/GGO-GREY.png" alt="GGO Logo" />
         </span>
         <h2>
-          <strong style="font-size: 20px;"></strong> World Cup <strong style="color: var(--wc-gold);">
-            Predictor</strong>
+          <strong style="font-size: 20px;"></strong> World Cup <strong style="color: var(--wc-gold);"> Predictor</strong>
         </h2>
       </div>
       <div class="login-divider"></div>
@@ -116,29 +115,7 @@
             <path d="M21 12a9 9 0 1 1-2.64-6.36" />
             <path d="M21 3v6h-6" />
           </svg>
-
         </button>
-        <button id="vote-nav-btn" style="display:none" onclick="openChampionPickModal()"> <svg viewBox="0 0 24 24"
-            aria-hidden="true">
-            <path d="M3 4h2v16H3zm4 1h12l-3 4 3 4H7z" />
-          </svg>
-        </button>
-        <div class="header-match-widgets" id="header-match-widgets">
-          <div class="live-game-widget" id="live-game-widget" style="display:none">
-            <span class="live-dot"></span>
-            <span class="next-lock-team" id="live-team1"></span>
-            <span class="live-score" id="live-score">0-0</span>
-            <span class="next-lock-team" id="live-team2"></span>
-            <span class="live-status" id="live-status">LIVE</span>
-          </div>
-          <div class="next-lock-widget" id="next-lock-widget" style="display:none">
-            <span class="next-lock-label">Next lock</span>
-            <span class="next-lock-team" id="next-lock-team1"></span>
-            <span class="next-lock-vs">vs</span>
-            <span class="next-lock-team" id="next-lock-team2"></span>
-            <span class="next-lock-timer" id="next-lock-timer">--:--:--</span>
-          </div>
-        </div>
         <div class="logo">
           <img src="https://gulfglobaloutsourcing.com/wp-content/uploads/2024/11/GGO-White-Var3.png" alt="GGO"
             class="header-logo" />
@@ -150,7 +127,11 @@
             <p>Prediction Game</p>
           </div>
         </div>
-
+        <button id="vote-nav-btn" style="display:none" onclick="openVoteModal()">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 4h2v16H3zm4 1h12l-3 4 3 4H7z" />
+          </svg>
+        </button>
 
         <div class="user-pill" id="user-pill">
           <a id="user-profile-link" href="profile.html" class="user-pill-link" title="View your profile">
@@ -1040,18 +1021,17 @@
     </div>
   </aside>
   <!-- Champion Predictor Modal -->
-  <div id="champion-pick-modal" class="vote-modal hidden" role="dialog" aria-modal="true"
-    aria-labelledby="champion-modal-title">
+  <div id="champion-pick-modal" class="vote-modal hidden" role="dialog" aria-modal="true" aria-labelledby="champion-modal-title">
     <div class="vote-card">
       <div class="vote-modal-icon">🏆</div>
       <h2 id="champion-modal-title">World Champion Pick</h2>
       <p class="vote-modal-desc" id="champion-modal-desc">
         Who will win the <strong>2026 World Cup</strong>?<br>
-        Locks at 10:00 PM, Monday Jul 6th, then scoring a winner only awards 100<br><small></small>
+         Locks at 10:00 PM, Monday Jul 6th, then scoring a winner only awards 100<br><small></small>
 
         <span id="champion-points-badge" class="champion-points-badge"></span>
         <span id="champion-countdown" class="champion-countdown"></span>
-      <p id="champion-pick-error" class="champion-pick-error"></p>
+        <p id="champion-pick-error" class="champion-pick-error"></p>
       </p>
       <div class="champion-vote-options" id="champion-vote-options">
         <div id="champion-team-grid" class="champion-team-grid"></div>
