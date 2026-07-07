@@ -1201,13 +1201,30 @@ export default {
       }
 
       // /sync — returns all data (public, read-only)
+      // /sync — returns all data (public, read-only), cached at the edge for 10s
       if (path === "/sync" || action === "sync") {
+        const cache = caches.default;
+        const cacheKey = new Request(request.url, request);
+
+        let cached = await cache.match(cacheKey);
+        if (cached) return cached;
+
         const data = await handleSyncGet(env);
-        return corsJson(data);
+        const response = corsJson(data);
+        response.headers.set("Cache-Control", "public, max-age=10");
+
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+        return response;
       }
 
       // /fixtures — just fixtures
       if (path === "/fixtures" || action === "fixtures") {
+        const cache = caches.default;
+        const cacheKey = new Request(request.url, request);
+
+        let cached = await cache.match(cacheKey);
+        if (cached) return cached;
+
         const fixtureRows = await loadCollection(env, "fixtures");
         const fixtures = fixtureRows.map((f) => ({
           matchId: String(f.matchId || f.id || "").replace(/^match_/, ""),
@@ -1221,7 +1238,14 @@ export default {
           ground: f.ground || "",
           stage: f.stage || "",
         }));
-        return corsJson({ fixtures, timestamp: new Date().toISOString() });
+        const response = corsJson({
+          fixtures,
+          timestamp: new Date().toISOString(),
+        });
+        response.headers.set("Cache-Control", "public, max-age=10");
+
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+        return response;
       }
 
       // /leaderboard — just the leaderboard
@@ -1243,6 +1267,12 @@ export default {
 
       // /profile — single-user profile data
       if (path === "/profile" || action === "profile") {
+        const cache = caches.default;
+        const cacheKey = new Request(request.url, request);
+
+        let cached = await cache.match(cacheKey);
+        if (cached) return cached;
+
         const username = url.searchParams.get("username") || "";
         if (!username) {
           return corsJson(
@@ -1251,7 +1281,11 @@ export default {
           );
         }
         const profileData = await handleProfileGet(env, username);
-        return corsJson(profileData);
+        const response = corsJson(profileData);
+        response.headers.set("Cache-Control", "public, max-age=10");
+
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+        return response;
       }
 
       // POST /admin/approve-request — create user in Supabase + send approval email
