@@ -1,4 +1,4 @@
-/* GGO WC 2026 Predictor - Main Stylesheet */
+﻿/* GGO WC 2026 Predictor - Main Stylesheet */
 :root {
   --wc-blue: #00f576;
   /* Neon energetic green */
@@ -65,7 +65,7 @@ select {
   font: inherit;
 }
 
-/* ════════════════════════════════════════LOGIN SCREEN════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•LOGIN SCREENâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 #login-screen {
   display: flex;
   justify-content: center;
@@ -193,9 +193,9 @@ select {
 
 .form-group input:focus {
   outline: none;
-  border-color: var(--wc-blue);
-  background: rgba(0, 209, 94, 0.08);
-  box-shadow: 0 0 0 3px rgba(0, 209, 94, 0.12);
+  border-color: var(--wc-gold);
+  background: rgba(185, 151, 0, 0.08);
+  box-shadow: 0 0 0 3px rgba(185, 151, 0, 0.12);
 }
 
 .username-suggestions {
@@ -221,8 +221,8 @@ select {
 .username-suggestion:hover,
 .username-suggestion:focus-visible {
   outline: none;
-  background: rgba(0, 209, 94, 0.12);
-  border-color: var(--wc-blue);
+  background: rgba(185, 151, 0, 0.12);
+  border-color: var(--wc-gold);
 }
 
 .btn-primary {
@@ -243,7 +243,7 @@ select {
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 209, 94, 0.3);
+  box-shadow: 0 8px 20px rgba(185, 151, 0, 0.3);
 }
 
 .btn-primary:active {
@@ -266,7 +266,7 @@ select {
   text-decoration: underline;
 }
 
-/* ════════════════════════════════════════HEADER════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•HEADERâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 header {
   background: linear-gradient(180deg,
       rgba(18, 14, 4, 0.97) 0%,
@@ -464,7 +464,7 @@ header {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 209, 94, 0.1);
+  background: rgba(185, 151, 0, 0.1);
   border: 1px solid rgba(0, 209, 94, 0.3);
   padding: 6px 12px;
   border-radius: 20px;
@@ -508,13 +508,13 @@ header {
 
 .nav-btn:hover {
   color: var(--light);
-  border-color: var(--wc-blue);
+  border-color: var(--wc-gold);
 }
 
 .nav-btn.active {
   background: var(--wc-blue);
   color: white;
-  border-color: var(--wc-blue);
+  border-color: var(--wc-gold);
 }
 
 .nav-badge {
@@ -532,7 +532,7 @@ header {
   line-height: 1;
 }
 
-/* ────────────────────────────────────────FILTER BUTTONS────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€FILTER BUTTONSâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .matches-filter {
   display: flex;
   gap: 8px;
@@ -542,7 +542,7 @@ header {
 
 .filter-btn {
   padding: 8px 16px;
-  background: rgba(0, 209, 94, 0.08);
+  background: rgba(185, 151, 0, 0.08);
   color: var(--light);
   border: 1px solid rgba(0, 209, 94, 0.3);
   border-radius: 6px;
@@ -556,15 +556,15 @@ header {
 }
 
 .filter-btn:hover {
-  background: rgba(0, 209, 94, 0.18);
-  border-color: var(--wc-blue);
+  background: rgba(185, 151, 0, 0.18);
+  border-color: var(--wc-gold);
   color: var(--light);
 }
 
 .filter-btn.active {
   background: var(--wc-blue);
   color: #fff;
-  border-color: var(--wc-blue);
+  border-color: var(--wc-gold);
   box-shadow: 0 4px 12px rgba(0, 209, 94, 0.25);
 }
 
@@ -590,7 +590,7 @@ header {
 
 .sync-btn {
   padding: 7px 12px;
-  background: rgba(0, 209, 94, 0.12);
+  background: rgba(185, 151, 0, 0.12);
   color: var(--light);
   border: 1px solid rgba(0, 209, 94, 0.35);
   border-radius: 6px;
@@ -601,8 +601,8 @@ header {
 }
 
 .sync-btn:hover {
-  border-color: var(--wc-blue);
-  background: rgba(0, 209, 94, 0.24);
+  border-color: var(--wc-gold);
+  background: rgba(185, 151, 0, 0.24);
 }
 
 .sync-btn.loading {
@@ -627,7 +627,7 @@ header {
 
 .big-refresh-btn:hover {
   background: rgba(227, 255, 11, 0.832);
-  border-color: var(--wc-blue);
+  border-color: var(--wc-gold);
 }
 
 .big-refresh-btn.spinning svg {
@@ -732,7 +732,7 @@ header {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(0, 209, 94, 0.1);
+  background: rgba(185, 151, 0, 0.1);
   border: 1px solid rgba(0, 209, 94, 0.3);
   border-radius: 20px;
   padding: 6px 12px 6px 6px;
@@ -787,7 +787,7 @@ header {
   gap: 10px;
 }
 
-/* ════════════════════════════════════════VIEW SWITCHING════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•VIEW SWITCHINGâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .view {
   display: none;
 }
@@ -796,7 +796,7 @@ header {
   display: block;
 }
 
-/* ════════════════════════════════════════MAIN CONTENT════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•MAIN CONTENTâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 main {
   max-width: 1970px;
   margin: 15px auto;
@@ -821,7 +821,7 @@ main {
   color: var(--wc-gold);
 }
 
-/* ────────────────────────────────────────MATCH CARDS (redesigned)────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€MATCH CARDS (redesigned)â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .group-matches {
   display: grid;
   grid-template-columns: repeat(2, minmax(280px, 1fr));
@@ -872,8 +872,8 @@ main {
 }
 
 .match-card.open:hover {
-  border-color: rgba(0, 209, 94, 0.6);
-  box-shadow: 0 12px 32px rgba(0, 209, 94, 0.2);
+  border-color: rgba(185, 151, 0, 0.6);
+  box-shadow: 0 12px 32px rgba(185, 151, 0, 0.2);
   transform: translateY(-2px);
 }
 
@@ -895,7 +895,7 @@ main {
   opacity: 1;
 }
 
-/* ── Card Header ── */
+/* â”€â”€ Card Header â”€â”€ */
 .mc-header {
   display: flex;
   align-items: center;
@@ -1004,7 +1004,7 @@ main {
   flex-shrink: 0;
 }
 
-/* ── Card Body ── */
+/* â”€â”€ Card Body â”€â”€ */
 .mc-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1286,7 +1286,7 @@ main {
   border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
-/* ×2 knockout multipliers (Round of 32) */
+/* Ã—2 knockout multipliers (Round of 32) */
 .pts-30 {
   background: rgba(255, 215, 0, 0.15);
   color: #ffd700;
@@ -1330,9 +1330,9 @@ main {
 
 .score-input.editable:hover,
 .score-input.editable:focus {
-  border-color: var(--wc-blue);
-  background: rgba(0, 209, 94, 0.12);
-  box-shadow: 0 0 0 3px rgba(0, 209, 94, 0.15);
+  border-color: var(--wc-gold);
+  background: rgba(185, 151, 0, 0.12);
+  box-shadow: 0 0 0 3px rgba(185, 151, 0, 0.15);
   outline: none;
 }
 
@@ -1347,7 +1347,7 @@ main {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-/* ── Card Footer ── */
+/* â”€â”€ Card Footer â”€â”€ */
 .mc-footer {
   padding: 10px 16px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -1393,7 +1393,7 @@ main {
   border: 1px solid rgba(16, 185, 129, 0.28);
 }
 
-/* ────────────────────────────────────────GROUP STANDINGS────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€GROUP STANDINGSâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #group-standings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1537,8 +1537,8 @@ main {
   display: inline-block;
 }
 
-/* ────────────────────────────────────────LEADERBOARD────────────────────────────────────────── */
-/* ── Leaderboard – desktop ── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€LEADERBOARDâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â”€â”€ Leaderboard â€“ desktop â”€â”€ */
 .leaderboard-table {
   width: 100%;
   max-width: 920px;
@@ -1597,7 +1597,7 @@ main {
 
 /* Row hover */
 .leaderboard-table tbody tr:hover {
-  background: rgba(0, 209, 94, 0.1);
+  background: rgba(185, 151, 0, 0.1);
   cursor: pointer;
   /* already set inline via JS, but keep */
 }
@@ -1615,7 +1615,7 @@ main {
   color: var(--danger);
 }
 
-/* ── Leaderboard rank cell ── */
+/* â”€â”€ Leaderboard rank cell â”€â”€ */
 .rank-cell {
   display: flex;
   align-items: center;
@@ -1705,8 +1705,8 @@ main {
   font-weight: 600;
 }
 
-/* ════════════════════════════════════════MATCH DETAIL DRAWER════════════════════════════════════════ */
-/* ── Drawer overlay ── */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•MATCH DETAIL DRAWERâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* â”€â”€ Drawer overlay â”€â”€ */
 .match-drawer-overlay {
   position: fixed;
   inset: 0;
@@ -1721,7 +1721,7 @@ main {
   pointer-events: all;
 }
 
-/* ── Drawer panel ── */
+/* â”€â”€ Drawer panel â”€â”€ */
 .match-drawer {
   position: fixed;
   top: 0;
@@ -1749,7 +1749,7 @@ main {
   transform: translateX(0);
 }
 
-/* ── Drawer top accent ── */
+/* â”€â”€ Drawer top accent â”€â”€ */
 .match-drawer::before {
   content: "";
   position: absolute;
@@ -1760,7 +1760,7 @@ main {
   background: linear-gradient(90deg, var(--wc-blue), var(--wc-red));
 }
 
-/* ── Drawer header ── */
+/* â”€â”€ Drawer header â”€â”€ */
 .drawer-header {
   display: flex;
   align-items: center;
@@ -1810,7 +1810,7 @@ main {
   color: var(--danger);
 }
 
-/* ── Scoreline hero ── */
+/* â”€â”€ Scoreline hero â”€â”€ */
 .drawer-scoreline {
   padding: 28px 22px 22px;
   display: grid;
@@ -1912,7 +1912,7 @@ main {
   border-color: rgba(16, 185, 129, 0.35);
 }
 
-/* ── Scrollable body ── */
+/* â”€â”€ Scrollable body â”€â”€ */
 .drawer-body {
   flex: 1;
   overflow-y: auto;
@@ -1930,7 +1930,7 @@ main {
   border-radius: 2px;
 }
 
-/* ── Section label ── */
+/* â”€â”€ Section label â”€â”€ */
 .drawer-section-label {
   font-family: var(--font-ggo-display);
   font-size: 12px;
@@ -1943,7 +1943,7 @@ main {
   margin-bottom: 12px;
 }
 
-/* ── Goalscorer timeline ── */
+/* â”€â”€ Goalscorer timeline â”€â”€ */
 .scorer-timeline {
   display: flex;
   flex-direction: column;
@@ -1966,7 +1966,7 @@ main {
   transform: translate(-50%, -50%);
   width: 1px;
   height: 100%;
-  background: rgba(0, 209, 94, 0.12);
+  background: rgba(185, 151, 0, 0.12);
 }
 
 .scorer-name {
@@ -1997,7 +1997,7 @@ main {
 }
 
 .scorer-minute-pill {
-  background: rgba(0, 209, 94, 0.12);
+  background: rgba(185, 151, 0, 0.12);
   border: 1px solid rgba(0, 209, 94, 0.28);
   border-radius: 999px;
   font-family: var(--font-ggo-display);
@@ -2022,7 +2022,7 @@ main {
   font-style: italic;
 }
 
-/* ── Your prediction block ── */
+/* â”€â”€ Your prediction block â”€â”€ */
 .drawer-prediction {
   display: flex;
   align-items: center;
@@ -2076,7 +2076,7 @@ main {
   opacity: 0.75;
 }
 
-/* ── Venue info ── */
+/* â”€â”€ Venue info â”€â”€ */
 .drawer-venue {
   display: flex;
   flex-direction: column;
@@ -2095,7 +2095,7 @@ main {
   color: var(--muted);
 }
 
-/* ── Mobile drawer ── */
+/* â”€â”€ Mobile drawer â”€â”€ */
 @media (max-width: 480px) {
   .match-drawer {
     top: auto;
@@ -2119,7 +2119,7 @@ main {
   }
 }
 
-/* ────────────────────────────────────────RESULTS VIEW────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€RESULTS VIEWâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .result-card {
   background:
     linear-gradient(145deg,
@@ -2150,8 +2150,8 @@ main {
 }
 
 .result-card:hover {
-  border-color: rgba(0, 209, 94, 0.6);
-  box-shadow: 0 12px 32px rgba(0, 209, 94, 0.2);
+  border-color: rgba(185, 151, 0, 0.6);
+  box-shadow: 0 12px 32px rgba(185, 151, 0, 0.2);
   transform: translateY(-2px);
 }
 
@@ -2267,7 +2267,7 @@ main {
   font-weight: 700;
 }
 
-/* ────────────────────────────────────────BRACKET VIEW────────────────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€BRACKET VIEWâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .champion-section {
   text-align: center;
   background: linear-gradient(135deg,
@@ -2321,7 +2321,7 @@ main {
 }
 
 .admin-card {
-  background: rgba(0, 209, 94, 0.08);
+  background: rgba(185, 151, 0, 0.08);
   border: 1px solid rgba(0, 209, 94, 0.25);
   border-radius: 10px;
   padding: 18px;
@@ -2687,7 +2687,7 @@ main {
   padding: 20px 0;
 }
 
-/* ════════════════════════════════════════MODAL════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•MODALâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /* Calendar Modal */
 .calendar-modal {
   max-width: 680px;
@@ -2728,8 +2728,8 @@ main {
 }
 
 .calendar-btn:hover {
-  background: rgba(0, 209, 94, 0.08);
-  border-color: var(--wc-blue);
+  background: rgba(185, 151, 0, 0.08);
+  border-color: var(--wc-gold);
 }
 
 .calendar-btn svg {
@@ -2773,7 +2773,7 @@ main {
   display: flex;
 }
 
-/* ── Round label ── */
+/* â”€â”€ Round label â”€â”€ */
 .bracket-round-label {
   font-family: var(--font-ggo-display);
   font-size: 13px;
@@ -2786,7 +2786,7 @@ main {
   margin-bottom: 6px;
 }
 
-/* ── Match card inside bracket ── */
+/* â”€â”€ Match card inside bracket â”€â”€ */
 .bracket-match {
   background: rgba(12, 18, 24, 0.95);
   border: 1px solid rgba(0, 209, 94, 0.25);
@@ -2843,7 +2843,7 @@ main {
   padding: 20px 0;
 }
 
-/* ── Remove any old .bracket-three-column / .bracket-two-column rules ── */
+/* â”€â”€ Remove any old .bracket-three-column / .bracket-two-column rules â”€â”€ */
 .modal {
   background: var(--dark);
   border: 1px solid rgba(0, 209, 94, 0.3);
@@ -2918,11 +2918,11 @@ main {
 }
 
 .btn-secondary:hover {
-  border-color: var(--wc-blue);
-  background: rgba(0, 209, 94, 0.1);
+  border-color: var(--wc-gold);
+  background: rgba(185, 151, 0, 0.1);
 }
 
-/* ════════════════════════════════════════TOAST NOTIFICATION════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•TOAST NOTIFICATIONâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .toast {
   position: fixed;
   bottom: 30px;
@@ -2956,7 +2956,7 @@ main {
   background: #f59e0b;
 }
 
-/* ════════════════════════════════════════RESPONSIVE════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•RESPONSIVEâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /* Tablet (900px and below) */
 @media (max-width: 900px) {
   header {
@@ -3199,7 +3199,7 @@ main {
 
   .leaderboard-table tr.current-user {
     background: rgba(0, 179, 89, 0.13);
-    border-color: rgba(0, 209, 94, 0.45);
+    border-color: rgba(185, 151, 0, 0.45);
   }
 
   .leaderboard-table td {
@@ -3651,7 +3651,7 @@ main {
 }
 
 .rules-list li::before {
-  content: "✦";
+  content: "âœ¦";
   position: absolute;
   left: 0;
   color: var(--wc-blue);
@@ -3896,7 +3896,7 @@ main {
   box-shadow: var(--wc-gold)
 }
 
-/* ════════════════════════════════════════RULES PAGE VIEW (full tab, not modal)════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•RULES PAGE VIEW (full tab, not modal)â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .rules-page-section {
   margin-bottom: 40px;
 }
@@ -3966,9 +3966,9 @@ main {
 }
 
 .feature-card:hover {
-  background: rgba(0, 209, 94, 0.07);
+  background: rgba(185, 151, 0, 0.07);
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 209, 94, 0.12);
+  box-shadow: 0 8px 24px rgba(185, 151, 0, 0.12);
 }
 
 .feature-icon {
@@ -4046,7 +4046,7 @@ main {
   color: var(--light);
 }
 
-/* ════════════════════════════════════════HAMBURGER BUTTON════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•HAMBURGER BUTTONâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .hamburger-btn {
   display: flex;
   flex-direction: column;
@@ -4071,7 +4071,7 @@ main {
   transition: all 0.3s ease;
 }
 
-/* ════════════════════════════════════════DESKTOP NAV (inside header, hidden on mobile)════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•DESKTOP NAV (inside header, hidden on mobile)â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .desktop-nav {
   display: none !important;
   gap: 8px;
@@ -4086,7 +4086,7 @@ main {
   margin-left: auto;
 }
 
-/* ════════════════════════════════════════SIDEBAR════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•SIDEBARâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -4225,7 +4225,7 @@ main {
   flex-shrink: 0;
 }
 
-/* ════════════════════════════════════════NAV CHANGE BANNER════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•NAV CHANGE BANNERâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .nav-change-banner {
   position: fixed;
   bottom: 16px;
@@ -4289,7 +4289,7 @@ main {
   }
 }
 
-/* Compact bracket – no horizontal scroll, fits viewport */
+/* Compact bracket â€“ no horizontal scroll, fits viewport */
 .bracket-scroll-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -4357,7 +4357,7 @@ main {
   font-weight: 700;
   color: var(--muted);
   text-align: right;
-  background: rgba(0, 209, 94, 0.1);
+  background: rgba(185, 151, 0, 0.1);
   padding: 0 3px;
   border-radius: 2px;
 }
@@ -4479,10 +4479,10 @@ main {
 .bracket-tab.active {
   color: #0c1218;
   background: var(--wc-blue);
-  border-color: var(--wc-blue);
+  border-color: var(--wc-gold);
 }
 
-/* Spider bracket — always show all columns, horizontal scroll */
+/* Spider bracket â€” always show all columns, horizontal scroll */
 .bracket-row[data-tabbed="true"] {
   display: flex !important;
   min-width: 1600px !important;
@@ -4496,11 +4496,11 @@ main {
    GRID BRACKET
 =========================== */
 
-/* The bracket uses a 15-row × 1-column CSS Grid per round.
+/* The bracket uses a 15-row Ã— 1-column CSS Grid per round.
    Each match slot is placed on the correct row via grid-row,
-   so spacing is automatic — no padding-top hacks, no gap magic numbers. */
+   so spacing is automatic â€” no padding-top hacks, no gap magic numbers. */
 
-/* Row height: 90px — match card (~68px) + breathing room */
+/* Row height: 90px â€” match card (~68px) + breathing room */
 :root {
   --brow: 90px;
 }
@@ -4551,7 +4551,7 @@ main {
 
   .vertical-bracket .bracket-scroll-wrapper {
     overflow-x: auto;
-    /* ← changed from visible to auto */
+    /* â† changed from visible to auto */
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     padding: 0 12px 32px;
@@ -4622,7 +4622,7 @@ main {
 }
 
 /* The grid that holds bracket slots for each round.
-   15 rows × 90px each = 1350px total height.
+   15 rows Ã— 90px each = 1350px total height.
    Slots are placed on specific rows via inline grid-row style. */
 .bracket-grid {
   display: grid;
@@ -4639,7 +4639,7 @@ main {
   position: relative;
 }
 
-/* Inner wrapper for the match card — connectors attach to this */
+/* Inner wrapper for the match card â€” connectors attach to this */
 .bracket-slot-inner {
   position: relative;
   width: 180px;
@@ -4699,7 +4699,7 @@ main {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Align final vertically: label (40px) + 7.5 rows to reach center of row 8 = 40 + 7.5×90 = 715px */
+  /* Align final vertically: label (40px) + 7.5 rows to reach center of row 8 = 40 + 7.5Ã—90 = 715px */
   padding-top: 715px;
   gap: 60px;
 }
@@ -4733,7 +4733,7 @@ main {
 .bracket-final .bracket-match {
   width: 200px;
   transform: scale(1.05);
-  border-color: rgba(0, 209, 94, 0.6);
+  border-color: rgba(185, 151, 0, 0.6);
   box-shadow: 0 0 24px rgba(0, 209, 94, 0.3);
 }
 
@@ -4760,8 +4760,8 @@ main {
    Row spacing is var(--brow) = 90px.
    Pairs span 2 rows, so vertical bar = 90px (from center of slot to
    center of next slot = 1 full row).
-   R16 pairs span 4 rows → 2×90 = 180px.
-   QF pairs span 8 rows → 4×90 = 360px.
+   R16 pairs span 4 rows â†’ 2Ã—90 = 180px.
+   QF pairs span 8 rows â†’ 4Ã—90 = 360px.
    SF to Final: longer stub handled by padding.
 =========================== */
 
@@ -4775,7 +4775,7 @@ main {
   border-top: 2px solid rgba(0, 209, 94, 0.35);
 }
 
-/* Hide stub on last round (SF→center handled by center padding) */
+/* Hide stub on last round (SFâ†’center handled by center padding) */
 .bracket-side.left .bracket-round:last-child .bracket-slot-inner::after {
   width: 40px;
   right: -40px;
@@ -4784,8 +4784,8 @@ main {
 /* NOTE: nth-child selectors target .bracket-grid > .bracket-slot,
    so they count only slot elements (the grid only contains slots). */
 
-/* R32: 8 slots on rows 1,3,5,7,9,11,13,15 — pairs are (1,3),(5,7),(9,11),(13,15)
-   Odd slots (1st,3rd…) draw bar downward; even slots draw upward. */
+/* R32: 8 slots on rows 1,3,5,7,9,11,13,15 â€” pairs are (1,3),(5,7),(9,11),(13,15)
+   Odd slots (1st,3rdâ€¦) draw bar downward; even slots draw upward. */
 .bracket-side.left .bracket-round:nth-child(1) .bracket-grid>.bracket-slot:nth-child(odd)::after {
   content: "";
   position: absolute;
@@ -4804,7 +4804,7 @@ main {
   border-right: 2px solid rgba(0, 209, 94, 0.35);
 }
 
-/* R16: 4 slots on rows 2,6,10,14 — pairs span 4 rows apart (4×90px) */
+/* R16: 4 slots on rows 2,6,10,14 â€” pairs span 4 rows apart (4Ã—90px) */
 .bracket-side.left .bracket-round:nth-child(2) .bracket-grid>.bracket-slot:nth-child(odd)::after {
   content: "";
   position: absolute;
@@ -4823,7 +4823,7 @@ main {
   border-right: 2px solid rgba(0, 209, 94, 0.35);
 }
 
-/* QF: 2 slots on rows 4,12 — 8 rows apart (8×90px) */
+/* QF: 2 slots on rows 4,12 â€” 8 rows apart (8Ã—90px) */
 .bracket-side.left .bracket-round:nth-child(3) .bracket-grid>.bracket-slot:nth-child(odd)::after {
   content: "";
   position: absolute;
@@ -4917,9 +4917,9 @@ main {
   border-left: 2px solid rgba(0, 209, 94, 0.35);
 }
 
-/* AFTER — add these new rules AFTER the existing ones: */
+/* AFTER â€” add these new rules AFTER the existing ones: */
 
-/* SF, Final, 3rd Place — switch accent from green to gold */
+/* SF, Final, 3rd Place â€” switch accent from green to gold */
 .vertical-bracket .bracket-match.sf-plus {
   border-color: rgba(185, 151, 0, 0.5);
   box-shadow: 0 0 16px rgba(185, 151, 0, 0.2);
@@ -4944,7 +4944,7 @@ main {
   color: var(--wc-gold);
 }
 
-/* Final card — bigger gold glow */
+/* Final card â€” bigger gold glow */
 .bracket-final .bracket-match.sf-plus {
   border-color: rgba(185, 151, 0, 0.8);
   box-shadow: 0 0 32px rgba(185, 151, 0, 0.45);
@@ -5141,7 +5141,7 @@ main {
   min-width: 54px;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(0, 209, 94, 0.08);
+  background: rgba(185, 151, 0, 0.08);
   border: 1px solid rgba(0, 209, 94, 0.16);
   color: var(--wc-blue);
   font-size: 9px;
@@ -5232,7 +5232,7 @@ main {
   }
 }
 
-/* ── MOBILE BRACKET: single-round view ── */
+/* â”€â”€ MOBILE BRACKET: single-round view â”€â”€ */
 @media (max-width: 999px) {
   .vertical-bracket .bracket-scroll-wrapper {
     overflow: visible !important;
@@ -5292,7 +5292,7 @@ main {
     margin-bottom: 10px;
   }
 
-  /* kill the CSS grid — just stack matches */
+  /* kill the CSS grid â€” just stack matches */
   .bracket-grid {
     display: flex !important;
     flex-direction: column !important;
@@ -5329,7 +5329,7 @@ main {
   }
 }
 
-/* ── Flow bracket (desktop) ── */
+/* â”€â”€ Flow bracket (desktop) â”€â”€ */
 .bracket-layout.flow {
   display: flex;
   align-items: stretch;
@@ -5550,7 +5550,7 @@ main {
   margin-right: 3px;
 }
 
-/* ── Home grid ── */
+/* â”€â”€ Home grid â”€â”€ */
 .home-grid {
   display: grid;
   gap: 20px;
@@ -5596,7 +5596,7 @@ main {
   font-size: 11px;
   font-weight: 700;
   color: var(--wc-blue);
-  background: rgba(0, 209, 94, 0.1);
+  background: rgba(185, 151, 0, 0.1);
   border: 1px solid rgba(0, 209, 94, 0.2);
   border-radius: 999px;
   padding: 3px 10px;
@@ -5609,7 +5609,7 @@ main {
   gap: 0;
 }
 
-/* ── Individual home match card ── */
+/* â”€â”€ Individual home match card â”€â”€ */
 .home-match-card-large {
   padding: 16px 18px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -5659,7 +5659,7 @@ main {
   flex-direction: column;
   align-items: center;
   gap: 0;
-  background: rgba(0, 209, 94, 0.08);
+  background: rgba(185, 151, 0, 0.08);
   border: 1px solid rgba(0, 209, 94, 0.15);
   border-radius: 8px;
   padding: 6px 10px;
@@ -5681,7 +5681,7 @@ main {
   color: var(--muted);
 }
 
-/* ── Percent bar ── */
+/* â”€â”€ Percent bar â”€â”€ */
 .match-percent-bar {
   display: flex;
   height: 3px;
@@ -5720,7 +5720,7 @@ main {
   text-align: right;
 }
 
-/* ── Popular predictions ── */
+/* â”€â”€ Popular predictions â”€â”€ */
 .popular-score-section {
   display: flex;
   flex-direction: column;
@@ -5809,7 +5809,7 @@ main {
   }
 }
 
-/* ── Match status badge ── */
+/* â”€â”€ Match status badge â”€â”€ */
 .match-status-badge {
   display: inline-flex;
   align-items: center;
@@ -5828,7 +5828,7 @@ main {
 }
 
 .match-status-badge.status-live::before {
-  content: "●";
+  content: "â—";
   margin-right: 4px;
   font-size: 7px;
   animation: pulse-dot 1.2s infinite;
@@ -5853,12 +5853,12 @@ main {
 }
 
 .match-status-badge.status-upcoming {
-  background: rgba(0, 209, 94, 0.1);
+  background: rgba(185, 151, 0, 0.1);
   color: var(--wc-blue);
   border: 1px solid rgba(0, 209, 94, 0.2);
 }
 
-/* ── Match group label ── */
+/* â”€â”€ Match group label â”€â”€ */
 .match-group-label {
   font-size: 9px;
   font-weight: 700;
@@ -5870,7 +5870,7 @@ main {
   padding: 2px 6px;
 }
 
-/* ── Day section headers (Yesterday / Today / Tomorrow) ── */
+/* â”€â”€ Day section headers (Yesterday / Today / Tomorrow) â”€â”€ */
 .home-day-section {
   padding: 0;
 }
@@ -5895,10 +5895,10 @@ main {
   flex-direction: column;
 }
 
-/* ════════════════════════════════════════
-         PROFILE PAGE — scoped additions only
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+         PROFILE PAGE â€” scoped additions only
          All base tokens come from style.css
-      ════════════════════════════════════════ */
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .logo {
   display: flex;
@@ -5963,7 +5963,7 @@ main {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 209, 94, 0.1);
+  background: rgba(185, 151, 0, 0.1);
   border: 1px solid rgba(0, 209, 94, 0.3);
   padding: 6px 12px;
   border-radius: 20px;
@@ -6005,7 +6005,7 @@ main {
   min-height: 44px;
 }
 
-/* ── Back nav ── */
+/* â”€â”€ Back nav â”€â”€ */
 .profile-back {
   display: inline-flex;
   align-items: center;
@@ -6037,7 +6037,7 @@ main {
   transform: translateX(-3px);
 }
 
-/* ── Hero card ── */
+/* â”€â”€ Hero card â”€â”€ */
 .profile-hero {
   position: relative;
   background:
@@ -6170,7 +6170,7 @@ main {
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(0, 209, 94, 0.3);
-  background: rgba(0, 209, 94, 0.08);
+  background: rgba(185, 151, 0, 0.08);
   font-size: 11px;
   font-weight: 700;
   color: var(--wc-blue);
@@ -6184,7 +6184,7 @@ main {
   color: var(--warning);
 }
 
-/* ── Stats row ── */
+/* â”€â”€ Stats row â”€â”€ */
 .profile-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -6272,7 +6272,7 @@ main {
   color: var(--muted);
 }
 
-/* ── Section heading ── */
+/* â”€â”€ Section heading â”€â”€ */
 .profile-section-title {
   font-family: var(--font-ggo-display);
   font-size: 22px;
@@ -6299,7 +6299,7 @@ main {
   letter-spacing: 0;
 }
 
-/* ── Prediction history filter ── */
+/* â”€â”€ Prediction history filter â”€â”€ */
 .profile-filter-row {
   display: flex;
   align-items: center;
@@ -6308,7 +6308,7 @@ main {
   flex-wrap: wrap;
 }
 
-/* ── Prediction history list ── */
+/* â”€â”€ Prediction history list â”€â”€ */
 .pred-history-list {
   display: flex;
   flex-direction: column;
@@ -6351,7 +6351,7 @@ main {
 }
 
 .pred-card:hover {
-  border-color: rgba(0, 209, 94, 0.45);
+  border-color: rgba(185, 151, 0, 0.45);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
@@ -6577,7 +6577,7 @@ main {
   background: rgba(16, 185, 129, 0.07);
 }
 
-/* ── Trophies / Achievements placeholder ── */
+/* â”€â”€ Trophies / Achievements placeholder â”€â”€ */
 .trophies-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -6607,7 +6607,7 @@ main {
   letter-spacing: 0.4px;
 }
 
-/* ── Skeleton loader ── */
+/* â”€â”€ Skeleton loader â”€â”€ */
 .skel {
   background: linear-gradient(90deg,
       rgba(255, 255, 255, 0.05) 25%,
@@ -6681,7 +6681,7 @@ main {
   border-radius: 10px;
 }
 
-/* ── Error state ── */
+/* â”€â”€ Error state â”€â”€ */
 .profile-error {
   text-align: center;
   padding: 60px 20px;
@@ -6702,7 +6702,7 @@ main {
   font-size: 14px;
 }
 
-/* ── Progress bar (accuracy) ── */
+/* â”€â”€ Progress bar (accuracy) â”€â”€ */
 .accuracy-bar-wrap {
   margin: 4px 0 14px;
   display: flex;
@@ -6751,7 +6751,7 @@ main {
   letter-spacing: 0.3px;
 }
 
-/* ── Responsive ── */
+/* â”€â”€ Responsive â”€â”€ */
 @media (max-width: 640px) {
   .profile-stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -6818,7 +6818,7 @@ main {
   }
 }
 
-/* ── Multiplier table ── */
+/* â”€â”€ Multiplier table â”€â”€ */
 .multiplier-table {
   display: flex;
   flex-direction: column;
@@ -6857,7 +6857,7 @@ main {
   text-align: right;
 }
 
-/* ── Knockout live banner ── */
+/* â”€â”€ Knockout live banner â”€â”€ */
 .knockout-banner {
   display: flex;
   align-items: center;
@@ -6902,7 +6902,7 @@ main {
   display: none !important;
 }
 
-/* ── Final score chip (replaces "vs" when match is done) ── */
+/* â”€â”€ Final score chip (replaces "vs" when match is done) â”€â”€ */
 .final-score-chip {
   display: inline-block;
   color: #0a0a0f;
@@ -6915,12 +6915,12 @@ main {
   box-shadow: 0 2px 8px rgba(99, 245, 66, 0.35);
 }
 
-/* ── Finished match card accent ── */
+/* â”€â”€ Finished match card accent â”€â”€ */
 .home-match-card-large.match-finished {
   border-left: 3px solid rgba(245, 200, 66, 0.5);
 }
 
-/* ── Exact score highlight (15 pts) — full row gold fill ── */
+/* â”€â”€ Exact score highlight (15 pts) â€” full row gold fill â”€â”€ */
 .popular-score.correct-score {
   background: rgba(245, 200, 66, 0.14);
   border-color: rgba(245, 200, 66, 0.35);
@@ -7010,7 +7010,7 @@ main {
   margin: 6px 0;
 }
 
-/* ════════════════════════════════════════ UI OVERHAUL STYLES ════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• UI OVERHAUL STYLES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* Atmospheric pitch background & textures */
 body {
@@ -7048,8 +7048,8 @@ body {
 .pred-card:hover,
 .result-card:hover {
   transform: translateY(-4px) !important;
-  border-color: rgba(0, 245, 118, 0.4) !important;
-  box-shadow: 0 12px 40px 0 rgba(0, 245, 118, 0.15) !important;
+  border-color: rgba(185, 151, 0, 0.4) !important;
+  box-shadow: 0 12px 40px 0 rgba(185, 151, 0, 0.15) !important;
 }
 
 /* Staggered card animations */
@@ -7121,9 +7121,9 @@ body {
 }
 
 .nav-btn:hover {
-  background: rgba(0, 245, 118, 0.08) !important;
-  color: var(--wc-blue) !important;
-  border-color: rgba(0, 245, 118, 0.3) !important;
+  background: rgba(185, 151, 0, 0.08) !important;
+  color: var(--wc-gold) !important;
+  border-color: rgba(185, 151, 0, 0.3) !important;
 }
 
 .nav-btn.active {
@@ -7194,7 +7194,7 @@ body {
 }
 
 .mobile-nav-btn.active {
-  color: var(--wc-blue) !important;
+  color: var(--wc-gold) !important;
   background: transparent !important;
   text-shadow: 0 0 10px rgba(0, 245, 118, 0.2);
 }
@@ -7263,9 +7263,9 @@ body {
   transform: scale(0.9);
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    R16 VOTE MODAL
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .vote-modal {
   position: fixed;
   inset: 0;
@@ -7475,9 +7475,9 @@ body {
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* ════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    CHAMPION PREDICTOR EXTRAS
-════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .champion-countdown {
   color: #ff184c;
   text-shadow: 0 0 10px #ff184c;
