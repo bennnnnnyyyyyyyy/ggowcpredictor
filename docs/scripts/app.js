@@ -4818,7 +4818,7 @@ async function openChampionPickModal() {
     if (existingPick) {
       // Already picked — show results
       if (badge)
-        badge.textContent = `Your pick: ${existingPick.team} · ${existingPick.points_value} pts if correct`;
+        badge.textContent = `${existingPick.points_value} pts if correct`;
       if (optionsDiv) optionsDiv.style.display = "none";
       if (submitBtn) submitBtn.style.display = "none";
       if (skipBtn) {
@@ -4975,6 +4975,33 @@ async function submitChampionPick() {
   }
 }
 
+function isTeamEliminated(teamName) {
+  if (!teamName) return false;
+  const fixtures = STATE.fixtures || [];
+  const finishedStatuses = new Set(["FT", "AET", "PEN", "FINISHED", "ENDED"]);
+
+  // Team is still alive if it appears in any fixture that isn't finished
+  for (const f of fixtures) {
+    const result = STATE.results?.[f.matchId];
+    const isFinished =
+      result &&
+      finishedStatuses.has(String(result.status || "").toUpperCase());
+    if (isFinished) continue;
+    const t1 = resolveSlot(f.team1) || f.team1;
+    const t2 = resolveSlot(f.team2) || f.team2;
+    if (t1 === teamName || t2 === teamName) return false;
+  }
+
+  // Not in any future fixture — check they appeared at all (avoids false-positive for unknown teams)
+  for (const f of fixtures) {
+    const t1 = resolveSlot(f.team1) || f.team1;
+    const t2 = resolveSlot(f.team2) || f.team2;
+    if (t1 === teamName || t2 === teamName) return true;
+  }
+
+  return false;
+}
+
 async function loadChampionPickResults(yourTeam) {
   const resultsDiv = document.getElementById("champion-pick-results");
   if (!resultsDiv) return;
@@ -4989,11 +5016,14 @@ async function loadChampionPickResults(yourTeam) {
     if (t) counts[t] = (counts[t] || 0) + 1;
   }
   const sorted = Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+    .sort((a, b) => b[1] - a[1]);
 
   if (yourTeam) {
+    const eliminated = isTeamEliminated(yourTeam);
     resultsDiv.innerHTML = `<span class="champion-your-pick">Your pick: <strong>${escapeHtml(yourTeam)}</strong></span>`;
+    if (eliminated) {
+      resultsDiv.innerHTML += `<div class="champion-eliminated-warning">⚠️ ${escapeHtml(yourTeam)} has been knocked out — your pick won't score points.</div>`;
+    }
   } else {
     resultsDiv.innerHTML = "";
   }

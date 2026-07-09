@@ -7667,3 +7667,16 @@ body {
 .champion-your-pick strong {
   color: var(--wc-green, #00c060);
 }
+
+.champion-eliminated-warning {
+  display: block;
+  text-align: center;
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ffcc55;
+  background: rgba(255, 160, 0, 0.12);
+  border: 1px solid rgba(255, 160, 0, 0.35);
+}
