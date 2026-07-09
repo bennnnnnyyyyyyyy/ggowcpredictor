@@ -675,7 +675,7 @@ header {
   color: var(--wc-gold);
   border-radius: 10px;
   background: rgba(0, 209, 94, 0.14);
-  border: 1px solid rgba(0, 209, 94, 0.4);
+  border: 1px solid rgba(185, 151, 0, 0.6);
   color: var(--light);
   cursor: pointer;
   flex-shrink: 0;
@@ -733,7 +733,7 @@ header {
   align-items: center;
   gap: 10px;
   background: rgba(185, 151, 0, 0.1);
-  border: 1px solid rgba(0, 209, 94, 0.3);
+  border: 1px solid rgba(185, 151, 0, 0.6);
   border-radius: 20px;
   padding: 6px 12px 6px 6px;
   font-size: 13px;
@@ -848,7 +848,7 @@ main {
     repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.04) 0 1px,
       transparent 1px 9px);
-  border: 2px solid rgba(57, 172, 46, 0.925);
+  border: 2px solid rgba(185, 151, 0, 0.6);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.25s ease;
