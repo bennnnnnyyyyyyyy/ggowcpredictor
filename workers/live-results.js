@@ -1643,7 +1643,7 @@ function cleanTeamName(name) {
   if (clean === "capeverde" || clean === "caboverde") return "capeverde";
   return clean;
 }
-
+// AFTER
 function buildFixtureLookups(fixtureRows, resolveTeams) {
   const byApiId = new Map();
   const byTeams = new Map();
@@ -1653,15 +1653,13 @@ function buildFixtureLookups(fixtureRows, resolveTeams) {
     const matchId = normalizeMatchId(fixture.matchId || fixture.id);
     if (!matchId) continue;
 
-    if (fixture.apiFixtureId !== null && fixture.apiFixtureId !== undefined) {
-      byApiId.set(String(fixture.apiFixtureId), fixture);
-    }
-
-    // Knockout fixtures store bracket slot codes ("W73", "L88", "1A", "3A/B/C/D/F")
-    // in team1/team2 until they're manually resolved. Resolve them here so live
-    // matching still works even if the fixtures table hasn't been updated yet.
     const home = cleanTeamName(resolve(fixture.team1));
     const away = cleanTeamName(resolve(fixture.team2));
+
+    if (fixture.apiFixtureId !== null && fixture.apiFixtureId !== undefined) {
+      byApiId.set(String(fixture.apiFixtureId), { fixture, home, away });
+    }
+
     if (home && away) {
       byTeams.set(`${home}__${away}`, { fixture, flipped: false });
       byTeams.set(`${away}__${home}`, { fixture, flipped: true });
@@ -1794,14 +1792,12 @@ function resolveFixtureMatch(item, lookups) {
   const homeTeam = cleanTeamName(item.homeTeam || item.team1 || "");
   const awayTeam = cleanTeamName(item.awayTeam || item.team2 || "");
   if (!homeTeam || !awayTeam) return null;
-
+  // AFTER
   if (apiGameId !== null && apiGameId !== undefined && apiGameId !== "") {
     const byId = lookups.byApiId.get(String(apiGameId));
     if (byId) {
-      const dbHome = cleanTeamName(byId.team1);
-      const dbAway = cleanTeamName(byId.team2);
-      const flipped = dbHome === awayTeam && dbAway === homeTeam;
-      return { fixture: byId, flipped };
+      const flipped = byId.home === awayTeam && byId.away === homeTeam;
+      return { fixture: byId.fixture, flipped };
     }
   }
 
