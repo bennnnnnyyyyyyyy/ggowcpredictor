@@ -544,7 +544,7 @@ header {
   padding: 8px 16px;
   background: rgba(185, 151, 0, 0.08);
   color: var(--light);
-  border: 1px solid rgba(0, 209, 94, 0.3);
+  border: 1px solid rgba(241, 201, 22, 0.63);
   border-radius: 6px;
   font-family: var(--font-ggo-body);
   font-size: 13px;
@@ -565,7 +565,7 @@ header {
   background: var(--wc-blue);
   color: #fff;
   border-color: var(--wc-gold);
-  box-shadow: 0 4px 12px rgba(0, 209, 94, 0.25);
+  box-shadow: 0 4px 12px rgba(241, 201, 22, 0.863);
 }
 
 .admin-btn {
@@ -6895,7 +6895,7 @@ main {
 }
 
 .knockout-banner-close:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--wc-gold)
 }
 
 .knockout-banner[hidden] {
@@ -6974,7 +6974,7 @@ main {
 }
 
 .pen-popup-btn:hover {
-  background: #00b359;
+  background: var(--wc-gold);
 }
 
 .pen-popup-cancel {
