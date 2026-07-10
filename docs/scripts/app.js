@@ -786,6 +786,7 @@ function showApp() {
   }
 
   showNavChangeBanner();
+  renderHome();
   requestSync();
 }
 
@@ -795,15 +796,13 @@ function hardRefreshApp() {
   window.location.href =
     window.location.pathname + "?refresh=" + Date.now() + window.location.hash;
 }
-
 setInterval(
   () => {
     if (document.hidden) return;
-    hardRefreshApp();
+    requestSync();
   },
   5 * 60 * 1000,
 );
-
 function handleLogout() {
   localStorage.removeItem("ggo_wc_token");
   localStorage.removeItem("ggo_wc_user");
