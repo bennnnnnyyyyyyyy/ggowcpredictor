@@ -106,4 +106,4 @@ UPDATE fixtures SET "kickoffUTC"='2026-07-12T01:00:00+00:00'::timestamptz WHERE 
 UPDATE fixtures SET "kickoffUTC"='2026-07-14T19:00:00+00:00'::timestamptz WHERE "apiFixtureId" = 101;
 UPDATE fixtures SET "kickoffUTC"='2026-07-15T19:00:00+00:00'::timestamptz WHERE "apiFixtureId" = 102;
 UPDATE fixtures SET "kickoffUTC"='2026-07-18T21:00:00+00:00'::timestamptz WHERE team1 = 'L101' AND team2 = 'L102';
-UPDATE fixtures SET "kickoffUTC"='2026-07-19T19:00:00+00:00'::timestamptz WHERE team1 = 'W101' AND team2 = 'W102';
+UPDATE fixtures SET "kickoffUTC"='2026-07-19T19:00:00+00:00'::timestamptz WHERE team1 = 'W101' AND team2 = 'W102';  
