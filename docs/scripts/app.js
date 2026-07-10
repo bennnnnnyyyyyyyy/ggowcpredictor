@@ -991,7 +991,10 @@ function buildScoreGroups(matchPreds, fixture) {
 
     let flagHtml = "";
     if (prediction.pred1 === prediction.pred2 && fixture) {
-      const penWinnerTeam = getPenaltyWinnerTeam(fixture, prediction.pen_winner);
+      const penWinnerTeam = getPenaltyWinnerTeam(
+        fixture,
+        prediction.pen_winner,
+      );
       if (penWinnerTeam) {
         flagHtml = getFlagImg(penWinnerTeam);
       }
@@ -1032,7 +1035,10 @@ function buildOutcomeGroups(matchPreds, homeTeam, awayTeam, fixture) {
 
     let flagHtml = "";
     if (outcome === "draw" && fixture) {
-      const penWinnerTeam = getPenaltyWinnerTeam(fixture, prediction.pen_winner);
+      const penWinnerTeam = getPenaltyWinnerTeam(
+        fixture,
+        prediction.pen_winner,
+      );
       if (penWinnerTeam) {
         flagHtml = getFlagImg(penWinnerTeam);
       }
@@ -4553,13 +4559,13 @@ function getUserStreaks(streakLength = 3) {
     );
 
   const allPreds = Object.values(STATE.allPredictions || {});
-  
+
   // Collect all unique active usernames from both the users list and predictions
   const usernames = Array.from(
     new Set([
       ...(STATE.users || []).map((u) => u.username),
       ...allPreds.map((p) => p.username),
-    ])
+    ]),
   ).filter(Boolean);
 
   const byUser = new Map();
@@ -4572,7 +4578,7 @@ function getUserStreaks(streakLength = 3) {
       const pred = allPreds.find(
         (p) =>
           String(p.username).toLowerCase() === String(username).toLowerCase() &&
-          String(p.matchId) === String(fixture.matchId)
+          String(p.matchId) === String(fixture.matchId),
       );
 
       if (pred) {
@@ -4598,7 +4604,7 @@ function getUserStreaks(streakLength = 3) {
   const coldStreaks = [];
   byUser.forEach((hits, username) => {
     if (!hits.length) return;
-    
+
     let maxHot = 0;
     let maxCold = 0;
     let currentHot = 0;
@@ -4677,14 +4683,12 @@ function renderHomeExtraTiles() {
           <div class="streaks-list">
             <div class="streak-section-title">Scoring streaks</div>
             ${hotStreaks
-              .map(
-                (s) => {
-                  const name = getShortName(getUserDisplayName(s.username));
-                  return `<div class="streak-row hot">🔥 <strong>${escapeHtml(
-                    name,
-                  )}</strong> — ${s.streak} scoring in a row</div>`;
-                }
-              )
+              .map((s) => {
+                const name = getShortName(getUserDisplayName(s.username));
+                return `<div class="streak-row hot">🔥 <strong>${escapeHtml(
+                  name,
+                )}</strong> ${s.streak} in a row</div>`;
+              })
               .join("")}
           </div>`
             : ""
@@ -4695,14 +4699,12 @@ function renderHomeExtraTiles() {
           <div class="streaks-list">
             <div class="streak-section-title">Cold streaks</div>
             ${coldStreaks
-              .map(
-                (s) => {
-                  const name = getShortName(getUserDisplayName(s.username));
-                  return `<div class="streak-row cold">🥶 <strong>${escapeHtml(
-                    name,
-                  )}</strong> — ${s.streak} misses in a row</div>`;
-                }
-              )
+              .map((s) => {
+                const name = getShortName(getUserDisplayName(s.username));
+                return `<div class="streak-row cold">🥶 <strong>${escapeHtml(
+                  name,
+                )}</strong> ${s.streak} missed in a row</div>`;
+              })
               .join("")}
           </div>`
             : ""
