@@ -973,7 +973,7 @@ function getPredictionOutcome(pred1, pred2) {
   return "draw";
 }
 
-function buildScoreGroups(matchPreds) {
+function buildScoreGroups(matchPreds, fixture) {
   const groups = new Map();
   matchPreds.forEach((prediction) => {
     if (prediction.pred1 == null || prediction.pred2 == null) return;
@@ -989,7 +989,15 @@ function buildScoreGroups(matchPreds) {
       prediction.user ||
       "Someone";
 
-    entry.users.push(name);
+    let flagHtml = "";
+    if (prediction.pred1 === prediction.pred2 && fixture) {
+      const penWinnerTeam = getPenaltyWinnerTeam(fixture, prediction.pen_winner);
+      if (penWinnerTeam) {
+        flagHtml = getFlagImg(penWinnerTeam);
+      }
+    }
+
+    entry.users.push({ name, flagHtml });
 
     groups.set(score, entry);
   });
@@ -997,7 +1005,7 @@ function buildScoreGroups(matchPreds) {
   return Array.from(groups.values()).sort((a, b) => b.count - a.count);
 }
 
-function buildOutcomeGroups(matchPreds, homeTeam, awayTeam) {
+function buildOutcomeGroups(matchPreds, homeTeam, awayTeam, fixture) {
   const groups = {
     home: { label: `${homeTeam} Win`, count: 0, users: [] },
     draw: { label: `Draw`, count: 0, users: [] },
@@ -1021,7 +1029,16 @@ function buildOutcomeGroups(matchPreds, homeTeam, awayTeam) {
       prediction.username ||
       prediction.user ||
       "Someone";
-    group.users.push(name);
+
+    let flagHtml = "";
+    if (outcome === "draw" && fixture) {
+      const penWinnerTeam = getPenaltyWinnerTeam(fixture, prediction.pen_winner);
+      if (penWinnerTeam) {
+        flagHtml = getFlagImg(penWinnerTeam);
+      }
+    }
+
+    group.users.push({ name, flagHtml });
   });
 
   return [groups.home, groups.draw, groups.away]
@@ -1117,8 +1134,8 @@ function renderHome() {
           ));
 
       const scoreGroups = hasStarted
-        ? buildScoreGroups(matchPreds)
-        : buildOutcomeGroups(matchPreds, homeTeam, awayTeam);
+        ? buildScoreGroups(matchPreds, fixture)
+        : buildOutcomeGroups(matchPreds, homeTeam, awayTeam, fixture);
 
       // ─── NEW: LOOK UP COLORS HERE ───
       const homeColor = wcTeamColors[homeTeam]?.primary || "var(--wc-blue)";
@@ -1154,14 +1171,14 @@ function renderHome() {
 
               return `
           <div class="popular-score ${index === 0 ? "popular-score-top" : ""} ${scoreClass}">
-            <div class="popular-score-main">
+             <div class="popular-score-main">
               <span class="score-badge">${escapeHtml(group.score)}</span>
               <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
             </div>
 
             <div class="popular-score-names">
               ${group.users
-                .map((name) => `<span>${escapeHtml(name)}</span>`)
+                .map((u) => `<span>${escapeHtml(u.name)}${u.flagHtml}</span>`)
                 .join("")}
             </div>
           </div>
@@ -2652,9 +2669,7 @@ function openMatchDrawer(matchId) {
     fixture,
     result?.penalty_winner,
   );
-  const scoreText = hasRes
-    ? `${result.score1} – ${result.score2}`
-    : "– vs –";
+  const scoreText = hasRes ? `${result.score1} – ${result.score2}` : "– vs –";
 
   const statusLabel = isLive
     ? result.status
@@ -4368,6 +4383,16 @@ function hasResult(result) {
   if (status === "NS" || status === "") return false;
   return isLiveStatus(status) || isFinalStatus(status);
 }
+function getShortName(fullName) {
+  const trimmed = String(fullName || "").trim();
+  const firstWord = trimmed.split(/\s+/)[0] || "";
+  const lower = firstWord.toLowerCase();
+  if (lower === "ben" || lower === "jane") {
+    return trimmed;
+  }
+  return firstWord;
+}
+
 function renderRaceToTop() {
   const container = document.getElementById("home-race-top3");
   if (!container) return;
@@ -4383,9 +4408,7 @@ function renderRaceToTop() {
     ${topPlayers
       .map((p, i) => {
         const gap = leaderPts - (p.totalPoints || 0);
-        const name = (p.displayName || p.username || "Player")
-          .trim()
-          .split(/\s+/)[0];
+        const name = getShortName(p.displayName || p.username || "Player");
         const pointsClass = i === 0 ? "race-points-glow" : "race-points";
         return `
         <div class="race-row rank-${i + 1}">
@@ -4517,7 +4540,7 @@ function getLiveProjectedDeltas() {
   return deltas;
 }
 
-// Most recent hot streak (consecutive scoring picks) and cold streak (consecutive zeros)
+// Longest hot streak (consecutive scoring picks) and cold streak (consecutive misses) since tournament started
 function getUserStreaks(streakLength = 3) {
   const finished = (STATE.fixtures || [])
     .filter((f) => {
@@ -4526,48 +4549,78 @@ function getUserStreaks(streakLength = 3) {
     })
     .sort(
       (a, b) =>
-        (b.kickoffDate?.getTime() || 0) - (a.kickoffDate?.getTime() || 0),
+        (a.kickoffDate?.getTime() || 0) - (b.kickoffDate?.getTime() || 0),
     );
 
   const allPreds = Object.values(STATE.allPredictions || {});
+  
+  // Collect all unique active usernames from both the users list and predictions
+  const usernames = Array.from(
+    new Set([
+      ...(STATE.users || []).map((u) => u.username),
+      ...allPreds.map((p) => p.username),
+    ])
+  ).filter(Boolean);
+
   const byUser = new Map();
 
-  finished.forEach((fixture) => {
-    const result = STATE.results[fixture.matchId];
-    allPreds
-      .filter((p) => String(p.matchId) === String(fixture.matchId))
-      .forEach((p) => {
+  usernames.forEach((username) => {
+    const hits = [];
+    finished.forEach((fixture) => {
+      const result = STATE.results[fixture.matchId];
+      // Find the prediction by this user for this fixture
+      const pred = allPreds.find(
+        (p) =>
+          String(p.username).toLowerCase() === String(username).toLowerCase() &&
+          String(p.matchId) === String(fixture.matchId)
+      );
+
+      if (pred) {
         const pts = calculateMatchPoints(
-          p.pred1,
-          p.pred2,
+          pred.pred1,
+          pred.pred2,
           result.score1,
           result.score2,
           fixture.stage,
-          p.pen_winner,
+          pred.pen_winner,
           result.penalty_winner,
         );
-        const list = byUser.get(p.username) || [];
-        list.push(pts > 0);
-        byUser.set(p.username, list);
-      });
+        hits.push(pts > 0);
+      } else {
+        // No prediction = miss (false)
+        hits.push(false);
+      }
+    });
+    byUser.set(username, hits);
   });
 
   const hotStreaks = [];
   const coldStreaks = [];
   byUser.forEach((hits, username) => {
     if (!hits.length) return;
-    const isHot = hits[0] === true;
-    let streak = 0;
-    for (const h of hits) {
-      if (h === isHot) streak++;
-      else break;
-    }
-    if (streak >= streakLength) {
-      if (isHot) {
-        hotStreaks.push({ username, streak });
+    
+    let maxHot = 0;
+    let maxCold = 0;
+    let currentHot = 0;
+    let currentCold = 0;
+
+    hits.forEach((h) => {
+      if (h === true) {
+        currentHot++;
+        currentCold = 0;
+        if (currentHot > maxHot) maxHot = currentHot;
       } else {
-        coldStreaks.push({ username, streak });
+        currentCold++;
+        currentHot = 0;
+        if (currentCold > maxCold) maxCold = currentCold;
       }
+    });
+
+    if (maxHot >= streakLength) {
+      hotStreaks.push({ username, streak: maxHot });
+    }
+    if (maxCold >= streakLength && maxCold <= 20) {
+      coldStreaks.push({ username, streak: maxCold });
     }
   });
 
@@ -4625,10 +4678,12 @@ function renderHomeExtraTiles() {
             <div class="streak-section-title">Scoring streaks</div>
             ${hotStreaks
               .map(
-                (s) =>
-                  `<div class="streak-row hot">🔥 <strong>${escapeHtml(
-                    getUserDisplayName(s.username),
-                  )}</strong> — ${s.streak} scoring in a row</div>`,
+                (s) => {
+                  const name = getShortName(getUserDisplayName(s.username));
+                  return `<div class="streak-row hot">🔥 <strong>${escapeHtml(
+                    name,
+                  )}</strong> — ${s.streak} scoring in a row</div>`;
+                }
               )
               .join("")}
           </div>`
@@ -4641,10 +4696,12 @@ function renderHomeExtraTiles() {
             <div class="streak-section-title">Cold streaks</div>
             ${coldStreaks
               .map(
-                (s) =>
-                  `<div class="streak-row cold">🥶 <strong>${escapeHtml(
-                    getUserDisplayName(s.username),
-                  )}</strong> — ${s.streak} misses in a row</div>`,
+                (s) => {
+                  const name = getShortName(getUserDisplayName(s.username));
+                  return `<div class="streak-row cold">🥶 <strong>${escapeHtml(
+                    name,
+                  )}</strong> — ${s.streak} misses in a row</div>`;
+                }
               )
               .join("")}
           </div>`
