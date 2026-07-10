@@ -44,6 +44,19 @@
 
 
 <body>
+  <!-- ═════════════ GLOBAL LOADING SCREEN ══════════ -->
+  <div id="app-loading-screen">
+    <div class="app-loading-inner">
+      <img src="assets/images/GGO-GREY.png" alt="GGO" class="app-loading-logo" />
+      <div class="app-loading-title">GGO <span>WC</span> 2026</div>
+      <div class="app-loading-subtitle">Prediction Game</div>
+      <div class="app-loading-spinner">
+        <div class="spinner-ring"></div>
+      </div>
+      <div class="app-loading-text">Loading...</div>
+    </div>
+  </div>
+
   <!-- ═════════════ LOGIN SCREEN ══════════ -->
   <div id="login-screen">
     <div class="login-card">
@@ -249,11 +262,14 @@
       <!-- ── HOME VIEW ── -->
       <div id="view-home" class="view active">
         <div class="home-hero">
-
           <div class="home-hero-stats" id="home-summary-stats"></div>
-          <div id="home-hot-cold-tile" class="home-tile"></div>
-          <div id="home-sweating-tile" class="home-tile"></div>
-          <div id="home-race-top3"class="home-tile"></div>
+
+          <div class="home-tiles-grid">
+            <div id="home-race-top3" class="home-tile"></div>
+            <div id="home-hot-cold-tile" class="home-tile"></div>
+            <div id="home-sweating-tile" class="home-tile"></div>
+            <div id="home-consensus-tile" class="home-tile"></div>
+          </div>
 
           <div class="home-win-bar" id="home-win-bar"></div>
         </div>

@@ -681,6 +681,24 @@ function renderProfile(data) {
     const hasPred = p.predictedHome !== null && p.predictedAway !== null;
     const firstName = (displayName || "").split(" ")[0];
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const profileUsername = (urlParams.get("user") || "").trim().toLowerCase();
+    const loggedInUser = (localStorage.getItem("ggo_wc_user") || "").trim().toLowerCase();
+    const isSelf = profileUsername === loggedInUser;
+
+    let pickDisplayHtml = "";
+    if (hasPred) {
+      if (!isSelf && p.statusType === "upcoming") {
+        const outcome = p.predictedHome > p.predictedAway ? "home" : p.predictedHome < p.predictedAway ? "away" : "draw";
+        const outcomeText = outcome === "home" ? `${esc(p.home)} Win` : outcome === "away" ? `${esc(p.away)} Win` : "Draw";
+        pickDisplayHtml = `<span class="pred-score-value pick" style="font-size: 13px; font-weight: 600; color: var(--wc-gold);">${outcomeText}</span>`;
+      } else {
+        pickDisplayHtml = scoreDisplay(p.predictedHome, p.predictedAway, "pick");
+      }
+    } else {
+      pickDisplayHtml = `<span class="pred-score-value no-pick">No pick</span>`;
+    }
+
     return `
     <article class="pred-card">
       <div class="pred-stripe ${stripe}"></div>
@@ -698,7 +716,7 @@ function renderProfile(data) {
           </div>
           <div class="pred-score-row">
             <span class="pred-score-label">${esc(firstName)}'s pick</span>
-            ${hasPred ? scoreDisplay(p.predictedHome, p.predictedAway, "pick") : `<span class="pred-score-value no-pick">No pick</span>`}
+            ${pickDisplayHtml}
           </div>
         </div>
         <div class="pred-meta">

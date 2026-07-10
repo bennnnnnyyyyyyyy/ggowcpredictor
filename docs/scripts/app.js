@@ -234,6 +234,15 @@ const STADIUMS_BY_GROUND = {
     timeZone: "America/Vancouver",
   },
 };
+function dismissLoadingScreen() {
+  const el = document.getElementById("app-loading-screen");
+  if (!el) return;
+  el.classList.add("fade-out");
+  setTimeout(() => {
+    el.remove();
+  }, 450);
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
   initFirebase();
 
@@ -261,6 +270,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   if (hasSession) {
     showApp();
+    // Loading screen dismisses after first requestSync completes (see requestSync)
+  } else {
+    // No session — show login form, dismiss loading screen
+    dismissLoadingScreen();
   }
   window.setInterval(() => {
     if (document.hidden) return;
@@ -984,6 +997,39 @@ function buildScoreGroups(matchPreds) {
   return Array.from(groups.values()).sort((a, b) => b.count - a.count);
 }
 
+function buildOutcomeGroups(matchPreds, homeTeam, awayTeam) {
+  const groups = {
+    home: { label: `${homeTeam} Win`, count: 0, users: [] },
+    draw: { label: `Draw`, count: 0, users: [] },
+    away: { label: `${awayTeam} Win`, count: 0, users: [] },
+  };
+
+  matchPreds.forEach((prediction) => {
+    if (prediction.pred1 == null || prediction.pred2 == null) return;
+    const outcome =
+      prediction.pred1 > prediction.pred2
+        ? "home"
+        : prediction.pred1 < prediction.pred2
+          ? "away"
+          : "draw";
+    const group = groups[outcome];
+    group.count += 1;
+    const user = STATE.users.find((u) => u.username === prediction.username);
+    const name =
+      user?.displayName ||
+      prediction.displayName ||
+      prediction.username ||
+      prediction.user ||
+      "Someone";
+    group.users.push(name);
+  });
+
+  return [groups.home, groups.draw, groups.away]
+    .filter((g) => g.count > 0)
+    .map((g) => ({ score: g.label, count: g.count, users: g.users }))
+    .sort((a, b) => b.count - a.count);
+}
+
 function renderHome() {
   const summary = document.getElementById("home-summary-stats");
   const matchCards = document.getElementById("home-today-games");
@@ -1056,13 +1102,28 @@ function renderHome() {
         ? Math.round((draws / matchPreds.length) * 100)
         : 0;
       const awayPct = Math.max(0, 100 - homePct - drawPct);
-      const scoreGroups = buildScoreGroups(matchPreds);
+
+      const result = STATE.results?.[fixture.matchId];
+
+      const kickedOff =
+        fixture.kickoffDate instanceof Date &&
+        !Number.isNaN(fixture.kickoffDate.getTime()) &&
+        Date.now() >= fixture.kickoffDate.getTime();
+      const hasStarted =
+        kickedOff ||
+        (result &&
+          !["NS", "NOT_STARTED", "TBD"].includes(
+            String(result.status || "").toUpperCase(),
+          ));
+
+      const scoreGroups = hasStarted
+        ? buildScoreGroups(matchPreds)
+        : buildOutcomeGroups(matchPreds, homeTeam, awayTeam);
 
       // ─── NEW: LOOK UP COLORS HERE ───
       const homeColor = wcTeamColors[homeTeam]?.primary || "var(--wc-blue)";
       const awayColor = wcTeamColors[awayTeam]?.primary || "var(--wc-red)";
 
-      const result = STATE.results?.[fixture.matchId];
       const isFinished =
         result &&
         [
@@ -1085,17 +1146,6 @@ function renderHome() {
       const popularHtml = scoreGroups.length
         ? scoreGroups
             .map((group, index) => {
-              const kickedOff =
-                fixture.kickoffDate instanceof Date &&
-                !Number.isNaN(fixture.kickoffDate.getTime()) &&
-                Date.now() >= fixture.kickoffDate.getTime();
-              const hasStarted =
-                kickedOff ||
-                (result &&
-                  !["NS", "NOT_STARTED", "TBD"].includes(
-                    String(result.status || "").toUpperCase(),
-                  ));
-
               // Only highlight the exact score (15 pts)
               const scoreClass =
                 isFinished && finalScore && group.score === finalScore
@@ -1109,17 +1159,11 @@ function renderHome() {
               <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
             </div>
 
-            ${
-              hasStarted
-                ? `
-              <div class="popular-score-names">
-                ${group.users
-                  .map((name) => `<span>${escapeHtml(name)}</span>`)
-                  .join("")}
-              </div>
-            `
-                : ""
-            }
+            <div class="popular-score-names">
+              ${group.users
+                .map((name) => `<span>${escapeHtml(name)}</span>`)
+                .join("")}
+            </div>
           </div>
         `;
             })
@@ -1201,8 +1245,9 @@ function renderHome() {
         buildDaySection("Tomorrow", windowBuckets.tomorrow),
       ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
-  winBar.innerHTML = totalScored
-    ? `
+  if (totalScored) {
+    winBar.style.display = "flex";
+    winBar.innerHTML = `
     <div class="header-match-widgets" id="header-match-widgets">
             <div class="live-game-widget" id="live-game-widget" style="display:none">
               <span class="live-dot"></span>
@@ -1219,8 +1264,11 @@ function renderHome() {
               <span class="next-lock-timer" id="next-lock-timer">--:--:--</span>
             </div>
           </div>
-  `
-    : `<div class="empty-state compact"><p>No results scored in this window yet.</p></div>`;
+  `;
+  } else {
+    winBar.style.display = "none";
+    winBar.innerHTML = "";
+  }
 
   renderHomeExtraTiles();
   renderRaceToTop();
@@ -1354,6 +1402,8 @@ async function requestSync() {
   updateAdminBadge();
   if (syncBtn) syncBtn.classList.remove("loading");
   checkChampionPick();
+  // Dismiss the initial loading screen on first sync
+  dismissLoadingScreen();
 }
 async function loadAccountRequests() {
   STATE.accountRequests = [];
@@ -3539,8 +3589,12 @@ function adminLookupUser() {
     return;
   }
 
-  const allPreds = STATE.allPredictions?.[username] || {};
-  const myPreds = Object.values(allPreds);
+  const myPreds = Object.values(STATE.allPredictions || {}).filter(
+    (p) =>
+      p &&
+      String(p.username || "").toLowerCase() === username.toLowerCase() &&
+      hasPrediction(p),
+  );
   if (!myPreds.length) {
     outEl.innerHTML = `<p>No predictions found for <strong>${escapeHtml(username)}</strong>.</p>`;
     return;
@@ -4290,24 +4344,27 @@ function hasResult(result) {
 function renderRaceToTop() {
   const container = document.getElementById("home-race-top3");
   if (!container) return;
-  const top3 = (STATE.leaderboard || []).slice(0, 3);
-  if (top3.length < 2) {
+  const topPlayers = (STATE.leaderboard || []).slice(0, 5);
+  if (topPlayers.length < 2) {
     container.innerHTML = "";
     return;
   }
 
-  const leaderPts = top3[0].totalPoints || 0;
+  const leaderPts = topPlayers[0].totalPoints || 0;
   container.innerHTML = `
     <h3 class="race-title">🏁 Race to the Top</h3>
-    ${top3
+    ${topPlayers
       .map((p, i) => {
         const gap = leaderPts - (p.totalPoints || 0);
-        const name = p.displayName || p.username || "Player";
+        const name = (p.displayName || p.username || "Player")
+          .trim()
+          .split(/\s+/)[0];
+        const pointsClass = i === 0 ? "race-points-glow" : "race-points";
         return `
         <div class="race-row rank-${i + 1}">
           <span class="race-rank">#${i + 1}</span>
           <span class="race-name">${escapeHtml(name)}</span>
-          <span class="race-points">${p.totalPoints || 0} pts</span>
+          <span class="${pointsClass}">${p.totalPoints || 0} pts</span>
           <span class="race-gap">${i === 0 ? "Leader" : `-${gap} pts`}</span>
         </div>
       `;
@@ -4496,21 +4553,53 @@ function getUserStreaks(streakLength = 3) {
 function renderHomeExtraTiles() {
   const hotColdEl = document.getElementById("home-hot-cold-tile");
   const sweatingEl = document.getElementById("home-sweating-tile");
-  if (!hotColdEl && !sweatingEl) return;
+  const consensusEl = document.getElementById("home-consensus-tile");
+
+  function getMatchPredictions(matchId) {
+    const source = Object.keys(STATE.allPredictions || {}).length
+      ? STATE.allPredictions
+      : STATE.predictions;
+    return Object.values(source || {}).filter(
+      (pred) =>
+        pred &&
+        String(pred.matchId || pred.match_id) === String(matchId) &&
+        hasPrediction(pred),
+    );
+  }
+
+  function getMatchConsensus(matchId) {
+    const matchPreds = getMatchPredictions(matchId);
+    if (!matchPreds.length) return null;
+
+    const homeWins = matchPreds.filter((p) => p.pred1 > p.pred2).length;
+    const draws = matchPreds.filter((p) => p.pred1 === p.pred2).length;
+    const awayWins = matchPreds.filter((p) => p.pred2 > p.pred1).length;
+    const total = matchPreds.length;
+
+    const homePct = Math.round((homeWins / total) * 100);
+    const drawPct = Math.round((draws / total) * 100);
+    const awayPct = Math.max(0, 100 - homePct - drawPct);
+
+    return { homeWins, draws, awayWins, total, homePct, drawPct, awayPct };
+  }
 
   if (hotColdEl) {
     const { hottest, coldest } = getUserStreaks(3);
     hotColdEl.innerHTML = `
+      <h3 class="race-title">🔥 Streaks</h3>
       ${hottest ? `<div class="streak-row hot">🔥 <strong>${escapeHtml(getUserDisplayName(hottest.username))}</strong> — ${hottest.streak} in a row</div>` : ""}
-      ${coldest ? `<div class="streak-row cold">🥶 <strong>${escapeHtml(getUserDisplayName(coldest.username))}</strong> — ${coldest.streak} misses in a row</div>` : ""}
-      ${!hottest && !coldest ? `<div class="streak-row empty">No streaks yet</div>` : ""}
+      ${coldest ? `<div class="streak-row cold">🥶 <strong>${escapeHtml(getUserDisplayName(coldest.username))}</strong> — ${coldest.streak} misses</div>` : ""}
+      ${!hottest && !coldest ? `<div class="streak-row empty">No active streaks yet</div>` : ""}
     `;
   }
 
   if (sweatingEl) {
     const liveFixtures = getLiveFixtures();
     if (!liveFixtures.length) {
-      sweatingEl.innerHTML = `<div class="sweating-empty">No live games right now</div>`;
+      sweatingEl.innerHTML = `
+        <h3 class="race-title">😬 Live Sweat</h3>
+        <div class="sweating-empty">No live games right now</div>
+      `;
     } else {
       const deltas = getLiveProjectedDeltas();
       const inTheMoney = [...deltas.entries()]
@@ -4518,6 +4607,7 @@ function renderHomeExtraTiles() {
         .sort((a, b) => b[1] - a[1]);
       const sweating = [...deltas.entries()].filter(([, v]) => v === 0);
       sweatingEl.innerHTML = `
+        <h3 class="race-title">😬 Live Sweat</h3>
         <div class="sweating-good">✅ ${inTheMoney.length} on track (top: ${
           inTheMoney
             .slice(0, 3)
@@ -4525,6 +4615,56 @@ function renderHomeExtraTiles() {
             .join(", ") || "—"
         })</div>
         <div class="sweating-bad">😬 ${sweating.length} sweating it out</div>
+      `;
+    }
+  }
+
+  if (consensusEl) {
+    const unplayed = (STATE.fixtures || [])
+      .filter((f) => {
+        const result = STATE.results?.[f.matchId];
+        return !result || !hasResult(result);
+      })
+      .sort(
+        (a, b) =>
+          (a.kickoffDate?.getTime() || 0) - (b.kickoffDate?.getTime() || 0),
+      );
+
+    const nextMatch = unplayed[0];
+    if (nextMatch) {
+      const consensus = getMatchConsensus(nextMatch.matchId);
+      const homeTeam = resolveSlot(nextMatch.team1) || nextMatch.team1;
+      const awayTeam = resolveSlot(nextMatch.team2) || nextMatch.team2;
+
+      if (consensus && consensus.total > 0) {
+        consensusEl.innerHTML = `
+          <h3 class="race-title">🔮 Crowd Consensus</h3>
+          <div class="consensus-matchup">Next: <strong>${escapeHtml(homeTeam)}</strong> vs <strong>${escapeHtml(awayTeam)}</strong></div>
+          <div class="consensus-bar-wrap">
+            <div class="consensus-bar">
+              <span class="consensus-seg seg-home" style="width:${consensus.homePct}%"><em>${consensus.homePct}%</em></span>
+              <span class="consensus-seg seg-draw" style="width:${consensus.drawPct}%">${consensus.drawPct > 8 ? `<em>${consensus.drawPct}%</em>` : ""}</span>
+              <span class="consensus-seg seg-away" style="width:${consensus.awayPct}%"><em>${consensus.awayPct}%</em></span>
+            </div>
+            <div class="consensus-labels">
+              <span>${escapeHtml(homeTeam)}</span>
+              <span>Draw</span>
+              <span>${escapeHtml(awayTeam)}</span>
+            </div>
+          </div>
+          <div class="consensus-footer">Based on ${consensus.total} picks</div>
+        `;
+      } else {
+        consensusEl.innerHTML = `
+          <h3 class="race-title">🔮 Crowd Consensus</h3>
+          <div class="consensus-matchup">Next: <strong>${escapeHtml(homeTeam)}</strong> vs <strong>${escapeHtml(awayTeam)}</strong></div>
+          <div class="consensus-empty">No picks submitted yet.</div>
+        `;
+      }
+    } else {
+      consensusEl.innerHTML = `
+        <h3 class="race-title">🔮 Crowd Consensus</h3>
+        <div class="consensus-empty">All matches completed!</div>
       `;
     }
   }
