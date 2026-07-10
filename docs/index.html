@@ -194,21 +194,20 @@
     <main>
       <div class="knockout-banner" id="knockout-banner" hidden>
         <span class="knockout-banner-fire">🔥</span>
-        <span class="knockout-banner-text">Round of 16 is <strong>LIVE</strong> - 3x points multiplier active for
-          these matches!</span>
+        <span class="knockout-banner-text">Quarter-final is <strong>LIVE</strong> — <span
+            style="color: var(--wc-gold)">4x </span>points multiplier active for these matches!</span>
         <button class="knockout-banner-close" onclick="dismissBanner()" aria-label="Dismiss">✕</button>
       </div>
 
       <script>
-        // Check if user previously dismissed the banner
-        if (localStorage.getItem('knockoutBannerDismissed') !== 'true') {
+        // New key per stage — clears for everyone when stage advances
+        if (localStorage.getItem('knockoutBannerDismissed_qf') !== 'true') {
           document.getElementById('knockout-banner').removeAttribute('hidden');
         }
 
-        // Hide banner and save choice to localStorage
         function dismissBanner() {
           document.getElementById('knockout-banner').setAttribute('hidden', 'true');
-          localStorage.setItem('knockoutBannerDismissed', 'true');
+          localStorage.setItem('knockoutBannerDismissed_qf', 'true');
         }
       </script>
 
@@ -1023,12 +1022,10 @@
   <div id="champion-pick-modal" class="vote-modal hidden" role="dialog" aria-modal="true"
     aria-labelledby="champion-modal-title">
     <div class="vote-card">
-      <div class="vote-modal-icon">🏆</div>
       <h2 id="champion-modal-title">World Champion Pick</h2>
       <p class="vote-modal-desc" id="champion-modal-desc">
         Who will win the <strong>2026 World Cup</strong>?<br>
-        Scoring a winner only awards 100<br><small></small>
-
+        Scoring a winner awards <strong style="color: var(--wc-gold);">100</strong> points<br>
         <span id="champion-points-badge" class="champion-points-badge"></span>
         <span id="champion-countdown" class="champion-countdown"></span>
       <p id="champion-pick-error" class="champion-pick-error"></p>
