@@ -2188,10 +2188,10 @@ function renderPredictionCard(match, idx) {
           : "";
 
   const predictionScore = hasPred
-    ? `${pred.pred1}-${pred.pred2}${predPensTeam ? ` (pens: ${escapeHtml(predPensTeam)})` : ""}`
+    ? `${pred.pred1}-${pred.pred2}${predPensTeam ? `<span class="score-pens-label">(pens: ${escapeHtml(predPensTeam)})</span>` : ""}`
     : "—";
   const actualScore = hasRes
-    ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}${actualPensTeam ? ` (pens: ${escapeHtml(actualPensTeam)})` : ""}`
+    ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}${actualPensTeam ? `<span class="score-pens-label">(pens: ${escapeHtml(actualPensTeam)})</span>` : ""}`
     : "vs";
 
   const resultScoreHtml = hasRes
@@ -2653,7 +2653,7 @@ function openMatchDrawer(matchId) {
     result?.penalty_winner,
   );
   const scoreText = hasRes
-    ? `${result.score1} – ${result.score2}${drawerActualPensTeam ? ` (pens: ${drawerActualPensTeam})` : ""}`
+    ? `${result.score1} – ${result.score2}`
     : "– vs –";
 
   const statusLabel = isLive
@@ -2764,6 +2764,7 @@ function openMatchDrawer(matchId) {
       </div>
       <div class="drawer-score-block">
         <div class="drawer-score ${isLive ? "live-score" : ""}">${escapeHtml(scoreText)}</div>
+        ${drawerActualPensTeam ? `<div class="drawer-pens-label">(pens: ${escapeHtml(drawerActualPensTeam)})</div>` : ""}
         <div class="drawer-status-chip ${statusCls}">
           ${isLive ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--warning);display:inline-block"></span>' : ""}
           ${escapeHtml(statusLabel)}
@@ -2864,12 +2865,12 @@ function renderResults() {
           <div class="match-date">${formatKickoff(fixture)}</div>
           <div class="match-teams">
             <div class="team"><div class="team-name">${getFlagImg(fixture.team1)}${escapeHtml(fixture.team1)}</div></div>
-            <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}${actualPensTeam ? ` (pens: ${escapeHtml(actualPensTeam)})` : ""}</div>
+            <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}${actualPensTeam ? `<span class="score-pens-label">(pens: ${escapeHtml(actualPensTeam)})</span>` : ""}</div>
             <div class="team"><div class="team-name">${getFlagImg(fixture.team2)}${escapeHtml(fixture.team2)}</div></div>
           </div>    
           <div class="result-status">${escapeHtml(normalizeResultStatus(result.status))}</div>
           <div class="match-footer">
-            <span>Your pick: ${hasPrediction(pred) ? `${pred.pred1}-${pred.pred2}${predPensTeam ? ` (pens: ${escapeHtml(predPensTeam)})` : ""}` : "none"}</span>
+            <span>Your pick: ${hasPrediction(pred) ? `${pred.pred1}-${pred.pred2}${predPensTeam ? `<span class="score-pens-label">(pens: ${escapeHtml(predPensTeam)})</span>` : ""}` : "none"}</span>
             ${points === null ? "" : `<strong>${points} pts</strong>`}
           </div>
         </article>

@@ -2203,48 +2203,7 @@ main {
   color: var(--muted);
 }
 
-/* ── Penalty-winner labels everywhere ──────────────────────────────────── */
-
-/* Inline label inside big score containers (result-score, mc-scoreline) */
-.score-pens-label {
-  display: block;
-  font-family: var(--font-ggo-body);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: var(--muted);
-  text-transform: none;
-  line-height: 1.2;
-  margin-top: 2px;
-}
-
-/* Standalone pens label in the drawer score block */
-.drawer-pens-label {
-  font-family: var(--font-ggo-body);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: 0.2px;
-}
-
-/* Allow the big score number containers to stack the pens label below */
-.mc-scoreline-actual,
-.mc-scoreline-pick {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1;
-}
-
-.result-card .result-score {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1;
-}
-
 .drawer-pred-pts {
-
   font-family: var(--font-ggo-display);
   font-size: 28px;
   font-weight: 900;

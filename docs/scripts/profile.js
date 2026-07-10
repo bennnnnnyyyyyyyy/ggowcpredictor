@@ -451,6 +451,8 @@ function buildProfilePayload(
         time: fixture.time || "",
         predictedHome: hasPred ? pred1 : null,
         predictedAway: hasPred ? pred2 : null,
+        predictedPenWinner: hasPred ? (p.pen_winner || null) : null,
+        actualPenWinner: result?.penalty_winner || null,
         actualHome,
         actualAway,
         points,
@@ -458,6 +460,7 @@ function buildProfilePayload(
         stage: fixture.stage || "",
         statusType,
       };
+
     })
     .sort((a, b) => {
       // finished first (by matchId desc), then live, then upcoming
@@ -593,11 +596,22 @@ function statusTagHtml(statusType, rawStatus) {
   return `<span class="pred-status-tag upcoming">Upcoming</span>`;
 }
 
-function scoreDisplay(home, away, cls) {
+function getPenaltyWinnerTeamProfile(home, away, winnerKey) {
+  if (!winnerKey) return null;
+  const key = String(winnerKey).toLowerCase();
+  if (key === "team1") return home;
+  if (key === "team2") return away;
+  return null;
+}
+
+function scoreDisplay(home, away, cls, penWinner) {
   if (home === null || away === null) {
     return `<span class="pred-score-value no-pick">—</span>`;
   }
-  return `<span class="pred-score-value ${cls}">${home}–${away}</span>`;
+  const pensHtml = penWinner
+    ? ` <span class="pred-score-pens">(pens: ${penWinner})</span>`
+    : "";
+  return `<span class="pred-score-value ${cls}">${home}–${away}${pensHtml}</span>`;
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -681,6 +695,10 @@ function renderProfile(data) {
     const hasPred = p.predictedHome !== null && p.predictedAway !== null;
     const firstName = (displayName || "").split(" ")[0];
 
+    // Resolve pen winner keys to friendly team names
+    const predPensTeam = getPenaltyWinnerTeamProfile(p.home, p.away, p.predictedPenWinner);
+    const actualPensTeam = getPenaltyWinnerTeamProfile(p.home, p.away, p.actualPenWinner);
+
     const urlParams = new URLSearchParams(window.location.search);
     const profileUsername = (urlParams.get("user") || "").trim().toLowerCase();
     const loggedInUser = (localStorage.getItem("ggo_wc_user") || "").trim().toLowerCase();
@@ -693,7 +711,7 @@ function renderProfile(data) {
         const outcomeText = outcome === "home" ? `${esc(p.home)} Win` : outcome === "away" ? `${esc(p.away)} Win` : "Draw";
         pickDisplayHtml = `<span class="pred-score-value pick" style="font-size: 13px; font-weight: 600; color: var(--wc-gold);">${outcomeText}</span>`;
       } else {
-        pickDisplayHtml = scoreDisplay(p.predictedHome, p.predictedAway, "pick");
+        pickDisplayHtml = scoreDisplay(p.predictedHome, p.predictedAway, "pick", predPensTeam);
       }
     } else {
       pickDisplayHtml = `<span class="pred-score-value no-pick">No pick</span>`;
@@ -712,13 +730,14 @@ function renderProfile(data) {
         <div class="pred-scores">
           <div class="pred-score-row">
             <span class="pred-score-label">Result</span>
-            ${scoreDisplay(p.actualHome, p.actualAway, "actual")}
+            ${scoreDisplay(p.actualHome, p.actualAway, "actual", actualPensTeam)}
           </div>
           <div class="pred-score-row">
             <span class="pred-score-label">${esc(firstName)}'s pick</span>
             ${pickDisplayHtml}
           </div>
         </div>
+
         <div class="pred-meta">
           ${groupPart}${roundPart}${datePart}
           ${statusTagHtml(p.statusType, p.status)}
