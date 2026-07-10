@@ -2648,7 +2648,13 @@ function openMatchDrawer(matchId) {
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
 
-  const scoreText = hasRes ? `${result.score1} – ${result.score2}` : "– vs –";
+  const drawerActualPensTeam = getPenaltyWinnerTeam(
+    fixture,
+    result?.penalty_winner,
+  );
+  const scoreText = hasRes
+    ? `${result.score1} – ${result.score2}${drawerActualPensTeam ? ` (pens: ${drawerActualPensTeam})` : ""}`
+    : "– vs –";
 
   const statusLabel = isLive
     ? result.status
@@ -2723,8 +2729,9 @@ function openMatchDrawer(matchId) {
             ? "pts-partial"
             : "pts-zero";
 
+  const drawerPredPensTeam = getPenaltyWinnerTeam(fixture, pred?.pen_winner);
   const predScoreHtml = hasPred
-    ? `<div class="drawer-pred-score">${pred.pred1} – ${pred.pred2}</div>`
+    ? `<div class="drawer-pred-score">${pred.pred1} – ${pred.pred2}${drawerPredPensTeam ? ` <span class="drawer-pred-pens">(pens: ${escapeHtml(drawerPredPensTeam)})</span>` : ""}</div>`
     : `<div class="drawer-pred-score no-pred">No prediction</div>`;
 
   const predPtsHtml =
