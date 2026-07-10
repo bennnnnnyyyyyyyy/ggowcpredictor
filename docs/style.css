@@ -7908,6 +7908,37 @@ body {
   display: none;
 }
 
+.home-tile.wide-streak {
+  grid-column: span 2;
+}
+
+.streaks-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-tile.wide-streak .streaks-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.streak-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 4px;
+}
+
+.streaks-list {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
 /* Race to the Top */
 .race-title {
   font-family: var(--font-ggo-display);

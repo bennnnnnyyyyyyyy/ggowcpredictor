@@ -2136,7 +2136,11 @@ function renderPredictionCard(match, idx) {
   const venue = getVenueDetails(match);
   const hasPred = hasPrediction(pred);
   const hasRes = result && hasResult(result);
-  const isSaving = savingMatchId === match.matchId; // ★ already present
+  const isSaving = savingMatchId === match.matchId;
+  const predPensTeam = getPenaltyWinnerTeam(match, pred.pen_winner);
+  const actualPensTeam = getPenaltyWinnerTeam(match, result?.penalty_winner);
+
+  // ★ already present
 
   const points =
     hasRes && hasPred
@@ -2176,16 +2180,18 @@ function renderPredictionCard(match, idx) {
 
   const statusLineHtml =
     locked && !hasRes
-      ? '<div class="mc-status-line"><span class="status-token">LOCK</span><span>Predictions closed</span></div>'
+      ? `<div class="mc-status-line"><span class="status-token">LOCK</span><span>Predictions closed${predPensTeam ? ` (Your pick: ${escapeHtml(predPensTeam)} on pens)` : ""}</span></div>`
       : hasPred && !locked && !hasRes
-        ? '<div class="mc-status-line"><span class="status-token">SAVED</span><span>Prediction saved</span></div>'
+        ? `<div class="mc-status-line"><span class="status-token">SAVED</span><span>Prediction saved${predPensTeam ? ` (Winner: ${escapeHtml(predPensTeam)})` : ""}</span></div>`
         : !locked && !hasRes
           ? '<div class="mc-status-line"><span class="status-token open-token">OPEN</span><span>Enter prediction</span></div>'
           : "";
 
-  const predictionScore = hasPred ? `${pred.pred1}-${pred.pred2}` : "—";
+  const predictionScore = hasPred
+    ? `${pred.pred1}-${pred.pred2}${predPensTeam ? ` (pens: ${escapeHtml(predPensTeam)})` : ""}`
+    : "—";
   const actualScore = hasRes
-    ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}`
+    ? `${result.score1 ?? "-"}-${result.score2 ?? "-"}${actualPensTeam ? ` (pens: ${escapeHtml(actualPensTeam)})` : ""}`
     : "vs";
 
   const resultScoreHtml = hasRes
@@ -2840,17 +2846,23 @@ function renderResults() {
             )
           : null;
 
+      const predPensTeam = getPenaltyWinnerTeam(fixture, pred?.pen_winner);
+      const actualPensTeam = getPenaltyWinnerTeam(
+        fixture,
+        result.penalty_winner,
+      );
+
       return `
         <article class="result-card" onclick="openMatchDrawer('${fixture.matchId}')" style="--idx: ${idx}">
           <div class="match-date">${formatKickoff(fixture)}</div>
           <div class="match-teams">
             <div class="team"><div class="team-name">${getFlagImg(fixture.team1)}${escapeHtml(fixture.team1)}</div></div>
-            <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}</div>
+            <div class="result-score">${result.score1 ?? "-"} - ${result.score2 ?? "-"}${actualPensTeam ? ` (pens: ${escapeHtml(actualPensTeam)})` : ""}</div>
             <div class="team"><div class="team-name">${getFlagImg(fixture.team2)}${escapeHtml(fixture.team2)}</div></div>
           </div>    
           <div class="result-status">${escapeHtml(normalizeResultStatus(result.status))}</div>
           <div class="match-footer">
-            <span>Your pick: ${hasPrediction(pred) ? `${pred.pred1}-${pred.pred2}` : "none"}</span>
+            <span>Your pick: ${hasPrediction(pred) ? `${pred.pred1}-${pred.pred2}${predPensTeam ? ` (pens: ${escapeHtml(predPensTeam)})` : ""}` : "none"}</span>
             ${points === null ? "" : `<strong>${points} pts</strong>`}
           </div>
         </article>
@@ -3455,6 +3467,13 @@ function resolveSlot(code) {
   }
 
   return trimmed;
+}
+function getPenaltyWinnerTeam(fixture, penaltyWinnerKey) {
+  if (!penaltyWinnerKey) return null;
+  const key = String(penaltyWinnerKey).toLowerCase();
+  if (key === "team1") return fixture.team1;
+  if (key === "team2") return fixture.team2;
+  return null;
 }
 function computeThirdPlaceRanking() {
   const groups = STATE.groupStandings || {};
@@ -4525,8 +4544,8 @@ function getUserStreaks(streakLength = 3) {
       });
   });
 
-  let hottest = null,
-    coldest = null;
+  const hotStreaks = [];
+  const coldStreaks = [];
   byUser.forEach((hits, username) => {
     if (!hits.length) return;
     const isHot = hits[0] === true;
@@ -4535,25 +4554,25 @@ function getUserStreaks(streakLength = 3) {
       if (h === isHot) streak++;
       else break;
     }
-    if (
-      isHot &&
-      streak >= streakLength &&
-      (!hottest || streak > hottest.streak)
-    )
-      hottest = { username, streak };
-    if (
-      !isHot &&
-      streak >= streakLength &&
-      (!coldest || streak > coldest.streak)
-    )
-      coldest = { username, streak };
+    if (streak >= streakLength) {
+      if (isHot) {
+        hotStreaks.push({ username, streak });
+      } else {
+        coldStreaks.push({ username, streak });
+      }
+    }
   });
-  return { hottest, coldest };
+
+  hotStreaks.sort((a, b) => b.streak - a.streak);
+  coldStreaks.sort((a, b) => b.streak - a.streak);
+
+  return { hotStreaks, coldStreaks };
 }
 function renderHomeExtraTiles() {
   const hotColdEl = document.getElementById("home-hot-cold-tile");
   const sweatingEl = document.getElementById("home-sweating-tile");
   const consensusEl = document.getElementById("home-consensus-tile");
+  const liveFixtures = getLiveFixtures();
 
   function getMatchPredictions(matchId) {
     const source = Object.keys(STATE.allPredictions || {}).length
@@ -4584,22 +4603,57 @@ function renderHomeExtraTiles() {
   }
 
   if (hotColdEl) {
-    const { hottest, coldest } = getUserStreaks(3);
+    const { hotStreaks, coldStreaks } = getUserStreaks(3);
+    const noStreaks = !hotStreaks.length && !coldStreaks.length;
+    const hasLiveGames = liveFixtures.length > 0;
+    hotColdEl.classList.toggle("wide-streak", !hasLiveGames);
     hotColdEl.innerHTML = `
       <h3 class="race-title">🔥 Streaks</h3>
-      ${hottest ? `<div class="streak-row hot">🔥 <strong>${escapeHtml(getUserDisplayName(hottest.username))}</strong> — ${hottest.streak} in a row</div>` : ""}
-      ${coldest ? `<div class="streak-row cold">🥶 <strong>${escapeHtml(getUserDisplayName(coldest.username))}</strong> — ${coldest.streak} misses</div>` : ""}
-      ${!hottest && !coldest ? `<div class="streak-row empty">No active streaks yet</div>` : ""}
+      <div class="streaks-columns">
+        ${
+          hotStreaks.length
+            ? `
+          <div class="streaks-list">
+            <div class="streak-section-title">Scoring streaks</div>
+            ${hotStreaks
+              .map(
+                (s) =>
+                  `<div class="streak-row hot">🔥 <strong>${escapeHtml(
+                    getUserDisplayName(s.username),
+                  )}</strong> — ${s.streak} scoring in a row</div>`,
+              )
+              .join("")}
+          </div>`
+            : ""
+        }
+        ${
+          coldStreaks.length
+            ? `
+          <div class="streaks-list">
+            <div class="streak-section-title">Cold streaks</div>
+            ${coldStreaks
+              .map(
+                (s) =>
+                  `<div class="streak-row cold">🥶 <strong>${escapeHtml(
+                    getUserDisplayName(s.username),
+                  )}</strong> — ${s.streak} misses in a row</div>`,
+              )
+              .join("")}
+          </div>`
+            : ""
+        }
+      </div>
+      ${
+        noStreaks
+          ? `<div class="streak-row empty">No active streaks yet</div>`
+          : ""
+      }
     `;
   }
 
   if (sweatingEl) {
-    const liveFixtures = getLiveFixtures();
     if (!liveFixtures.length) {
-      sweatingEl.innerHTML = `
-        <h3 class="race-title">😬 Live Sweat</h3>
-        <div class="sweating-empty">No live games right now</div>
-      `;
+      sweatingEl.innerHTML = "";
     } else {
       const deltas = getLiveProjectedDeltas();
       const inTheMoney = [...deltas.entries()]
