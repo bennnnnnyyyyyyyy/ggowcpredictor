@@ -4585,7 +4585,11 @@ function getUserStreaks(streakLength = 3) {
           pred.pen_winner,
           result.penalty_winner,
         );
-        hits.push(pts > 0);
+        const stageKey = String(fixture.stage || "group").toLowerCase();
+        const multiplierMap = { group: 1, r32: 2, r16: 3, qf: 4, sf: 5, third: 5, final: 6 };
+        const multiplier = multiplierMap[stageKey] ?? 1;
+        const isExact = pts === 15 * multiplier;
+        hits.push(isExact);
       } else {
         // No prediction = miss (false)
         hits.push(false);
