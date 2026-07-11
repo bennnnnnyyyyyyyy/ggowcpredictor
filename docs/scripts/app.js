@@ -4603,22 +4603,20 @@ function getUserStreaks(streakLength = 3) {
   byUser.forEach((hits, username) => {
     if (!hits.length) return;
 
-    let maxHot = 0;
-    let maxCold = 0;
-    let currentHot = 0;
-    let currentCold = 0;
+    const last = hits[hits.length - 1];
+    let streak = 0;
+    for (let i = hits.length - 1; i >= 0 && hits[i] === last; i--) {
+      streak++;
+    }
 
-    hits.forEach((h) => {
-      if (h === true) {
-        currentHot++;
-        currentCold = 0;
-        if (currentHot > maxHot) maxHot = currentHot;
-      } else {
-        currentCold++;
-        currentHot = 0;
-        if (currentCold > maxCold) maxCold = currentCold;
-      }
-    });
+    if (last === true && streak >= streakLength) {
+      hotStreaks.push({ username, streak });
+    }
+    if (last === false && streak >= streakLength && streak <= 20) {
+      coldStreaks.push({ username, streak });
+    }
+  });
+    
 
     if (maxHot >= streakLength) {
       hotStreaks.push({ username, streak: maxHot });
