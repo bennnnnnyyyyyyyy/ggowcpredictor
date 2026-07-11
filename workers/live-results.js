@@ -563,7 +563,6 @@ async function syncLiveResults(env) {
       );
     }
   }
-
   const liveOrFinished = matchedUpdates.filter(
     (u) => u.status !== "NS" && u.score1 !== null && u.score2 !== null,
   );

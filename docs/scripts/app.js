@@ -4616,11 +4616,11 @@ function getUserStreaks(streakLength = 3) {
       }
     });
 
-    if (currentHot >= streakLength) {
-      hotStreaks.push({ username, streak: currentHot });
+    if (maxHot >= streakLength) {
+      hotStreaks.push({ username, streak: maxHot });
     }
-    if (currentCold >= streakLength && currentCold <= 20) {
-      coldStreaks.push({ username, streak: currentCold });
+    if (maxCold >= streakLength && maxCold <= 20) {
+      coldStreaks.push({ username, streak: maxCold });
     }
   });
 
