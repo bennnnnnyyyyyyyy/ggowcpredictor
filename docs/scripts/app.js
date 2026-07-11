@@ -4616,15 +4616,6 @@ function getUserStreaks(streakLength = 3) {
       coldStreaks.push({ username, streak });
     }
   });
-    
-
-    if (maxHot >= streakLength) {
-      hotStreaks.push({ username, streak: maxHot });
-    }
-    if (maxCold >= streakLength && maxCold <= 20) {
-      coldStreaks.push({ username, streak: maxCold });
-    }
-  });
 
   hotStreaks.sort((a, b) => b.streak - a.streak);
   coldStreaks.sort((a, b) => b.streak - a.streak);
