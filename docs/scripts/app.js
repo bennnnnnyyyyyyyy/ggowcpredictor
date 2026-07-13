@@ -1183,9 +1183,7 @@ function renderHome() {
             </div>
 
             <div class="popular-score-names">
-              ${group.users
-                .map((u) => `<span>${escapeHtml(u.name)}${u.flagHtml}</span>`)
-                .join("")}
+              ${group.users.map((u) => `<span>${escapeHtml(u.name)}${u.flagHtml}${u.penWinnerName ? ` (pens: ${escapeHtml(u.penWinnerName)})` : ""}</span>`).join("")}
             </div>
           </div>
         `;
@@ -3494,8 +3492,8 @@ function resolveSlot(code) {
 function getPenaltyWinnerTeam(fixture, penaltyWinnerKey) {
   if (!penaltyWinnerKey) return null;
   const key = String(penaltyWinnerKey).toLowerCase();
-  if (key === "team1") return fixture.team1;
-  if (key === "team2") return fixture.team2;
+  if (key === "team1") return resolveSlot(fixture.team1) || fixture.team1;
+  if (key === "team2") return resolveSlot(fixture.team2) || fixture.team2;
   return null;
 }
 function computeThirdPlaceRanking() {
@@ -4590,9 +4588,6 @@ function getUserStreaks(streakLength = 3) {
         const multiplier = multiplierMap[stageKey] ?? 1;
         const isExact = pts === 15 * multiplier;
         hits.push(isExact);
-      } else {
-        // No prediction = miss (false)
-        hits.push(false);
       }
     });
     byUser.set(username, hits);
@@ -4655,9 +4650,8 @@ function renderHomeExtraTiles() {
 
     return { homeWins, draws, awayWins, total, homePct, drawPct, awayPct };
   }
-
   if (hotColdEl) {
-    const { hotStreaks } = getUserStreaks(3);
+    const { hotStreaks, coldStreaks } = getUserStreaks(3);
     const hasLiveGames = liveFixtures.length > 0;
     hotColdEl.classList.toggle("wide-streak", !hasLiveGames);
     hotColdEl.innerHTML = `
@@ -4678,6 +4672,22 @@ function renderHomeExtraTiles() {
           </div>`
         : ""
       }
+        ${coldStreaks.length
+        ? `
+          <div class="streaks-list">
+            <div class="streak-section-title">Cold streaks</div>
+            ${coldStreaks
+          .map((s) => {
+            const name = getShortName(getUserDisplayName(s.username));
+            return `<div class="streak-row cold">🥶 <strong>${escapeHtml(
+              name,
+            )}</strong> ${s.streak} missed in a row</div>`;
+          })
+          .join("")}
+          </div>`
+        : ""
+      }
+      </div>
       `;
   }
 
