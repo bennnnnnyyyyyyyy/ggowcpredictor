@@ -6,7 +6,7 @@ scripts/_check_*.js
 .env
 .env.local
 .dev.vars
-
+.idea/
 #node
 node_modules/
 
@@ -42,4 +42,4 @@ backup.cjs
 
 kladerboard backup.js
 
-
+docs/scripts/test222.py

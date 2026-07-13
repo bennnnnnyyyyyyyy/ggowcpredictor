@@ -451,7 +451,7 @@ function buildProfilePayload(
         time: fixture.time || "",
         predictedHome: hasPred ? pred1 : null,
         predictedAway: hasPred ? pred2 : null,
-        predictedPenWinner: hasPred ? (p.pen_winner || null) : null,
+        predictedPenWinner: hasPred ? p.pen_winner || null : null,
         actualPenWinner: result?.penalty_winner || null,
         actualHome,
         actualAway,
@@ -460,7 +460,6 @@ function buildProfilePayload(
         stage: fixture.stage || "",
         statusType,
       };
-
     })
     .sort((a, b) => {
       // finished first (by matchId desc), then live, then upcoming
@@ -696,22 +695,47 @@ function renderProfile(data) {
     const firstName = (displayName || "").split(" ")[0];
 
     // Resolve pen winner keys to friendly team names
-    const predPensTeam = getPenaltyWinnerTeamProfile(p.home, p.away, p.predictedPenWinner);
-    const actualPensTeam = getPenaltyWinnerTeamProfile(p.home, p.away, p.actualPenWinner);
+    const predPensTeam = getPenaltyWinnerTeamProfile(
+      p.home,
+      p.away,
+      p.predictedPenWinner,
+    );
+    const actualPensTeam = getPenaltyWinnerTeamProfile(
+      p.home,
+      p.away,
+      p.actualPenWinner,
+    );
 
     const urlParams = new URLSearchParams(window.location.search);
     const profileUsername = (urlParams.get("user") || "").trim().toLowerCase();
-    const loggedInUser = (localStorage.getItem("ggo_wc_user") || "").trim().toLowerCase();
+    const loggedInUser = (localStorage.getItem("ggo_wc_user") || "")
+      .trim()
+      .toLowerCase();
     const isSelf = profileUsername === loggedInUser;
 
     let pickDisplayHtml = "";
     if (hasPred) {
       if (!isSelf && p.statusType === "upcoming") {
-        const outcome = p.predictedHome > p.predictedAway ? "home" : p.predictedHome < p.predictedAway ? "away" : "draw";
-        const outcomeText = outcome === "home" ? `${esc(p.home)} Win` : outcome === "away" ? `${esc(p.away)} Win` : "Draw";
+        const outcome =
+          p.predictedHome > p.predictedAway
+            ? "home"
+            : p.predictedHome < p.predictedAway
+              ? "away"
+              : "draw";
+        const outcomeText =
+          outcome === "home"
+            ? `${esc(p.home)} Win`
+            : outcome === "away"
+              ? `${esc(p.away)} Win`
+              : "Draw";
         pickDisplayHtml = `<span class="pred-score-value pick" style="font-size: 13px; font-weight: 600; color: var(--wc-gold);">${outcomeText}</span>`;
       } else {
-        pickDisplayHtml = scoreDisplay(p.predictedHome, p.predictedAway, "pick", predPensTeam);
+        pickDisplayHtml = scoreDisplay(
+          p.predictedHome,
+          p.predictedAway,
+          "pick",
+          predPensTeam,
+        );
       }
     } else {
       pickDisplayHtml = `<span class="pred-score-value no-pick">No pick</span>`;
@@ -804,8 +828,9 @@ function renderProfile(data) {
     </div>
 
     <!-- Accuracy bar -->
-    ${scored > 0
-      ? `
+    ${
+      scored > 0
+        ? `
     <div class="accuracy-bar-wrap" style="margin-bottom:28px">
       <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Scoring accuracy</span>
       <div class="accuracy-bar-track">
@@ -813,7 +838,7 @@ function renderProfile(data) {
       </div>
       <span class="accuracy-label">${accuracy}%</span>
     </div>`
-      : ""
+        : ""
     }
 
     

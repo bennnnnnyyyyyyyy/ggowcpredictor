@@ -527,6 +527,8 @@ async function syncLiveResults(env) {
     if (!resolved) continue;
 
     const { fixture, flipped } = resolved;
+    const kickoffTime = fixture.kickoffUTC ? new Date(fixture.kickoffUTC).getTime() : null;
+    if (kickoffTime && Date.now() < kickoffTime) continue;
     const internalMatchId = normalizeMatchId(fixture.matchId || fixture.id);
     const apiHome = toNullableNumber(readScore(item, "home"));
     const apiAway = toNullableNumber(readScore(item, "away"));
@@ -563,7 +565,6 @@ async function syncLiveResults(env) {
       );
     }
   }
-
   const liveOrFinished = matchedUpdates.filter(
     (u) => u.status !== "NS" && u.score1 !== null && u.score2 !== null,
   );

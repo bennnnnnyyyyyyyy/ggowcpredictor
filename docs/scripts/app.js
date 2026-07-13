@@ -4585,7 +4585,11 @@ function getUserStreaks(streakLength = 3) {
           pred.pen_winner,
           result.penalty_winner,
         );
-        hits.push(pts > 0);
+        const stageKey = String(fixture.stage || "group").toLowerCase();
+        const multiplierMap = { group: 1, r32: 2, r16: 3, qf: 4, sf: 5, third: 5, final: 6 };
+        const multiplier = multiplierMap[stageKey] ?? 1;
+        const isExact = pts === 15 * multiplier;
+        hits.push(isExact);
       } else {
         // No prediction = miss (false)
         hits.push(false);
@@ -4599,28 +4603,17 @@ function getUserStreaks(streakLength = 3) {
   byUser.forEach((hits, username) => {
     if (!hits.length) return;
 
-    let maxHot = 0;
-    let maxCold = 0;
-    let currentHot = 0;
-    let currentCold = 0;
-
-    hits.forEach((h) => {
-      if (h === true) {
-        currentHot++;
-        currentCold = 0;
-        if (currentHot > maxHot) maxHot = currentHot;
-      } else {
-        currentCold++;
-        currentHot = 0;
-        if (currentCold > maxCold) maxCold = currentCold;
-      }
-    });
-
-    if (currentHot >= streakLength) {
-      hotStreaks.push({ username, streak: currentHot });
+    const last = hits[hits.length - 1];
+    let streak = 0;
+    for (let i = hits.length - 1; i >= 0 && hits[i] === last; i--) {
+      streak++;
     }
-    if (currentCold >= streakLength && currentCold <= 20) {
-      coldStreaks.push({ username, streak: currentCold });
+
+    if (last === true && streak >= streakLength) {
+      hotStreaks.push({ username, streak });
+    }
+    if (last === false && streak >= streakLength && streak <= 20) {
+      coldStreaks.push({ username, streak });
     }
   });
 
