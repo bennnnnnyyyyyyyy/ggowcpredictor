@@ -4415,7 +4415,7 @@ function renderRaceToTop() {
           <span class="race-rank">#${i + 1}</span>
           <span class="race-name">${escapeHtml(name)}</span>
           <span class="${pointsClass}">${p.totalPoints || 0} pts</span>
-          <span class="race-gap">${i === 0 ? "Leader" : `-${gap} pts`}</span>
+          <span class="race-gap">${i === 0 ? "Winner" : `-${gap} pts`}</span>
         </div>
       `;
       })
@@ -4664,8 +4664,7 @@ function renderHomeExtraTiles() {
   }
 
   if (hotColdEl) {
-    const { hotStreaks, coldStreaks } = getUserStreaks(3);
-    const noStreaks = !hotStreaks.length && !coldStreaks.length;
+    const { hotStreaks } = getUserStreaks(3);
     const hasLiveGames = liveFixtures.length > 0;
     hotColdEl.classList.toggle("wide-streak", !hasLiveGames);
     hotColdEl.innerHTML = `
@@ -4686,27 +4685,7 @@ function renderHomeExtraTiles() {
           </div>`
         : ""
       }
-        ${coldStreaks.length
-        ? `
-          <div class="streaks-list">
-            <div class="streak-section-title">Cold streaks</div>
-            ${coldStreaks
-          .map((s) => {
-            const name = getShortName(getUserDisplayName(s.username));
-            return `<div class="streak-row cold">🥶 <strong>${escapeHtml(
-              name,
-            )}</strong> ${s.streak} missed in a row</div>`;
-          })
-          .join("")}
-          </div>`
-        : ""
-      }
-      </div>
-      ${noStreaks
-        ? `<div class="streak-row empty">No active streaks yet</div>`
-        : ""
-      }
-    `;
+      `;
   }
 
   if (sweatingEl) {
