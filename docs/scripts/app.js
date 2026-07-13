@@ -1657,7 +1657,7 @@ setInterval(() => {
     if (activeId === "predictions") renderPredictions();
     else if (activeId === "results") renderResults();
     else if (activeId === "standings") renderGroupStandings();
-    updateHeaderMatchWidgets();
+    updateHeaderMatchWidgets1();
   }
 }, 30000);
 async function loadPredictions() {
@@ -5658,9 +5658,9 @@ function updateNextLockWidget() {
   widget.style.display = "flex";
 }
 
-function updateHeaderMatchWidgets() {
+function updateHeaderMatchWidgets1() {
   updateLiveGameWidget();
   updateNextLockWidget();
 }
 
-setInterval(updateHeaderMatchWidgets, 1000);
+setInterval(updateHeaderMatchWidgets1, 1000);
