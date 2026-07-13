@@ -27,7 +27,8 @@ ggowcpredictor db  (1).xlsx
 *.log
 *.har
 
-
+.cursorignore
+.clasp.json
 codexchange scoring.md
 contextforleaderboardissue.md
 
