@@ -4583,13 +4583,10 @@ function getUserStreaks(streakLength = 3) {
           pred.pen_winner,
           result.penalty_winner,
         );
-        const stageKey = String(fixture.stage || "group").toLowerCase();
-        const multiplierMap = { group: 1, r32: 2, r16: 3, qf: 4, sf: 5, third: 5, final: 6 };
-        const multiplier = multiplierMap[stageKey] ?? 1;
-        const isExact = pts === 15 * multiplier;
-        hits.push(isExact);
+        hits.push(pts > 0);
       }
-    });
+    }
+    );
     byUser.set(username, hits);
   });
 
@@ -4639,11 +4636,32 @@ function renderHomeExtraTiles() {
     const matchPreds = getMatchPredictions(matchId);
     if (!matchPreds.length) return null;
 
-    const homeWins = matchPreds.filter((p) => p.pred1 > p.pred2).length;
-    const draws = matchPreds.filter((p) => p.pred1 === p.pred2).length;
-    const awayWins = matchPreds.filter((p) => p.pred2 > p.pred1).length;
-    const total = matchPreds.length;
+    const fixture = (STATE.fixtures || []).find(
+      (f) => String(f.matchId) === String(matchId),
+    );
+    const stageKey = String(fixture?.stage || "group").toLowerCase();
+    const isKnockout = stageKey !== "group" && stageKey !== "";
 
+    let homeWins = 0,
+      draws = 0,
+      awayWins = 0;
+
+    matchPreds.forEach((p) => {
+      if (p.pred1 > p.pred2) {
+        homeWins++;
+      } else if (p.pred2 > p.pred1) {
+        awayWins++;
+      } else if (isKnockout) {
+        const pw = String(p.pen_winner || "").toLowerCase();
+        if (pw === "team1") homeWins++;
+        else if (pw === "team2") awayWins++;
+        else draws++;
+      } else {
+        draws++;
+      }
+    });
+
+    const total = matchPreds.length;
     const homePct = Math.round((homeWins / total) * 100);
     const drawPct = Math.round((draws / total) * 100);
     const awayPct = Math.max(0, 100 - homePct - drawPct);
@@ -4728,29 +4746,65 @@ function renderHomeExtraTiles() {
       const consensus = getMatchConsensus(nextMatch.matchId);
       const homeTeam = resolveSlot(nextMatch.team1) || nextMatch.team1;
       const awayTeam = resolveSlot(nextMatch.team2) || nextMatch.team2;
+      const stageKey = String(nextMatch.stage || "group").toLowerCase();
+      const isKnockout = stageKey !== "group" && stageKey !== "";
+
+      const matchPreds = getMatchPredictions(nextMatch.matchId);
+      const myPred = matchPreds.find(
+        (p) =>
+          String(p.username).toLowerCase() ===
+          String(SESSION.username || "").toLowerCase(),
+      );
+
+      let myPickLine = "";
+      let herdLine = "";
+      let crowdLine = "";
+
+      if (myPred) {
+        let myPickTeam;
+        if (myPred.pred1 > myPred.pred2) {
+          myPickTeam = homeTeam;
+        } else if (myPred.pred2 > myPred.pred1) {
+          myPickTeam = awayTeam;
+        } else if (isKnockout) {
+          const pw = String(myPred.pen_winner || "").toLowerCase();
+          myPickTeam =
+            pw === "team1" ? homeTeam : pw === "team2" ? awayTeam : "Draw";
+        } else {
+          myPickTeam = "Draw";
+        }
+        myPickLine = `<div class="consensus-mypick">You picked: <strong>${escapeHtml(
+          myPickTeam,
+        )}</strong> (${myPred.pred1}-${myPred.pred2})</div>`;
+
+        if (consensus && consensus.total > 0 && myPickTeam !== "Draw") {
+          const myPct = myPickTeam === homeTeam ? consensus.homePct : consensus.awayPct;
+          const otherTeam = myPickTeam === homeTeam ? awayTeam : homeTeam;
+          const otherPct = myPickTeam === homeTeam ? consensus.awayPct : consensus.homePct;
+          crowdLine = `<div class="consensus-crowdline">Crowd: ${myPct}% ${escapeHtml(
+            myPickTeam,
+          )}, ${otherPct}% ${escapeHtml(otherTeam)}</div>`;
+          herdLine =
+            myPct >= 50
+              ? `<div class="consensus-herd majority">You're with the majority ✅</div>`
+              : `<div class="consensus-herd contrarian">You're going against ${100 - myPct}% of the crowd 🎲</div>`;
+        }
+      }
 
       if (consensus && consensus.total > 0) {
         consensusEl.innerHTML = `
           <h3 class="race-title">🔮 Crowd Consensus</h3>
           <div class="consensus-matchup">Next: <strong>${escapeHtml(homeTeam)}</strong> vs <strong>${escapeHtml(awayTeam)}</strong></div>
-          <div class="consensus-bar-wrap">
-            <div class="consensus-bar">
-              <span class="consensus-seg seg-home" style="width:${consensus.homePct}%"><em>${consensus.homePct}%</em></span>
-              <span class="consensus-seg seg-draw" style="width:${consensus.drawPct}%">${consensus.drawPct > 8 ? `<em>${consensus.drawPct}%</em>` : ""}</span>
-              <span class="consensus-seg seg-away" style="width:${consensus.awayPct}%"><em>${consensus.awayPct}%</em></span>
-            </div>
-            <div class="consensus-labels">
-              <span>${escapeHtml(homeTeam)}</span>
-              <span>Draw</span>
-              <span>${escapeHtml(awayTeam)}</span>
-            </div>
-          </div>
+          ${myPickLine}
+          ${crowdLine}
+          ${herdLine}
           <div class="consensus-footer">Based on ${consensus.total} picks</div>
         `;
       } else {
         consensusEl.innerHTML = `
           <h3 class="race-title">🔮 Crowd Consensus</h3>
           <div class="consensus-matchup">Next: <strong>${escapeHtml(homeTeam)}</strong> vs <strong>${escapeHtml(awayTeam)}</strong></div>
+          ${myPickLine}
           <div class="consensus-empty">No picks submitted yet.</div>
         `;
       }
