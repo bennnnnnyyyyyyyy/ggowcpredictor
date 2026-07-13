@@ -4773,7 +4773,7 @@ function renderHomeExtraTiles() {
         } else {
           myPickTeam = "Draw";
         }
-        myPickLine = `<div class="consensus-mypick">You picked: <strong>${escapeHtml(
+        myPickLine = `<div class="consensus-mypick">You picked: ${getFlagImg(myPickTeam)} <strong>${escapeHtml(
           myPickTeam,
         )}</strong> (${myPred.pred1}-${myPred.pred2})</div>`;
 
