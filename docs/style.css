@@ -3821,7 +3821,7 @@ main {
 }
 
 .rules-list li::before {
-  content: "âœ¦";
+  content: "\2726";
   position: absolute;
   left: 0;
   color: var(--wc-blue);
@@ -5271,15 +5271,15 @@ main {
 }
 
 .vertical-bracket .bracket-seed.is-loser {
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.65);
   text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
+  text-decoration-thickness: 1px;
 }
 
 .vertical-bracket .bracket-seed.is-loser .team-code,
 .vertical-bracket .bracket-seed.is-loser .team-flag,
 .vertical-bracket .bracket-seed.is-loser .team-name {
-  opacity: 0.55;
+  opacity: 0.8;
 }
 
 .vertical-bracket .bracket-seed.is-winner .team-name {
@@ -7886,6 +7886,8 @@ body {
   font-size: 13px;
   color: var(--text);
   min-height: 48px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .home-tile:empty {
@@ -7904,7 +7906,7 @@ body {
 
 .home-tile.wide-streak .streaks-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
 
@@ -7921,6 +7923,7 @@ body {
 .streaks-list {
   max-height: 150px;
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
@@ -8154,4 +8157,12 @@ body {
   /* red dot = live, dropping */
   white-space: nowrap;
   opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+  .logo-divider,
+  .logo img.wc-logo,
+  .logo-text {
+    display: none !important;
+  }
 }
