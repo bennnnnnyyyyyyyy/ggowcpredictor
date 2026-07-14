@@ -1266,15 +1266,18 @@ function renderHome() {
       buildDaySection("Tomorrow", windowBuckets.tomorrow),
     ].join("")
     : `<div class="empty-state compact"><p>No fixtures are scheduled for today yet.</p></div>`;
-  if (totalScored) {
-    winBar.style.display = "flex";
-    winBar.innerHTML = `
+  // Always render the live-game / next-lock widgets under the home tiles.
+  // (Previously this was gated on `totalScored`, which only counts already-
+  // scored predictions and has nothing to do with whether a game is live or
+  // a lock is upcoming — that made the widgets disappear whenever no
+  // predictions had been scored yet, even mid-live-game.)
+  winBar.style.display = "flex";
+  winBar.innerHTML = `
     <div class="header-match-widgets" id="header-match-widgets">
             <div class="live-game-widget" id="live-game-widget" style="display:none">
-              <span class="live-dot"></span>
-              <span class="next-lock-team" id="live-team1"></span>
+              ${getFlagImg(homeTeam)} <span class="next-lock-team" id="live-team1"></span>
               <span class="live-score" id="live-score">0-0</span>
-              <span class="next-lock-team" id="live-team2"></span>
+              <span class="next-lock-team" id="live-team2"></span>${getFlagImg(awayTeam)}
               <span class="live-status" id="live-status">LIVE</span>
             </div>
             <div class="next-lock-widget" id="next-lock-widget" style="display:none">
@@ -1286,10 +1289,7 @@ function renderHome() {
             </div>
           </div>
   `;
-  } else {
-    winBar.style.display = "none";
-    winBar.innerHTML = "";
-  }
+  updateHeaderMatchWidgets();
 
   renderHomeExtraTiles();
   renderRaceToTop();

@@ -488,12 +488,13 @@ header {
 .next-lock-widget {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 6px 12px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   font-family: var(--font-ggo-display);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   white-space: nowrap;
 }
