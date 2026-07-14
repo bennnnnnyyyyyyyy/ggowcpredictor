@@ -6128,7 +6128,7 @@ main {
 }
 
 .logo-text h1 span {
-  color: var(--wc-red);
+  color: var(--wc-gold);
 }
 
 .logo-text p {
@@ -6240,7 +6240,7 @@ main {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--wc-blue), var(--wc-red));
+  background: linear-gradient(90deg, var(--wc-blue), var(--wc-gold));
 }
 
 .profile-hero-inner {
@@ -6330,7 +6330,7 @@ main {
 }
 
 .profile-username span {
-  color: var(--wc-blue);
+  color: var(--wc-gold);
   font-weight: 600;
 }
 
@@ -6428,6 +6428,7 @@ main {
 
 .stat-card.stat-pts .stat-value {
   color: #ffd700;
+  text-shadow: 0 0 10px #ffd700;
 }
 
 .stat-card.stat-exact .stat-value {
@@ -6906,7 +6907,7 @@ main {
 
 .accuracy-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--wc-blue), var(--wc-red));
+  background: linear-gradient(90deg, var(--wc-gold), rgb(252, 236, 94));
   border-radius: 999px;
   transition: width 0.6s ease;
 }
@@ -8160,6 +8161,7 @@ body {
 }
 
 @media (max-width: 600px) {
+
   .logo-divider,
   .logo img.wc-logo,
   .logo-text {
