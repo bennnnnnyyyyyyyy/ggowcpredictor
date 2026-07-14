@@ -480,8 +480,9 @@ header {
 .header-match-widgets {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  margin-left: 1%;
+  width: 100%;
   flex-wrap: wrap;
 }
 
@@ -5696,6 +5697,7 @@ main {
 .home-win-bar {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
 }
 
