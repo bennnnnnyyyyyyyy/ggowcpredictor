@@ -4,8 +4,7 @@
   /* Neon energetic green */
   --wc-red: #ff3b5c;
   /* Cyber red */
-  --wc-purple: #6e00f5;
-  /* Electro purple */
+  /* --wc-purple removed: token defined but never used */
   --dark: #070a13;
   /* Premium dark pitch background */
   --card-bg: rgba(14, 20, 35, 0.7);
@@ -37,6 +36,15 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+/* ═══ GLOBAL FOCUS RING (WCAG 2.4.7) ═══
+   Using :focus-visible so mouse users never see it,
+   only keyboard / assistive-tech users do. */
+:focus-visible {
+  outline: 2px solid var(--wc-gold);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
 }
 
 html,
@@ -313,7 +321,7 @@ select {
 }
 
 .form-group input:focus {
-  outline: none;
+  /* outline handled globally via :focus-visible */
   border-color: var(--wc-gold);
   background: rgba(185, 151, 0, 0.08);
   box-shadow: 0 0 0 3px rgba(185, 151, 0, 0.12);
@@ -341,7 +349,6 @@ select {
 
 .username-suggestion:hover,
 .username-suggestion:focus-visible {
-  outline: none;
   background: rgba(185, 151, 0, 0.12);
   border-color: var(--wc-gold);
 }
@@ -633,7 +640,7 @@ header {
 }
 
 .nav-btn.active {
-  background: var(--wc-blue);
+  background: var(--wc-gold);
   color: white;
   border-color: var(--wc-gold);
 }
@@ -729,6 +736,18 @@ header {
 .sync-btn.loading {
   opacity: 0.65;
   pointer-events: none;
+}
+
+/* Calendar button — styled via class, not inline, so prefers-reduced-motion works */
+#calendar-nav-btn.sync-btn-calendar {
+  background: rgba(30, 224, 40, 0.85);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #calendar-nav-btn.sync-btn-calendar {
+    animation: exact-glow 2.2s ease-in-out infinite;
+  }
 }
 
 .big-refresh-btn {
@@ -902,11 +921,7 @@ header {
   color: inherit !important;
 }
 
-.user-pill-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+/* duplicate .user-pill-link block removed */
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•VIEW SWITCHINGâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .view {
@@ -919,7 +934,7 @@ header {
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•MAIN CONTENTâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 main {
-  max-width: 1970px;
+  max-width: 1440px;
   margin: 15px auto;
   padding: 0 20px;
 }
@@ -956,7 +971,7 @@ main {
 }
 
 @media (max-width: 500px) {
-  mobile-bottom-nav .group-matches {
+  .mobile-bottom-nav .group-matches {
     grid-template-columns: repeat(1, minmax(280px, 1fr));
   }
 }
@@ -1454,7 +1469,7 @@ main {
   border-color: var(--wc-gold);
   background: rgba(185, 151, 0, 0.12);
   box-shadow: 0 0 0 3px rgba(185, 151, 0, 0.15);
-  outline: none;
+  /* outline handled globally via :focus-visible */
 }
 
 .score-input::-webkit-outer-spin-button,
@@ -7212,17 +7227,26 @@ body {
     repeating-linear-gradient(135deg,
       rgba(255, 255, 255, 0.01) 0 1px,
       transparent 1px 12px) !important;
-  background-attachment: fixed;
+  /* background-attachment: fixed is desktop-only —
+     on mobile Safari it disables GPU scroll compositing */
+  background-attachment: scroll;
 }
 
-/* Glassmorphism & custom borders on cards */
+@media (min-width: 769px) {
+  body {
+    background-attachment: fixed !important;
+  }
+}
+
+/* Card glass treatment
+   backdrop-filter removed: applied to 20+ simultaneous elements it causes GPU
+   layer explosion and jank on mid-range mobile. Cards have rich backgrounds
+   already — the blur was not visually meaningful. */
 .match-card,
 .home-match-card-large,
 .pred-card,
 .result-card {
   background: var(--card-bg) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 0, 0, 0.15) !important;
   border-radius: var(--radius-md) !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;

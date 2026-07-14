@@ -36,11 +36,6 @@
   })();
 </script>
 
-<!-- Match Detail Drawer -->
-<div id="match-drawer-overlay" class="match-drawer-overlay" onclick="closeMatchDrawer()"></div>
-<aside id="match-drawer" class="match-drawer" role="dialog" aria-modal="true">
-  <div id="match-drawer-inner"></div>
-</aside>
 
 
 <body>
@@ -168,12 +163,7 @@
               ">
             Settings
           </button>
-          <button id="calendar-nav-btn" class="sync-btn" type="button" onclick="toggleCalendarModal(true)" style="
-                display: none;
-                animation: exact-glow 2.2s ease-in-out infinite;
-                background: rgba(30, 224, 40, 0.877);
-                border-color: rgba(255, 255, 255, 0.25);
-              ">
+          <button id="calendar-nav-btn" class="sync-btn" type="button" onclick="toggleCalendarModal(true)" style="display: none;">
             Add to Calendar
           </button>
         </div>
@@ -1055,6 +1045,11 @@
       <button class="vote-skip-btn" onclick="skipChampionPick()">Remind Me Later</button>
     </div>
   </div>
+  <!-- Match Detail Drawer -->
+  <div id="match-drawer-overlay" class="match-drawer-overlay" onclick="closeMatchDrawer()"></div>
+  <aside id="match-drawer" class="match-drawer" role="dialog" aria-modal="true">
+    <div id="match-drawer-inner"></div>
+  </aside>
 </body>
 <script src="scripts/app.js?v=8" defer></script>
 
