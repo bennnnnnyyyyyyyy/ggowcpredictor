@@ -1275,9 +1275,10 @@ function renderHome() {
   winBar.innerHTML = `
     <div class="header-match-widgets" id="header-match-widgets">
             <div class="live-game-widget" id="live-game-widget" style="display:none">
-              ${getFlagImg(homeTeam)} <span class="next-lock-team" id="live-team1"></span>
+              <span class="live-dot"></span>
+              <span class="next-lock-team" id="live-team1"></span>
               <span class="live-score" id="live-score">0-0</span>
-              <span class="next-lock-team" id="live-team2"></span>${getFlagImg(awayTeam)}
+              <span class="next-lock-team" id="live-team2"></span>
               <span class="live-status" id="live-status">LIVE</span>
             </div>
             <div class="next-lock-widget" id="next-lock-widget" style="display:none">
