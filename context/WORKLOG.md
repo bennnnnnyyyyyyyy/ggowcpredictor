@@ -534,3 +534,15 @@ where p.username = 'ben_arthur';
 ### Notes
 
 - This is meant to make the round tabs behave like a mobile view switcher rather than a clipped static tree.
+
+## 2026-07-15 - Next Lock flags cache fix and Leaderboard contender/gold highlighting
+
+### What changed
+
+- Fixed the Next Lock and Live Game flags caching bug by making the update check self-healing (re-populates flags if target elements are empty) and resetting cached IDs on home view re-render.
+- Added dynamic striking distance calculation (5 points * stage multiplier) to the home leaderboard. Players within this points threshold of the leader get visual contender flair (pulsing fire emoji, orange gap text, left border, and tooltip).
+- Added gold row highlight, border, and inset shadow styling to the first-place row on the home leaderboard to maintain hierarchy over contenders.
+
+### Verification
+
+- Verified syntax and layout consistency across scripts and style sheets.
