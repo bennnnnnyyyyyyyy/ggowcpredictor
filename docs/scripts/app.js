@@ -1300,6 +1300,19 @@ function renderHome() {
         ? buildScoreGroups(matchPreds, fixture)
         : buildOutcomeGroups(matchPreds, homeTeam, awayTeam, fixture);
 
+      // Re-sort finished matches: exact → good outcome → popularity
+      if (isFinished && finalScore && scoreGroups.length) {
+        const tier = (group) => {
+          if (group.score === finalScore) return 0;        // exact — golden
+          if (isGoodOutcome(group.score, result)) return 1; // correct outcome
+          return 2;                                         // wrong
+        };
+        scoreGroups.sort((a, b) => {
+          const td = tier(a) - tier(b);
+          return td !== 0 ? td : b.count - a.count; // tie-break by count
+        });
+      }
+
       // ─── NEW: LOOK UP COLORS HERE ───
       const homeColor = wcTeamColors[homeTeam]?.primary || "var(--wc-blue)";
       const awayColor = wcTeamColors[awayTeam]?.primary || "var(--wc-red)";
