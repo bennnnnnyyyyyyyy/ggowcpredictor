@@ -6832,6 +6832,40 @@ main {
   }
 }
 
+/* ── Home match card skeleton ── */
+.home-match-card-skel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  min-height: 160px;
+  animation: card-fade-in 0.3s ease both;
+}
+
+@keyframes card-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Staggered skeleton fade-in */
+.home-match-card-skel:nth-child(2) { animation-delay: 0.07s; }
+.home-match-card-skel:nth-child(3) { animation-delay: 0.14s; }
+
+/* Skeleton home tile placeholders */
+.home-tile:empty::before {
+  content: "";
+  display: block;
+  height: 90px;
+  border-radius: 10px;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s infinite;
+}
+
 .pred-stage-divider {
   display: flex;
   align-items: center;

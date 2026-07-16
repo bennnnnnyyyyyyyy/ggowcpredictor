@@ -799,6 +799,20 @@ function showApp() {
     showPenaltyPopup();
   }
 
+  // ── Stale-while-revalidate: hydrate STATE from localStorage cache
+  // so the home page renders instantly with last-known data while
+  // requestSync() fetches fresh data in the background.
+  if (SESSION.username) {
+    const cachedPredictions = readLocalObject(`ggo_wc_predictions_${SESSION.username}`);
+    if (cachedPredictions && Object.keys(cachedPredictions).length) {
+      STATE.predictions = cachedPredictions;
+    }
+    const cachedAllPreds = readLocalObject("ggo_wc_predictions_all");
+    if (cachedAllPreds && Object.keys(cachedAllPreds).length) {
+      STATE.allPredictions = cachedAllPreds;
+    }
+  }
+
   showNavChangeBanner();
   renderHome();
   requestSync();
@@ -1155,6 +1169,24 @@ function isGoodOutcome(scoreStr, result) {
   const actualOutcome = Math.sign(result.score1 - result.score2);
   return predOutcome === actualOutcome;
 }
+// ── Skeleton cards: rendered while fixtures aren't loaded yet
+function renderSkeletonCards(count = 3) {
+  const cards = Array.from({ length: count }, () => `
+    <article class="home-match-card-skel">
+      <div class="skel skel-line skel-line-wide" style="height:14px;width:55%;margin-bottom:10px"></div>
+      <div class="skel skel-line skel-line-wide" style="height:22px;width:85%;margin-bottom:14px"></div>
+      <div class="skel skel-bar" style="height:8px;width:100%;border-radius:4px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div class="skel" style="height:12px;width:28%;border-radius:4px"></div>
+        <div class="skel" style="height:12px;width:18%;border-radius:4px"></div>
+        <div class="skel" style="height:12px;width:28%;border-radius:4px"></div>
+      </div>
+      <div class="skel" style="height:56px;width:100%;border-radius:8px"></div>
+    </article>
+  `).join("");
+  return cards;
+}
+
 function renderHome() {
   const summary = document.getElementById("home-summary-stats");
   const matchCards = document.getElementById("home-today-games");
@@ -1162,6 +1194,12 @@ function renderHome() {
   const tabsContainer = document.getElementById("home-match-tabs");
   const count = document.getElementById("today-match-count");
   if (!summary || !matchCards || !winBar) return;
+
+  // Show skeleton while fixtures are loading (no data yet)
+  if (!STATE.fixtures.length) {
+    matchCards.innerHTML = renderSkeletonCards(3);
+    return;
+  }
 
   const tabOrder = getHomeTabOrder();
   const liveFixture = getLiveHomeFixture();
@@ -1404,8 +1442,11 @@ function renderHome() {
   liveFixtureId = null;
   updateHeaderMatchWidgets();
 
-  renderHomeExtraTiles();
-  renderRaceToTop();
+  // Defer expensive tile computations so match cards paint first
+  setTimeout(() => {
+    renderHomeExtraTiles();
+    renderRaceToTop();
+  }, 0);
 }
 function ensureAdminNav() {
   const nav = document.getElementById("main-nav");
@@ -1453,49 +1494,49 @@ async function requestSync() {
     }
   };
 
-  const [
-    gameData,
-    results,
-    leaderboard,
-    standings,
-    allPreds,
-    myPreds,
-    acctReqs,
-  ] = await Promise.allSettled([
+  // ── STAGE 1: load critical path first (fixtures + my predictions)
+  // These two resolve fastest and unlock a meaningful home render.
+  const [gameData, myPreds] = await Promise.allSettled([
     loadGameData(),
-    loadResults(),
-    loadLeaderboard(),
-    loadGroupStandings(),
-    loadAllPredictions(),
     loadPredictions(),
-    loadAccountRequests(),
   ]);
-  [
-    gameData,
-    results,
-    leaderboard,
-    standings,
-    allPreds,
-    myPreds,
-    acctReqs,
-  ].forEach((r, i) => {
+  [gameData, myPreds].forEach((r, i) => {
     if (r.status === "rejected") {
       hadError = true;
-      console.warn(`Loader ${i} failed:`, r.reason);
+      console.warn(`Stage-1 loader ${i} failed:`, r.reason);
     }
   });
   if (!STATE.fixtures.length) {
-    try {
-      await loadFixtures();
-    } catch (e) {
+    try { await loadFixtures(); } catch (e) {
       hadError = true;
       console.warn("Fixture fallback failed.", e);
     }
   }
 
-  const activeViewId = document
-    .querySelector(".view.active")
-    ?.id?.replace("view-", "");
+  // Render + dismiss loading screen as soon as Stage 1 data is ready
+  const activeViewId = () => document.querySelector(".view.active")?.id?.replace("view-", "");
+  renderHome();
+  dismissLoadingScreen();
+
+  // ── STAGE 2: load the rest in background (no blocking)
+  const [results, leaderboard, standings, allPreds, acctReqs] =
+    await Promise.allSettled([
+      loadResults(),
+      loadLeaderboard(),
+      loadGroupStandings(),
+      loadAllPredictions(),
+      loadAccountRequests(),
+    ]);
+  [results, leaderboard, standings, allPreds, acctReqs].forEach((r, i) => {
+    if (r.status === "rejected") {
+      hadError = true;
+      console.warn(`Stage-2 loader ${i} failed:`, r.reason);
+    }
+  });
+
+  // Invalidate streak cache since allPredictions may have changed
+  _streakCache = null;
+
   const renderers = {
     home: renderHome,
     predictions: renderPredictions,
@@ -1505,11 +1546,13 @@ async function requestSync() {
     bracket: renderBracket,
     admin: renderAdmin,
   };
-  if (renderers[activeViewId]) {
-    await runStep(activeViewId, renderers[activeViewId]);
+  const vid = activeViewId();
+  if (renderers[vid]) {
+    await runStep(vid, renderers[vid]);
   } else {
     await runStep("Home", () => renderHome());
   }
+
   const hasAnyData =
     STATE.fixtures.length ||
     Object.keys(STATE.results).length ||
@@ -1536,8 +1579,6 @@ async function requestSync() {
   updateAdminBadge();
   if (syncBtn) syncBtn.classList.remove("loading");
   checkChampionPick();
-  // Dismiss the initial loading screen on first sync
-  dismissLoadingScreen();
 }
 async function loadAccountRequests() {
   STATE.accountRequests = [];
@@ -4688,7 +4729,19 @@ function getLiveProjectedDeltas() {
 }
 
 // Longest hot streak (consecutive scoring picks) and cold streak (consecutive misses) since tournament started
+// Cache for getUserStreaks — invalidated by requestSync when allPredictions changes
+let _streakCache = null;
+let _streakCacheKey = null;
+
 function getUserStreaks(streakLength = 3) {
+  // ── Fast path: return cached result if nothing has changed ──
+  const cacheKey = String(Object.keys(STATE.allPredictions || {}).length) +
+    "|" + String(Object.keys(STATE.results || {}).length) +
+    "|" + String((STATE.fixtures || []).length);
+  if (_streakCache && _streakCacheKey === cacheKey) {
+    return _streakCache;
+  }
+
   const finished = (STATE.fixtures || [])
     .filter((f) => {
       const r = STATE.results[f.matchId];
@@ -4701,7 +4754,14 @@ function getUserStreaks(streakLength = 3) {
 
   const allPreds = Object.values(STATE.allPredictions || {});
 
-  // Collect all unique active usernames from both the users list and predictions
+  // ── O(n) pre-index: Map<"username_matchId" → pred> replaces O(n) find()
+  const predIndex = new Map();
+  allPreds.forEach((p) => {
+    const key = String(p.username || "").toLowerCase() + "_" + String(p.matchId);
+    predIndex.set(key, p);
+  });
+
+  // Collect all unique active usernames
   const usernames = Array.from(
     new Set([
       ...(STATE.users || []).map((u) => u.username),
@@ -4713,14 +4773,11 @@ function getUserStreaks(streakLength = 3) {
 
   usernames.forEach((username) => {
     const hits = [];
+    const userLower = String(username).toLowerCase();
     finished.forEach((fixture) => {
       const result = STATE.results[fixture.matchId];
-      // Find the prediction by this user for this fixture
-      const pred = allPreds.find(
-        (p) =>
-          String(p.username).toLowerCase() === String(username).toLowerCase() &&
-          String(p.matchId) === String(fixture.matchId),
-      );
+      // O(1) Map lookup instead of O(n) find()
+      const pred = predIndex.get(userLower + "_" + String(fixture.matchId));
 
       if (pred) {
         const pts = calculateMatchPoints(
@@ -4760,7 +4817,10 @@ function getUserStreaks(streakLength = 3) {
   hotStreaks.sort((a, b) => b.streak - a.streak);
   coldStreaks.sort((a, b) => b.streak - a.streak);
 
-  return { hotStreaks, coldStreaks };
+  const result = { hotStreaks, coldStreaks };
+  _streakCache = result;
+  _streakCacheKey = cacheKey;
+  return result;
 }
 function renderHomeExtraTiles() {
   const hotColdEl = document.getElementById("home-hot-cold-tile");

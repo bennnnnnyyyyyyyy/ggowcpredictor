@@ -1,4 +1,20 @@
+## 2026-07-16 - Home page performance refactor
+
+### What changed
+
+- **Staged data loading in `requestSync()`** — Split the 7 parallel fetches into two stages. Stage 1 loads only `loadGameData()` + `loadPredictions()` (fastest path); the loading screen dismisses and home renders immediately after Stage 1. Stage 2 loads results, leaderboard, standings, all predictions, and account requests in the background.
+- **Stale-while-revalidate in `showApp()`** — On login/page load, STATE is hydrated from localStorage cache (`ggo_wc_predictions_*` and `ggo_wc_predictions_all`) before any network request fires. This means the home page renders with last-known data instantly.
+- **Skeleton loading cards** — `renderHome()` now injects shimmer skeleton cards (`renderSkeletonCards()`) when `STATE.fixtures` is empty, replacing the plain "Loading…" empty state. Cards fade in staggered.
+- **Deferred expensive tiles** — `renderHomeExtraTiles()` and `renderRaceToTop()` are now wrapped in `setTimeout(fn, 0)` inside `renderHome()`, letting match cards paint to the DOM before streak/race computations run.
+- **`getUserStreaks()` O(n³) → O(n)** — Replaced the inner `allPreds.find()` call (O(n) per fixture per user) with a pre-built `Map<"username_matchId" → pred>` for O(1) lookup. For 20 users × 128 fixtures this eliminates ~2.5M iterations per render. Added a result cache keyed on prediction/result/fixture counts; the cache is invalidated by `requestSync()` after Stage 2 completes.
+- **Skeleton tile placeholders** — Empty `.home-tile` elements now show a shimmer via CSS `::before` pseudo-element while tiles are deferred.
+
+### Why
+
+- The home page was noticeably slow after all 128 fixtures were added: initial load blocked on all 7 fetches, `getUserStreaks` was O(n³), and every tab switch triggered a full synchronous re-render including streak computation.
+
 ## 2026-06-25 - Prediction ordering newest-first
+
 
 ### What changed
 
