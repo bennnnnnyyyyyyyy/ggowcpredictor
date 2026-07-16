@@ -1298,7 +1298,7 @@ function renderHome() {
             }
 
             return `
-          <div class="popular-score ${index === 0 ? "popular-score-top" : ""} ${scoreClass}">
+          <div class="popular-score ${index === 0 ? "popular-score" : ""} ${scoreClass}">
              <div class="popular-score-main">
               <span class="score-badge">${escapeHtml(group.score)}</span>
               <strong>${group.count} pick${group.count === 1 ? "" : "s"}</strong>
