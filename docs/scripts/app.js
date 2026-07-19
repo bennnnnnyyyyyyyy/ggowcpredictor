@@ -1054,6 +1054,7 @@ function getDefaultHomeTab() {
 
 function selectHomeTab(key) {
   STATE.activeHomeTab = key;
+  STATE.userChoseHomeTab = true; // user explicitly clicked a tab
   renderHome();
 }
 function getMatchStatusInfo(fixture) {
@@ -1209,7 +1210,20 @@ function renderHome() {
   const liveFixture = getLiveHomeFixture();
   let activeTab;
   if (liveFixture) {
-    activeTab = getHomeTabKey(liveFixture);
+    // Always jump to the live-game tab — even if the user previously
+    // navigated away, a live game takes priority on every render.
+    // Exception: respect the user's explicit choice once a live game is
+    // already showing (they may want to browse other tabs mid-match).
+    const liveTab = getHomeTabKey(liveFixture);
+    if (!STATE.userChoseHomeTab || STATE.activeHomeTab !== liveTab) {
+      activeTab = liveTab;
+      // Reset the user-choice flag so the next render re-evaluates cleanly
+      // only when a *new* live game appears (different tab).
+      if (STATE.activeHomeTab !== liveTab) STATE.userChoseHomeTab = false;
+    } else {
+      // User is intentionally on a different tab while a game is live — honour it.
+      activeTab = STATE.activeHomeTab;
+    }
   } else if (STATE.activeHomeTab && tabOrder.includes(STATE.activeHomeTab)) {
     activeTab = STATE.activeHomeTab;
   } else {
