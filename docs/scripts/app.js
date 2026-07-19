@@ -886,6 +886,7 @@ function showView(id, btn) {
   if (id === "calendar") toggleCalendarModal(true);
   if (id === "admin") renderAdmin();
   if (id === "rules") renderRulesPage();
+  if (id === "report") renderTournamentReport();
 }
 
 function getLocalDateKey(date = new Date()) {
@@ -5939,3 +5940,575 @@ function updateHeaderMatchWidgets() {
 }
 
 setInterval(updateHeaderMatchWidgets, 1000);
+
+// ══════════════════════════════════════════════════════════════
+// END OF TOURNAMENT REPORT
+// One big scrollable page: all players, all games, trophies, stats
+// ══════════════════════════════════════════════════════════════
+
+const FINISHED_STATUSES = new Set(['FT','AET','PEN','FINISHED','ENDED','COMPLETED','FULL_TIME']);
+
+// Matches excluded from award/highlight stats — app wasn't live for these
+const EXCLUDED_MATCH_TEAMS = [
+  ['mexico', 'south africa'],
+  ['south korea', 'czech republic'],
+];
+function isExcludedMatch(fixture) {
+  const t1 = (resolveSlot(fixture.team1) || fixture.team1 || '').toLowerCase();
+  const t2 = (resolveSlot(fixture.team2) || fixture.team2 || '').toLowerCase();
+  return EXCLUDED_MATCH_TEAMS.some(([a, b]) =>
+    (t1.includes(a) && t2.includes(b)) || (t1.includes(b) && t2.includes(a))
+  );
+}
+
+function isTournamentFinished() {
+  const total = (STATE.fixtures || []).length;
+  const done = (STATE.fixtures || []).filter(f => {
+    const r = STATE.results?.[f.matchId];
+    return r && FINISHED_STATUSES.has(String(r.status || '').toUpperCase());
+  }).length;
+  return { done, total, finished: total > 0 && done === total };
+}
+
+function getTournamentChampion() {
+  const final = (STATE.fixtures || []).find(f => String(f.stage || '').toLowerCase() === 'final');
+  if (!final) return null;
+  const result = STATE.results?.[final.matchId];
+  if (!result) return null;
+  if (!FINISHED_STATUSES.has(String(result.status || '').toUpperCase())) return null;
+  if (result.penalty_winner) {
+    return String(result.penalty_winner).toLowerCase() === 'team1'
+      ? (resolveSlot(final.team1) || final.team1)
+      : (resolveSlot(final.team2) || final.team2);
+  }
+  if (result.score1 > result.score2) return resolveSlot(final.team1) || final.team1;
+  if (result.score2 > result.score1) return resolveSlot(final.team2) || final.team2;
+  return null;
+}
+
+function computeTournamentReport() {
+  const allPredsList = Object.values(STATE.allPredictions || {});
+  const finishedFixtures = (STATE.fixtures || [])
+    .filter(f => {
+      const r = STATE.results?.[f.matchId];
+      return r && FINISHED_STATUSES.has(String(r.status || '').toUpperCase());
+    })
+    .sort((a, b) => (a.kickoffDate?.getTime() || 0) - (b.kickoffDate?.getTime() || 0));
+
+  const playerMap = {};
+  for (const lb of (STATE.leaderboard || [])) {
+    playerMap[lb.username] = {
+      username: lb.username,
+      displayName: lb.displayName || lb.username,
+      rank: lb.rank || 999,
+      totalPoints: lb.totalPoints || 0,
+      exactScores: lb.exactScores || 0,
+      correctOutcomes: lb.correctOutcomes || 0,
+      predicted: lb.predicted || 0,
+      scored: lb.scored || 0,
+      perStage: {}, perGame: [], trophies: [],
+    };
+  }
+
+  for (const pred of allPredsList) {
+    const matchId = String(pred.matchId || pred.match_id || '');
+    const fixture = finishedFixtures.find(f => f.matchId === matchId);
+    if (!fixture) continue;
+    const result = STATE.results?.[matchId];
+    if (!result || result.score1 == null || result.score2 == null) continue;
+
+    const pts = calculateMatchPoints(pred.pred1, pred.pred2, result.score1, result.score2, fixture.stage, pred.pen_winner, result.penalty_winner);
+    const stage = String(fixture.stage || 'group').toLowerCase();
+    const mult = STAGE_MULTIPLIERS[stage] || 1;
+    const isFOT = stage === 'final' || stage === 'third';
+    const isExact = isFOT ? pts === 100 : Math.abs(pts / mult - 15) < 0.01;
+    const isCorrect = pts > 0;
+
+    const rnd = String(fixture.round || '').toLowerCase();
+    const sk = stage !== 'group' ? stage :
+      rnd.includes('2') ? 'group_md2' : rnd.includes('3') ? 'group_md3' : 'group_md1';
+
+    const username = pred.username;
+    if (!playerMap[username]) {
+      const user = (STATE.users || []).find(u => u.username === username);
+      playerMap[username] = {
+        username, displayName: user?.displayName || username, rank: 999,
+        totalPoints: 0, exactScores: 0, correctOutcomes: 0,
+        predicted: 0, scored: 0, perStage: {}, perGame: [], trophies: [],
+      };
+    }
+    const player = playerMap[username];
+    if (!player.perStage[sk]) player.perStage[sk] = { pts: 0, exact: 0, correct: 0, games: 0 };
+    player.perStage[sk].pts += pts;
+    player.perStage[sk].games += 1;
+    if (isExact) player.perStage[sk].exact += 1;
+    if (isCorrect) player.perStage[sk].correct += 1;
+    player.perGame.push({ matchId, pred1: pred.pred1, pred2: pred.pred2, pts, isExact, isCorrect, fixture, result, pen_winner: pred.pen_winner });
+  }
+
+  const players = Object.values(playerMap)
+    .filter(p => p.predicted > 0 || p.perGame.length > 0)
+    .sort((a, b) => (a.rank || 999) - (b.rank || 999));
+
+  const matchStats = {};
+  for (const fixture of finishedFixtures) {
+    const matchId = fixture.matchId;
+    const result = STATE.results[matchId];
+    const preds = allPredsList.filter(p => String(p.matchId || p.match_id) === matchId && p.pred1 != null);
+    const pickCounts = {};
+    const exactUsers = [];
+    for (const p of preds) {
+      const key = `${p.pred1}-${p.pred2}`;
+      pickCounts[key] = (pickCounts[key] || 0) + 1;
+      const pts = calculateMatchPoints(p.pred1, p.pred2, result.score1, result.score2, fixture.stage, p.pen_winner, result.penalty_winner);
+      const stage = String(fixture.stage || 'group').toLowerCase();
+      const mult = STAGE_MULTIPLIERS[stage] || 1;
+      const isFOT = stage === 'final' || stage === 'third';
+      if (isFOT ? pts === 100 : Math.abs(pts / mult - 15) < 0.01) exactUsers.push(p.username);
+    }
+    const top = Object.entries(pickCounts).sort((a, b) => b[1] - a[1])[0];
+    matchStats[matchId] = {
+      fixture, result, preds, exactCount: exactUsers.length, exactUsers,
+      totalPredicted: preds.length,
+      mostPopularPick: top?.[0] || null, mostPopularCount: top?.[1] || 0,
+      excluded: isExcludedMatch(fixture),
+    };
+  }
+
+  const awards = computeAwards(players, matchStats, finishedFixtures);
+  const highlights = computeHighlights(players, matchStats);
+  return { players, matchStats, finishedFixtures, awards, highlights };
+}
+
+function computeAwards(players, matchStats, fixtures) {
+  const awards = [];
+  if (!players.length) return awards;
+  const srt = (arr, fn) => [...arr].sort(fn);
+
+  const exactOf = p => p.exactScores || p.perGame.filter(g => g.isExact).length;
+
+  // Achievement awards — positive, skill-based
+  const A = (obj) => ({ ...obj, type: 'achievement' });
+  const Q = (obj) => ({ ...obj, type: 'quirky' });  // fun/character awards
+
+  // 💥 GGO Champion — top of the leaderboard
+  if (players[0]) awards.push(A({ icon: '💥', name: 'GGO Champion', desc: 'Highest total points — king of the table', winner: players[0].displayName, stat: `${players[0].totalPoints} pts`, username: players[0].username }));
+
+  // 🎯 The Oracle — most exact scores
+  const oracle = srt(players, (a, b) => exactOf(b) - exactOf(a))[0];
+  if (oracle) awards.push(A({ icon: '🎯', name: 'The Oracle', desc: 'Most exact scorelines across all 104 games', winner: oracle.displayName, stat: `${exactOf(oracle)} exact scores`, username: oracle.username }));
+
+  // 🔥 Knockout King — most points in knockout stages
+  const koKey = p => ['r32','r16','qf','sf','third','final'].reduce((s, k) => s + (p.perStage[k]?.pts || 0), 0);
+  const koKing = srt(players, (a, b) => koKey(b) - koKey(a))[0];
+  if (koKing) awards.push(A({ icon: '🔥', name: 'Knockout King', desc: 'Most points earned in knockout rounds', winner: koKing.displayName, stat: `${koKey(koKing)} knockout pts`, username: koKing.username }));
+
+  // ⚽ Group Stage God — most group stage points
+  const gsKey = p => ['group_md1','group_md2','group_md3'].reduce((s, k) => s + (p.perStage[k]?.pts || 0), 0);
+  const gsGod = srt(players, (a, b) => gsKey(b) - gsKey(a))[0];
+  if (gsGod) awards.push(A({ icon: '⚽', name: 'Group Stage God', desc: 'Dominated group stage predictions', winner: gsGod.displayName, stat: `${gsKey(gsGod)} group pts`, username: gsGod.username }));
+
+  // 🎯 Sniper — highest exact score rate
+  const snipers = players.filter(p => (p.scored || p.perGame.length) >= 15);
+  const sniper = srt(snipers, (a, b) => {
+    const as = a.scored || a.perGame.length, bs = b.scored || b.perGame.length;
+    return (exactOf(b) / (bs || 1)) - (exactOf(a) / (as || 1));
+  })[0];
+  if (sniper) {
+    const s = sniper.scored || sniper.perGame.length;
+    awards.push(A({ icon: '🔭', name: 'Sniper', desc: 'Highest exact score rate (min 15 predictions)', winner: sniper.displayName, stat: `${Math.round((exactOf(sniper)/(s||1))*100)}% exact rate`, username: sniper.username }));
+  }
+
+  // 🎲 Lone Wolf — most solo exact scores nobody else got
+  const uniqueExacts = {};
+  for (const ms of Object.values(matchStats)) {
+    if (!ms.excluded && ms.exactUsers.length === 1) uniqueExacts[ms.exactUsers[0]] = (uniqueExacts[ms.exactUsers[0]] || 0) + 1;
+  }
+  const lone = Object.entries(uniqueExacts).sort((a, b) => b[1] - a[1])[0];
+  if (lone) {
+    const p = players.find(x => x.username === lone[0]);
+    if (p) awards.push(A({ icon: '🎲', name: 'Lone Wolf', desc: 'Most exact scores that nobody else predicted', winner: p.displayName, stat: `${lone[1]} solo exact scores`, username: p.username }));
+  }
+
+  // 📐 Mr. Consistent — lowest points std deviation
+  const withVar = players.map(p => {
+    const pts = p.perGame.map(g => g.pts);
+    if (pts.length < 10) return null;
+    const mean = pts.reduce((s, x) => s + x, 0) / pts.length;
+    const sd = Math.sqrt(pts.reduce((s, x) => s + (x - mean) ** 2, 0) / pts.length);
+    return { player: p, sd };
+  }).filter(Boolean).sort((a, b) => a.sd - b.sd);
+  if (withVar[0]) awards.push(A({ icon: '📐', name: 'Mr. Consistent', desc: 'Smallest variance in points game to game', winner: withVar[0].player.displayName, stat: `σ = ${Math.round(withVar[0].sd)} pts`, username: withVar[0].player.username }));
+
+  // 🏆 Final Boss — called the Final exactly
+  const finalFix = fixtures.find(f => String(f.stage || '').toLowerCase() === 'final');
+  if (finalFix && matchStats[finalFix.matchId]?.exactUsers?.length > 0) {
+    const names = matchStats[finalFix.matchId].exactUsers.map(u => players.find(x => x.username === u)?.displayName || u).join(', ');
+    awards.push(A({ icon: '🏆', name: 'Final Boss', desc: 'Predicted the World Cup Final scoreline exactly', winner: names, stat: '+100 pts', username: matchStats[finalFix.matchId].exactUsers[0] }));
+  }
+
+  // ── Quirky / character awards ──────────────────────────────────
+
+  // 😬 Heartbreak Kid — most correct outcomes but zero exact scores
+  const hb = srt(players.filter(p => exactOf(p) === 0), (a, b) => (b.correctOutcomes || 0) - (a.correctOutcomes || 0))[0];
+  if (hb) awards.push(Q({ icon: '😬', name: 'Heartbreak Kid', desc: 'Knew the winner, never nailed the exact score', winner: hb.displayName, stat: `${hb.correctOutcomes || 0} correct, 0 exact`, username: hb.username }));
+
+  // 🧊 Ice Cold — lowest correct outcome %
+  const cold = srt(players.filter(p => (p.scored || p.perGame.length) >= 15), (a, b) => {
+    const as = a.scored || a.perGame.length, bs = b.scored || b.perGame.length;
+    return ((a.correctOutcomes || 0) / (as || 1)) - ((b.correctOutcomes || 0) / (bs || 1));
+  })[0];
+  if (cold) {
+    const s = cold.scored || cold.perGame.length;
+    awards.push(Q({ icon: '🧊', name: 'Ice Cold', desc: 'Lowest correct outcome rate — rough tournament', winner: cold.displayName, stat: `${Math.round(((cold.correctOutcomes||0)/(s||1))*100)}% correct`, username: cold.username }));
+  }
+
+  // 📉 The Optimist — most total predicted goals
+  const optim = srt(players.map(p => ({ p, total: p.perGame.reduce((s, g) => s + (Number(g.pred1)||0) + (Number(g.pred2)||0), 0) })), (a, b) => b.total - a.total)[0];
+  if (optim) awards.push(Q({ icon: '📉', name: 'The Optimist', desc: 'Predicted the most total goals across all games', winner: optim.p.displayName, stat: `${optim.total} predicted goals`, username: optim.p.username }));
+
+  // 💀 Last Place
+  if (players.length > 1) {
+    const last = players[players.length - 1];
+    awards.push(Q({ icon: '💀', name: 'Last Place', desc: 'Better luck at the next World Cup', winner: last.displayName, stat: `${last.totalPoints} pts`, username: last.username }));
+  }
+
+  return awards;
+}
+
+function computeHighlights(players, matchStats) {
+  const h = [];
+  // Only consider non-excluded matches for all highlights
+  const validMs = Object.values(matchStats).filter(ms => !ms.excluded);
+
+  // Most exact scores in one match
+  const mostExact = [...validMs].sort((a, b) => b.exactCount - a.exactCount)[0];
+  if (mostExact?.exactCount > 0) {
+    const f = mostExact.fixture;
+    h.push({ icon: '🎯', label: 'Most people nailed it', text: `${mostExact.exactCount} player${mostExact.exactCount > 1 ? 's' : ''} called ${resolveSlot(f.team1)||f.team1} ${mostExact.result.score1}–${mostExact.result.score2} ${resolveSlot(f.team2)||f.team2} exactly` });
+  }
+
+  // Match where everyone who predicted scored 0
+  const zeroGame = validMs.find(ms =>
+    ms.preds.length >= 3 && ms.preds.every(p => {
+      const pts = calculateMatchPoints(p.pred1, p.pred2, ms.result.score1, ms.result.score2, ms.fixture.stage, p.pen_winner, ms.result.penalty_winner);
+      return pts === 0;
+    })
+  );
+  if (zeroGame) {
+    const f = zeroGame.fixture;
+    h.push({ icon: '💀', label: 'Nobody scored on this one', text: `Not a single player got points on ${resolveSlot(f.team1)||f.team1} ${zeroGame.result.score1}–${zeroGame.result.score2} ${resolveSlot(f.team2)||f.team2}` });
+  }
+
+  // Biggest upset — winning team was least predicted
+  const upsets = validMs.map(ms => {
+    const r = ms.result;
+    if (!r || r.score1 == null || r.score1 === r.score2) return null;
+    const winner = r.score1 > r.score2 ? 'home' : 'away';
+    const total = ms.preds.filter(p => p.pred1 != null).length;
+    if (total < 3) return null;
+    const winnerPicks = ms.preds.filter(p => winner === 'home' ? p.pred1 > p.pred2 : p.pred2 > p.pred1).length;
+    return { ms, pct: Math.round((winnerPicks / total) * 100) };
+  }).filter(Boolean).sort((a, b) => a.pct - b.pct);
+  if (upsets[0] && upsets[0].pct <= 30) {
+    const f = upsets[0].ms.fixture; const r = upsets[0].ms.result;
+    const winner = r.score1 > r.score2 ? (resolveSlot(f.team1)||f.team1) : (resolveSlot(f.team2)||f.team2);
+    h.push({ icon: '😱', label: 'Biggest upset', text: `Only ${upsets[0].pct}% predicted ${winner} to win — nobody saw it coming` });
+  }
+
+  // Game most people got correct (not just exact)
+  const mostCorrect = [...validMs].filter(ms => ms.preds.length >= 3).sort((a, b) => {
+    const ac = a.preds.filter(p => calculateMatchPoints(p.pred1,p.pred2,a.result.score1,a.result.score2,a.fixture.stage,p.pen_winner,a.result.penalty_winner)>0).length;
+    const bc = b.preds.filter(p => calculateMatchPoints(p.pred1,p.pred2,b.result.score1,b.result.score2,b.fixture.stage,p.pen_winner,b.result.penalty_winner)>0).length;
+    return (bc/b.preds.length) - (ac/a.preds.length);
+  })[0];
+  if (mostCorrect) {
+    const f = mostCorrect.fixture;
+    const cnt = mostCorrect.preds.filter(p => calculateMatchPoints(p.pred1,p.pred2,mostCorrect.result.score1,mostCorrect.result.score2,f.stage,p.pen_winner,mostCorrect.result.penalty_winner)>0).length;
+    const pct = Math.round((cnt / mostCorrect.preds.length) * 100);
+    h.push({ icon: '🤝', label: 'Everyone agreed on this one', text: `${pct}% of players called ${resolveSlot(f.team1)||f.team1} vs ${resolveSlot(f.team2)||f.team2} correctly` });
+  }
+
+  // Most predicted game (most engaged match)
+  const mostPred = [...validMs].sort((a, b) => b.totalPredicted - a.totalPredicted)[0];
+  if (mostPred) {
+    const f = mostPred.fixture;
+    h.push({ icon: '🏟️', label: 'Most predicted game', text: `${mostPred.totalPredicted} players predicted ${resolveSlot(f.team1)||f.team1} vs ${resolveSlot(f.team2)||f.team2}` });
+  }
+
+  // Least predicted game among properly live ones (min 1 prediction, well below average)
+  const avgPred = validMs.reduce((s, m) => s + m.totalPredicted, 0) / (validMs.length || 1);
+  const leastPred = [...validMs].filter(ms => ms.totalPredicted > 0 && ms.totalPredicted < avgPred * 0.6).sort((a, b) => a.totalPredicted - b.totalPredicted)[0];
+  if (leastPred) {
+    const f = leastPred.fixture;
+    h.push({ icon: '🥱', label: 'Least predicted game', text: `Only ${leastPred.totalPredicted} players predicted ${resolveSlot(f.team1)||f.team1} vs ${resolveSlot(f.team2)||f.team2}` });
+  }
+
+  return h;
+}
+
+function renderTournamentReport() {
+  const container = document.getElementById('tournament-report-content');
+  if (!container) return;
+
+  if (!STATE.fixtures.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">⏳</div><p>Sync data first.</p></div>`;
+    return;
+  }
+
+  const { done, total } = isTournamentFinished();
+  const champion = getTournamentChampion();
+  const { players, matchStats, finishedFixtures, awards, highlights } = computeTournamentReport();
+  const achievementAwards = awards.filter(a => a.type === 'achievement');
+  const quirkyAwards = awards.filter(a => a.type === 'quirky');
+
+  const STAGE_KEYS = ['group_md1','group_md2','group_md3','r32','r16','qf','sf','third','final'];
+  const STAGE_DISP = { group_md1:'MD1', group_md2:'MD2', group_md3:'MD3', r32:'R32', r16:'R16', qf:'QF', sf:'SF', third:'3rd', final:'Final' };
+  const STAGE_CLR  = { group_md1:'#4a9eff', group_md2:'#3d8fe8', group_md3:'#2a75cc', r32:'#7c5cbf', r16:'#a855f7', qf:'#ec4899', sf:'#f59e0b', third:'#10b981', final:'#f7c948' };
+
+  const maxPts = Math.max(1, ...players.flatMap(p => STAGE_KEYS.map(sk => p.perStage[sk]?.pts || 0)));
+  const exactOf = p => p.exactScores || p.perGame.filter(g => g.isExact).length;
+
+  const notFinishedBanner = done < total ? `<div class="tr-progress-banner">⏳ Tournament in progress — <strong>${done} of ${total}</strong> matches complete. Report updates as results come in.</div>` : '';
+
+  // ── Section 1: Hero ──────────────────────────────────────────
+  const heroHtml = `
+    <div class="tr-hero" style="${champion ? `background:linear-gradient(135deg,${getTeamColor(champion)}44 0%,var(--card-bg) 50%,${getTeamSecondary(champion)}22 100%)` : ''}">
+      <div class="tr-hero-eyebrow">GGO Prediction League · ${done} Matches Played</div>
+      <div class="tr-hero-wc">FIFA WORLD CUP 2026</div>
+      ${champion
+        ? `<div class="tr-hero-champ-label">🏆 World Champion</div><div class="tr-hero-champ">${getFlagImg(champion)}<span>${escapeHtml(champion)}</span></div>`
+        : `<div class="tr-hero-champ-label">Tournament in Progress...</div>`}
+      <div class="tr-hero-meta">
+        <span>⚽ ${done} games</span>
+        <span>👥 ${players.length} players</span>
+        <span>🎯 ${players.reduce((s,p)=>s+exactOf(p),0)} exact scores</span>
+        <span>📊 ${Object.values(matchStats).reduce((s,m)=>s+m.totalPredicted,0)} predictions</span>
+      </div>
+    </div>`;
+
+  // ── Section 2: Podium ─────────────────────────────────────────
+  const top3 = players.slice(0,3);
+  const podiumOrder = top3.length >= 2 ? [top3[1], top3[0], top3[2]].filter(Boolean) : top3;
+  const podiumCls  = ['tr-podium-silver','tr-podium-gold','tr-podium-bronze'];
+  const podiumMedal= ['🥈','🥇','🥉'];
+  const podiumHtml = top3.length ? `
+    <section class="tr-section">
+      <h2 class="tr-section-title">🥇 The Podium</h2>
+      <div class="tr-podium">
+        ${podiumOrder.map((p,i) => `
+          <div class="tr-podium-slot ${podiumCls[i]}">
+            <div class="tr-podium-avatar">${getInitials(p.displayName)}</div>
+            <div class="tr-podium-name">${escapeHtml(p.displayName)}</div>
+            <div class="tr-podium-pts">${p.totalPoints} pts</div>
+            <div class="tr-podium-sub">${exactOf(p)} exact · ${p.correctOutcomes||0} correct</div>
+            <div class="tr-podium-block"><span>${podiumMedal[i]}</span><span>#${p.rank||i+1}</span></div>
+          </div>`).join('')}
+      </div>
+    </section>` : '';
+
+  // ── Section 3: Full Leaderboard ───────────────────────────────
+  const lbHtml = players.length ? `
+    <section class="tr-section">
+      <h2 class="tr-section-title">📊 Final Standings</h2>
+      <div class="tr-table-wrap">
+        <table class="tr-lb-table">
+          <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Exact</th><th>Correct</th><th>%</th><th>Predicted</th><th>Missed</th></tr></thead>
+          <tbody>
+            ${players.map((p,idx) => {
+              const rank = p.rank || idx+1;
+              const sc = p.scored || p.perGame.length;
+              const pct = sc > 0 ? Math.round(((p.correctOutcomes||0)/sc)*100) : 0;
+              const missed = Math.max(0, done - (p.predicted||p.perGame.length));
+              const rc = rank===1?'tr-rank-gold':rank===2?'tr-rank-silver':rank===3?'tr-rank-bronze':'';
+              return `<tr class="${p.username===SESSION.username?'tr-row-me':''}">
+                <td><span class="tr-rank-badge ${rc}">${rank}</span></td>
+                <td><div class="tr-player-cell"><span class="tr-avatar">${getInitials(p.displayName)}</span>${escapeHtml(p.displayName)}</div></td>
+                <td><strong>${p.totalPoints}</strong></td>
+                <td>${exactOf(p)}</td>
+                <td>${p.correctOutcomes||0}</td>
+                <td><span class="${pct>=60?'tr-pct-hi':pct>=40?'tr-pct-mid':'tr-pct-lo'}">${pct}%</span></td>
+                <td>${p.predicted||p.perGame.length}</td>
+                <td class="${missed>10?'tr-missed-hi':''}">${missed}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </section>` : '';
+
+  // ── Section 4: Awards ─────────────────────────────────────────
+  const renderAwardCard = (a) => `
+    <div class="tr-award-card tr-award-${a.type}${a.username===SESSION.username?' tr-award-mine':''}">
+      <div class="tr-award-icon">${a.icon}</div>
+      <div class="tr-award-name">${escapeHtml(a.name)}</div>
+      <div class="tr-award-winner">${escapeHtml(a.winner)}</div>
+      <div class="tr-award-stat">${escapeHtml(a.stat)}</div>
+      <div class="tr-award-desc">${escapeHtml(a.desc)}</div>
+    </div>`;
+
+  const awardsHtml = awards.length ? `
+    <section class="tr-section tr-section-awards">
+      <h2 class="tr-section-title">🏅 Awards Ceremony</h2>
+      ${achievementAwards.length ? `
+        <div class="tr-awards-group-label tr-label-achievement">🌟 Honours Board</div>
+        <div class="tr-awards-grid tr-awards-achievement">
+          ${achievementAwards.map(renderAwardCard).join('')}
+        </div>` : ''}
+      ${quirkyAwards.length ? `
+        <div class="tr-awards-group-label tr-label-quirky">💀 Characters of the Tournament</div>
+        <div class="tr-awards-grid tr-awards-quirky">
+          ${quirkyAwards.map(renderAwardCard).join('')}
+        </div>` : ''}
+    </section>` : '';
+
+  // ── Section 5: Stage Breakdown ────────────────────────────────
+  const activeStageKeys = STAGE_KEYS.filter(sk => players.some(p => (p.perStage[sk]?.pts||0)>0));
+  const stageHtml = players.length ? `
+    <section class="tr-section">
+      <h2 class="tr-section-title">📈 Points by Stage</h2>
+      <div class="tr-stage-legend">
+        ${activeStageKeys.map(sk=>`<span class="tr-stage-dot" style="background:${STAGE_CLR[sk]}"></span><span>${STAGE_DISP[sk]}</span>`).join('')}
+      </div>
+      <div class="tr-stage-chart">
+        ${players.map(p=>`
+          <div class="tr-stage-row">
+            <div class="tr-stage-name">${escapeHtml(getShortName(p.displayName))}</div>
+            <div class="tr-stage-bars">
+              ${STAGE_KEYS.map(sk=>{
+                const pts=p.perStage[sk]?.pts||0; if(!pts)return'';
+                return `<div class="tr-stage-bar" style="width:${Math.round((pts/maxPts)*100)}%;background:${STAGE_CLR[sk]}" title="${STAGE_DISP[sk]}: ${pts} pts"></div>`;
+              }).join('')}
+            </div>
+            <div class="tr-stage-total">${p.totalPoints}</div>
+          </div>`).join('')}
+      </div>
+    </section>` : '';
+
+  // ── Section 6: Player Scorecards ─────────────────────────────
+  const scorecardsHtml = players.length ? `
+    <section class="tr-section">
+      <h2 class="tr-section-title">🎭 Player Scorecards</h2>
+      <div class="tr-scorecards">
+        ${players.map(p => {
+          const isMe = p.username === SESSION.username;
+          const sc = p.scored || p.perGame.length;
+          const pct = sc > 0 ? Math.round(((p.correctOutcomes||0)/sc)*100) : 0;
+          const best = p.perGame.length ? [...p.perGame].sort((a,b)=>b.pts-a.pts)[0] : null;
+          const worstMiss = p.perGame.filter(g=>g.pts===0).sort(()=>0)[0];
+          const myAwards = awards.filter(a=>a.username===p.username);
+          const rank = p.rank || 999;
+          const rc = rank===1?'tr-rank-gold':rank===2?'tr-rank-silver':rank===3?'tr-rank-bronze':'';
+          return `
+            <div class="tr-scorecard${isMe?' tr-scorecard-me':''}" id="sc-${CSS.escape?CSS.escape(p.username):p.username}">
+              <div class="tr-sc-head" onclick="this.closest('.tr-scorecard').classList.toggle('tr-sc-open')">
+                <span class="tr-rank-badge ${rc}">${rank}</span>
+                <span class="tr-sc-avatar">${getInitials(p.displayName)}</span>
+                <div class="tr-sc-info">
+                  <div class="tr-sc-name">${escapeHtml(p.displayName)}${isMe?'<span class="tr-you-badge"> you</span>':''}</div>
+                  <div class="tr-sc-meta">${p.totalPoints} pts · ${exactOf(p)} exact · ${pct}% correct</div>
+                </div>
+                <div class="tr-sc-trophies">${myAwards.map(a=>`<span title="${escapeHtml(a.name)}">${a.icon}</span>`).join('')}</div>
+                <span class="tr-sc-chevron">›</span>
+              </div>
+              <div class="tr-sc-body">
+                ${myAwards.length?`<div class="tr-sc-chips">${myAwards.map(a=>`<span class="tr-sc-chip">${a.icon} ${escapeHtml(a.name)}</span>`).join('')}</div>`:''}
+                <div class="tr-sc-grid">
+                  <div class="tr-sc-stat"><span class="tr-sc-val">${p.totalPoints}</span><span class="tr-sc-lbl">Total</span></div>
+                  <div class="tr-sc-stat"><span class="tr-sc-val">${exactOf(p)}</span><span class="tr-sc-lbl">Exact</span></div>
+                  <div class="tr-sc-stat"><span class="tr-sc-val">${p.correctOutcomes||0}</span><span class="tr-sc-lbl">Correct</span></div>
+                  <div class="tr-sc-stat"><span class="tr-sc-val">${pct}%</span><span class="tr-sc-lbl">Rate</span></div>
+                  <div class="tr-sc-stat"><span class="tr-sc-val">${p.predicted||p.perGame.length}</span><span class="tr-sc-lbl">Predicted</span></div>
+                  <div class="tr-sc-stat"><span class="tr-sc-val">${Math.max(0,done-(p.predicted||p.perGame.length))}</span><span class="tr-sc-lbl">Missed</span></div>
+                </div>
+                ${best?`<div class="tr-sc-hl tr-sc-best">🏆 Best: <strong>${escapeHtml(resolveSlot(best.fixture.team1)||best.fixture.team1)} vs ${escapeHtml(resolveSlot(best.fixture.team2)||best.fixture.team2)}</strong> — predicted ${best.pred1}-${best.pred2} → <strong>+${best.pts} pts</strong>${best.isExact?' 🎯':''}</div>`:''}
+                ${worstMiss?`<div class="tr-sc-hl tr-sc-worst">💀 Miss: <strong>${escapeHtml(resolveSlot(worstMiss.fixture.team1)||worstMiss.fixture.team1)} vs ${escapeHtml(resolveSlot(worstMiss.fixture.team2)||worstMiss.fixture.team2)}</strong> — predicted ${worstMiss.pred1}-${worstMiss.pred2}, actual ${worstMiss.result.score1}-${worstMiss.result.score2}</div>`:''}
+                <div class="tr-sc-stages">
+                  ${STAGE_KEYS.filter(sk=>p.perStage[sk]).map(sk=>{
+                    const d=p.perStage[sk];
+                    const w=Math.round((d.pts/maxPts)*100);
+                    return `<div class="tr-sc-stage-row">
+                      <span class="tr-sc-sname">${STAGE_DISP[sk]}</span>
+                      <div class="tr-sc-sbar-track"><div class="tr-sc-sbar" style="width:${w}%;background:${STAGE_CLR[sk]}"></div></div>
+                      <span class="tr-sc-spts">${d.pts}pts</span>
+                      <span class="tr-sc-sexact">${d.exact}✓</span>
+                    </div>`;
+                  }).join('')}
+                </div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </section>` : '';
+
+  // ── Section 7: Highlights ─────────────────────────────────────
+  const hlHtml = highlights.length ? `
+    <section class="tr-section">
+      <h2 class="tr-section-title">🤯 Moments of the Tournament</h2>
+      <div class="tr-highlights">
+        ${highlights.map(h=>`
+          <div class="tr-hl-card">
+            <div class="tr-hl-icon">${h.icon}</div>
+            <div class="tr-hl-label">${escapeHtml(h.label)}</div>
+            <div class="tr-hl-text">${escapeHtml(h.text)}</div>
+          </div>`).join('')}
+      </div>
+    </section>` : '';
+
+  // ── Section 8: All Games Log ──────────────────────────────────
+  const gamesHtml = finishedFixtures.length ? `
+    <section class="tr-section">
+      <h2 class="tr-section-title">📋 All ${finishedFixtures.length} Results</h2>
+      <div class="tr-table-wrap">
+        <table class="tr-games-table">
+          <thead><tr><th>Stage</th><th>Match</th><th>Score</th><th>Top Pick</th><th>Exact</th><th>Correct</th></tr></thead>
+          <tbody>
+            ${[...finishedFixtures].reverse().map(f => {
+              const ms = matchStats[f.matchId]; if(!ms) return '';
+              const r = ms.result;
+              const t1 = resolveSlot(f.team1)||f.team1, t2 = resolveSlot(f.team2)||f.team2;
+              const stage = String(f.stage||'group').toLowerCase();
+              const stageLbl = STAGE_LABELS[stage] || stage;
+              const correctCount = ms.preds.filter(p => calculateMatchPoints(p.pred1,p.pred2,r.score1,r.score2,stage,p.pen_winner,r.penalty_winner)>0).length;
+              const noPreds = ms.totalPredicted === 0 || ms.excluded;
+              return `<tr class="tr-game-row${noPreds?' tr-game-no-preds':''}" onclick="openMatchDrawer('${f.matchId}')" style="cursor:pointer" title="${noPreds?'No predictions — app not yet live':'''}">
+                <td><span class="tr-stage-chip tr-chip-${stage}">${escapeHtml(stageLbl)}</span></td>
+                <td>${getFlagImg(t1)} ${escapeHtml(t1)} vs ${getFlagImg(t2)} ${escapeHtml(t2)}${noPreds?'<span class="tr-no-pred-badge" title="No predictions recorded">no preds</span>':''}</td>
+                <td><strong>${r.score1}–${r.score2}</strong>${r.penalty_winner?' 🅿':r.status==='AET'?' AET':''}</td>
+                <td class="tr-popular">${ms.mostPopularPick?`${ms.mostPopularPick} ×${ms.mostPopularCount}`:'<span style="opacity:.4">—</span>'}</td>
+                <td>${ms.exactCount>0?`<span class="tr-exact-badge">${ms.exactCount}</span>`:noPreds?'<span style="opacity:.3">—</span>':'0'}</td>
+                <td>${noPreds?'<span style="opacity:.3">—</span>':correctCount}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </section>` : '';
+
+  // ── Chapter dividers to give the page structure ───────────────
+  const chap = (label) => `<div class="tr-chapter">${label}</div>`;
+
+  container.innerHTML = [
+    notFinishedBanner,
+    heroHtml,
+    podiumHtml,
+    chap('📊 The Numbers'),
+    lbHtml,
+    stageHtml,
+    chap('🏅 Awards'),
+    awardsHtml,
+    chap('🎭 Player Files'),
+    scorecardsHtml,
+    chap('⚡ Moments'),
+    hlHtml,
+    chap('📋 Match Log'),
+    gamesHtml,
+  ].join('');
+
+  // Auto-open logged-in user's scorecard
+  if (SESSION.username) {
+    const myCard = document.getElementById(`sc-${SESSION.username}`);
+    if (myCard) myCard.classList.add('tr-sc-open');
+  }
+}
+
