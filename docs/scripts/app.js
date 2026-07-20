@@ -818,6 +818,92 @@ function showApp() {
   showNavChangeBanner();
   renderHome();
   requestSync();
+  showReportWelcomePopup();
+}
+
+function showReportWelcomePopup() {
+  const seenKey = SESSION.username ? `ggo_report_welcome_seen_${SESSION.username}` : "ggo_report_welcome_seen_guest";
+  if (localStorage.getItem(seenKey)) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "report-welcome-overlay";
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.backgroundColor = "rgba(10, 15, 30, 0.9)";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.zIndex = "20000";
+  overlay.style.backdropFilter = "blur(8px)";
+  overlay.style.opacity = "0";
+  overlay.style.transition = "opacity 0.3s ease";
+  
+  overlay.innerHTML = `
+    <div style="
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid rgba(247, 201, 72, 0.35);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(247, 201, 72, 0.15);
+      border-radius: 24px;
+      padding: 3rem 2rem;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      color: #f8fafc;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    ">
+      <div style="font-size: 4.5rem; margin-bottom: 1.5rem;">🏆</div>
+      <h2 style="font-size: 1.85rem; font-weight: 900; color: #f7c948; margin-bottom: 0.75rem; font-family: sans-serif; letter-spacing: -0.02em;">GGO Prediction League</h2>
+      <p style="font-size: 1.15rem; font-weight: 700; color: #38bdf8; margin-bottom: 1.25rem;">The Tournament Report is Live!</p>
+      <p style="font-size: 0.95rem; line-height: 1.6; color: #94a3b8; margin-bottom: 2.25rem; padding: 0 0.5rem;">
+        The FIFA World Cup 2026 has concluded. Explore the tournament review, including standings, awards, player scorecards, and highlights!
+      </p>
+      <button id="close-report-welcome" style="
+        background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        color: #0f172a;
+        font-weight: 800;
+        font-size: 1rem;
+        padding: 0.85rem 3rem;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+      ">
+        View Report
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(() => {
+    overlay.style.opacity = "1";
+    overlay.querySelector("div").style.transform = "scale(1) translateY(0)";
+  });
+
+  const closeBtn = overlay.querySelector("#close-report-welcome");
+  closeBtn.addEventListener("click", () => {
+    overlay.style.opacity = "0";
+    overlay.querySelector("div").style.transform = "scale(0.9) translateY(20px)";
+    setTimeout(() => {
+      overlay.remove();
+      localStorage.setItem(seenKey, "true");
+      showView("report");
+    }, 300);
+  });
+
+  closeBtn.addEventListener("mouseenter", () => {
+    closeBtn.style.transform = "translateY(-2px) scale(1.02)";
+    closeBtn.style.boxShadow = "0 10px 25px rgba(245, 158, 11, 0.4)";
+  });
+  closeBtn.addEventListener("mouseleave", () => {
+    closeBtn.style.transform = "none";
+    closeBtn.style.boxShadow = "0 8px 20px rgba(245, 158, 11, 0.3)";
+  });
 }
 
 function hardRefreshApp() {
@@ -6809,7 +6895,7 @@ function renderTournamentReport() {
       <h2 class="tr-section-title">📊 Final Standings</h2>
       <div class="tr-table-wrap">
         <table class="tr-lb-table">
-          <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Exact</th><th>Correct</th><th>%</th><th>Predicted</th><th>Missed</th></tr></thead>
+          <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Exact</th><th>Correct</th><th>%</th><th>Avg</th><th>Predicted</th><th>Missed</th></tr></thead>
           <tbody>
             ${players
               .map((p, idx) => {
@@ -6823,6 +6909,7 @@ function renderTournamentReport() {
                   0,
                   done - (p.predicted || p.perGame.length),
                 );
+                const avgPts = sc > 0 ? (p.totalPoints / sc).toFixed(1) : "-";
                 const rc =
                   rank === 1
                     ? "tr-rank-gold"
@@ -6838,6 +6925,7 @@ function renderTournamentReport() {
                 <td>${exactOf(p)}</td>
                 <td>${p.correctOutcomes || 0}</td>
                 <td><span class="${pct >= 60 ? "tr-pct-hi" : pct >= 40 ? "tr-pct-mid" : "tr-pct-lo"}">${pct}%</span></td>
+                <td class="tr-avg">${avgPts}</td>
                 <td>${p.predicted || p.perGame.length}</td>
                 <td class="${missed > 10 ? "tr-missed-hi" : ""}">${missed}</td>
               </tr>`;
