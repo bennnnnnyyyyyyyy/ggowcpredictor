@@ -6294,6 +6294,81 @@ function computeAwards(players, matchStats, fixtures) {
       }),
     );
 
+  // ⚡ Hot Streak — longest consecutive correct prediction run
+  const streakOf = (p) => {
+    let max = 0,
+      cur = 0;
+    const sorted = [...p.perGame].sort(
+      (a, b) =>
+        (a.fixture.kickoffDate?.getTime() || 0) -
+        (b.fixture.kickoffDate?.getTime() || 0),
+    );
+    for (const g of sorted) {
+      if (g.isCorrect) {
+        cur++;
+        max = Math.max(max, cur);
+      } else cur = 0;
+    }
+    return max;
+  };
+  const hotStreak = srt(players, (a, b) => streakOf(b) - streakOf(a))[0];
+  if (hotStreak && streakOf(hotStreak) >= 3)
+    awards.push(
+      A({
+        icon: "⚡",
+        name: "Hot Streak",
+        desc: "Longest consecutive run of correct predictions",
+        winner: hotStreak.displayName,
+        stat: `${streakOf(hotStreak)} in a row`,
+        username: hotStreak.username,
+      }),
+    );
+
+  // 🏁 Finals Expert — most points in QF + SF + Final
+  const finalRunKey = (p) =>
+    ["qf", "sf", "final"].reduce((s, k) => s + (p.perStage[k]?.pts || 0), 0);
+  const finalsExpert = srt(
+    players,
+    (a, b) => finalRunKey(b) - finalRunKey(a),
+  )[0];
+  if (finalsExpert && finalRunKey(finalsExpert) > 0)
+    awards.push(
+      A({
+        icon: "🏁",
+        name: "Finals Expert",
+        desc: "Most points across QF, SF and the Final",
+        winner: finalsExpert.displayName,
+        stat: `${finalRunKey(finalsExpert)} pts in final run`,
+        username: finalsExpert.username,
+      }),
+    );
+
+  // 🧹 Clean Sheet — fewest zero-point games (min 20 predictions)
+  const cleanCandidates = players.filter((p) => p.perGame.length >= 20);
+  const cleanSheet = srt(cleanCandidates, (a, b) => {
+    const az = a.perGame.filter((g) => g.pts === 0).length / a.perGame.length;
+    const bz = b.perGame.filter((g) => g.pts === 0).length / b.perGame.length;
+    return az - bz;
+  })[0];
+  if (cleanSheet) {
+    const scored = Math.round(
+      (1 -
+        cleanSheet.perGame.filter((g) => g.pts === 0).length /
+          cleanSheet.perGame.length) *
+        100,
+    );
+    awards.push(
+      A({
+        icon: "🧹",
+        name: "Clean Sheet",
+        desc: "Scored points in the highest % of games (min 20 preds)",
+        winner: cleanSheet.displayName,
+        stat: `${scored}% non-zero games`,
+        username: cleanSheet.username,
+      }),
+    );
+  }
+
   // 🏆 Final Boss — called the Final exactly
   const finalFix = fixtures.find(
     (f) => String(f.stage || "").toLowerCase() === "final",
@@ -6379,6 +6454,52 @@ function computeAwards(players, matchStats, fixtures) {
         winner: optim.p.displayName,
         stat: `${optim.total} predicted goals`,
         username: optim.p.username,
+      }),
+    );
+
+  // 🤡 Draw Merchant — predicted the most draws
+  const drawCounts = srt(
+    players.map((p) => ({
+      p,
+      draws: p.perGame.filter((g) => Number(g.pred1) === Number(g.pred2))
+        .length,
+    })),
+    (a, b) => b.draws - a.draws,
+  );
+  if (drawCounts[0]?.draws >= 5)
+    awards.push(
+      Q({
+        icon: "🤡",
+        name: "Draw Merchant",
+        desc: "Predicted the most draws across the tournament",
+        winner: drawCounts[0].p.displayName,
+        stat: `${drawCounts[0].draws} draws predicted`,
+        username: drawCounts[0].p.username,
+      }),
+    );
+
+  // 😐 One-Trick Pony — most repeated identical scoreline prediction
+  const oneTrick = srt(
+    players.map((p) => {
+      const counts = {};
+      for (const g of p.perGame) {
+        const k = `${g.pred1}-${g.pred2}`;
+        counts[k] = (counts[k] || 0) + 1;
+      }
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      return { p, score: top?.[0], count: top?.[1] || 0 };
+    }),
+    (a, b) => b.count - a.count,
+  );
+  if (oneTrick[0]?.count >= 5)
+    awards.push(
+      Q({
+        icon: "😐",
+        name: "One-Trick Pony",
+        desc: "Predicted the same scoreline more than anyone else",
+        winner: oneTrick[0].p.displayName,
+        stat: `${oneTrick[0].score} × ${oneTrick[0].count} times`,
+        username: oneTrick[0].p.username,
       }),
     );
 
@@ -6551,6 +6672,51 @@ function computeHighlights(players, matchStats) {
     });
   }
 
+  // Most chaotic game — widest variety of different predictions
+  const diverse = [...validMs]
+    .filter((ms) => ms.preds.length >= 5)
+    .sort((a, b) => {
+      const ua =
+        new Set(a.preds.map((p) => `${p.pred1}-${p.pred2}`)).size /
+        a.preds.length;
+      const ub =
+        new Set(b.preds.map((p) => `${p.pred1}-${p.pred2}`)).size /
+        b.preds.length;
+      return ub - ua;
+    })[0];
+  if (diverse) {
+    const uniquePicks = new Set(
+      diverse.preds.map((p) => `${p.pred1}-${p.pred2}`),
+    ).size;
+    const f = diverse.fixture;
+    h.push({
+      icon: "🎨",
+      label: "Most chaotic game",
+      text: `${uniquePicks} different scorelines predicted for ${resolveSlot(f.team1) || f.team1} vs ${resolveSlot(f.team2) || f.team2} — no one could agree`,
+    });
+  }
+
+  // Lowest-scoring game (fewest total goals, min 3 predictors)
+  const lowScoring = [...validMs]
+    .filter((ms) => ms.preds.length >= 3 && ms.result.score1 != null)
+    .sort(
+      (a, b) =>
+        (a.result.score1 || 0) +
+        (a.result.score2 || 0) -
+        ((b.result.score1 || 0) + (b.result.score2 || 0)),
+    )[0];
+  if (lowScoring) {
+    const goals =
+      (lowScoring.result.score1 || 0) + (lowScoring.result.score2 || 0);
+    const f = lowScoring.fixture;
+    if (goals <= 1)
+      h.push({
+        icon: "😴",
+        label: goals === 0 ? "Most boring game" : "Most defensive game",
+        text: `${resolveSlot(f.team1) || f.team1} ${lowScoring.result.score1}–${lowScoring.result.score2} ${resolveSlot(f.team2) || f.team2} — ${goals === 0 ? "a 0–0 snooze fest" : "just 1 goal between them"}`,
+      });
+  }
+
   return h;
 }
 
@@ -6570,69 +6736,44 @@ function renderTournamentReport() {
   const achievementAwards = awards.filter((a) => a.type === "achievement");
   const quirkyAwards = awards.filter((a) => a.type === "quirky");
 
-  const STAGE_KEYS = [
-    "group_md1",
-    "group_md2",
-    "group_md3",
-    "r32",
-    "r16",
-    "qf",
-    "sf",
-    "third",
-    "final",
-  ];
-  const STAGE_DISP = {
-    group_md1: "MD1",
-    group_md2: "MD2",
-    group_md3: "MD3",
-    r32: "R32",
-    r16: "R16",
-    qf: "QF",
-    sf: "SF",
-    third: "3rd",
-    final: "Final",
-  };
-  const STAGE_CLR = {
-    group_md1: "#4a9eff",
-    group_md2: "#3d8fe8",
-    group_md3: "#2a75cc",
-    r32: "#7c5cbf",
-    r16: "#a855f7",
-    qf: "#ec4899",
-    sf: "#f59e0b",
-    third: "#10b981",
-    final: "#f7c948",
-  };
+  const STAGE_KEYS = ["group_md1", "group_md2", "group_md3", "r32", "r16"];
 
-  const maxPts = Math.max(
-    1,
-    ...players.flatMap((p) => STAGE_KEYS.map((sk) => p.perStage[sk]?.pts || 0)),
-  );
-  const exactOf = (p) =>
-    p.exactScores || p.perGame.filter((g) => g.isExact).length;
-
-  const notFinishedBanner =
-    done < total
-      ? `<div class="tr-progress-banner">⏳ Tournament in progress — <strong>${done} of ${total}</strong> matches complete. Report updates as results come in.</div>`
-      : "";
-
-  // ── Section 1: Hero ──────────────────────────────────────────
-  const heroHtml = `
-    <div class="tr-hero" style="${champion ? `background:linear-gradient(135deg,${getTeamColor(champion)}44 0%,var(--card-bg) 50%,${getTeamSecondary(champion)}22 100%)` : ""}">
-      <div class="tr-hero-eyebrow">GGO Prediction League · ${done} Matches Played</div>
-      <div class="tr-hero-wc">FIFA WORLD CUP 2026</div>
-      ${
-        champion
-          ? `<div class="tr-hero-champ-label">🏆 World Champion</div><div class="tr-hero-champ">${getFlagImg(champion)}<span>${escapeHtml(champion)}</span></div>`
-          : `<div class="tr-hero-champ-label">Tournament in Progress...</div>`
-      }
-      <div class="tr-hero-meta">
-        <span>⚽ ${done} games</span>
-        <span>👥 ${players.length} players</span>
-        <span>🎯 ${players.reduce((s, p) => s + exactOf(p), 0)} exact scores</span>
-        <span>📊 ${Object.values(matchStats).reduce((s, m) => s + m.totalPredicted, 0)} predictions</span>
-      </div>
-    </div>`;
+  // ── Hero banner ──────────────────────────────────────────────────────
+  const heroHtml = (() => {
+    const totalGoals = Object.values(matchStats).reduce(
+      (s, ms) => s + (ms.result?.score1 || 0) + (ms.result?.score2 || 0),
+      0,
+    );
+    const totalPreds = Object.values(matchStats).reduce(
+      (s, m) => s + m.totalPredicted,
+      0,
+    );
+    const totalExact = players.reduce((s, p) => s + exactOf(p), 0);
+    const totalCorrect = players.reduce(
+      (s, p) => s + (p.correctOutcomes || 0),
+      0,
+    );
+    const avgCorrectPct =
+      totalPreds > 0 ? Math.round((totalCorrect / totalPreds) * 100) : 0;
+    return `
+      <div class="tr-hero" style="${champion ? `background:linear-gradient(135deg,${getTeamColor(champion)}44 0%,var(--card-bg) 50%,${getTeamSecondary(champion)}22 100%)` : ""}">
+        <div class="tr-hero-eyebrow">GGO Prediction League · ${done} Matches Played</div>
+        <div class="tr-hero-wc">FIFA WORLD CUP 2026</div>
+        ${
+          champion
+            ? `<div class="tr-hero-champ-label">🏆 World Champion</div><div class="tr-hero-champ">${getFlagImg(champion)}<span>${escapeHtml(champion)}</span></div>`
+            : `<div class="tr-hero-champ-label">Tournament in Progress...</div>`
+        }
+        <div class="tr-hero-meta">
+          <span title="Matches played">⚽ ${done} games</span>
+          <span title="Goals scored in tournament">💥 ${totalGoals} goals</span>
+          <span title="Players in league">👥 ${players.length} players</span>
+          <span title="Total exact scorelines predicted">🎯 ${totalExact} exact scores</span>
+          <span title="Predictions submitted">📊 ${totalPreds} predictions</span>
+          <span title="Overall correct outcome rate">✅ ${avgCorrectPct}% correct rate</span>
+        </div>
+      </div>`;
+  })();
 
   // ── Section 2: Podium ─────────────────────────────────────────
   const top3 = players.slice(0, 3);
@@ -6941,5 +7082,18 @@ function renderTournamentReport() {
   if (SESSION.username) {
     const myCard = document.getElementById(`sc-${SESSION.username}`);
     if (myCard) myCard.classList.add("tr-sc-open");
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  //  HELPER: Get team name from the global MATCH_DATA map
+  // ──────────────────────────────────────────────────────────────────────
+  function resolveSlot(rawKey) {
+    if (!rawKey) return rawKey || "";
+    const key = String(rawKey).toUpperCase();
+    return (
+      (MATCH_DATA.teams || {})[key] ||
+      (MATCH_DATA.teamsByKey || {})[key] ||
+      rawKey
+    );
   }
 }
