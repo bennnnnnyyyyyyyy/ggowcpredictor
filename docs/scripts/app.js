@@ -458,7 +458,7 @@ async function handleLogin(event) {
             };
           }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // 4. Demo users last resort
@@ -840,7 +840,7 @@ function showReportWelcomePopup() {
   overlay.style.backdropFilter = "blur(8px)";
   overlay.style.opacity = "0";
   overlay.style.transition = "opacity 0.3s ease";
-  
+
   overlay.innerHTML = `
     <div style="
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -905,7 +905,27 @@ function showReportWelcomePopup() {
     closeBtn.style.boxShadow = "0 8px 20px rgba(245, 158, 11, 0.3)";
   });
 }
+let _reportScrollTrackerAttached = false;
+function setupReportScrollSeenTracking() {
+  if (_reportScrollTrackerAttached) return;
+  _reportScrollTrackerAttached = true;
 
+  const seenKey = SESSION.username
+    ? `ggo_report_welcome_seen_${SESSION.username}`
+    : "ggo_report_welcome_seen_guest";
+
+  if (localStorage.getItem(seenKey)) return;
+
+  const onScroll = () => {
+    const scrolledToEnd =
+      window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
+    if (scrolledToEnd) {
+      localStorage.setItem(seenKey, "true");
+      window.removeEventListener("scroll", onScroll);
+    }
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+}
 function hardRefreshApp() {
   const btn = document.getElementById("big-refresh-btn");
   if (btn) btn.classList.add("spinning");
@@ -1451,17 +1471,17 @@ function renderHome() {
 
       const popularHtml = scoreGroups.length
         ? scoreGroups
-            .map((group, index) => {
-              let scoreClass = "";
-              if (isFinished && finalScore) {
-                if (group.score === finalScore) {
-                  scoreClass = "correct-score";
-                } else if (isGoodOutcome(group.score, result)) {
-                  scoreClass = "good-outcome";
-                }
+          .map((group, index) => {
+            let scoreClass = "";
+            if (isFinished && finalScore) {
+              if (group.score === finalScore) {
+                scoreClass = "correct-score";
+              } else if (isGoodOutcome(group.score, result)) {
+                scoreClass = "good-outcome";
               }
+            }
 
-              return `
+            return `
           <div class="popular-score ${index === 0 ? "popular-score" : ""} ${scoreClass}">
              <div class="popular-score-main">
               <span class="score-badge">${escapeHtml(group.score)}</span>
@@ -1473,8 +1493,8 @@ function renderHome() {
             </div>
           </div>
         `;
-            })
-            .join("")
+          })
+          .join("")
         : `<div class="empty-state compact"><p>No predictions yet for this match.</p></div>`;
 
       return `
@@ -1700,10 +1720,10 @@ async function requestSync() {
       hadError && !hasAnyData
         ? "Sync failed"
         : `Live - ${STATE.lastSync.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZone: "Africa/Cairo",
-          })}`;
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Africa/Cairo",
+        })}`;
   }
 
   updateChampionSection();
@@ -2118,21 +2138,21 @@ function readResultScore(result, side) {
   const directKeys =
     side === "home"
       ? [
-          "score1",
-          "team1Score",
-          "homeScore",
-          "home_score",
-          "homeGoals",
-          "goalsHome",
-        ]
+        "score1",
+        "team1Score",
+        "homeScore",
+        "home_score",
+        "homeGoals",
+        "goalsHome",
+      ]
       : [
-          "score2",
-          "team2Score",
-          "awayScore",
-          "away_score",
-          "awayGoals",
-          "goalsAway",
-        ];
+        "score2",
+        "team2Score",
+        "awayScore",
+        "away_score",
+        "awayGoals",
+        "goalsAway",
+      ];
 
   for (const key of directKeys) {
     if (
@@ -2149,21 +2169,21 @@ function readResultScore(result, side) {
     const paths =
       side === "home"
         ? [
-            ["home"],
-            ["local"],
-            ["team1"],
-            ["fulltime", "home"],
-            ["ft", "home"],
-            ["final", "home"],
-          ]
+          ["home"],
+          ["local"],
+          ["team1"],
+          ["fulltime", "home"],
+          ["ft", "home"],
+          ["final", "home"],
+        ]
         : [
-            ["away"],
-            ["visitor"],
-            ["team2"],
-            ["fulltime", "away"],
-            ["ft", "away"],
-            ["final", "away"],
-          ];
+          ["away"],
+          ["visitor"],
+          ["team2"],
+          ["fulltime", "away"],
+          ["ft", "away"],
+          ["final", "away"],
+        ];
 
     for (const path of paths) {
       let value = nested;
@@ -2452,14 +2472,14 @@ function renderPredictionCard(match, idx) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-          pred.pred1,
-          pred.pred2,
-          result.score1,
-          result.score2,
-          match.stage,
-          pred.pen_winner,
-          result.penalty_winner,
-        )
+        pred.pred1,
+        pred.pred2,
+        result.score1,
+        result.score2,
+        match.stage,
+        pred.pen_winner,
+        result.penalty_winner,
+      )
       : null;
   const ptsTier = (() => {
     if (points === null) return "";
@@ -2510,16 +2530,15 @@ function renderPredictionCard(match, idx) {
           <span class="mc-scoreline-label">Your Pick</span>
           <span class="mc-scoreline-pick">${predictionScore}</span>
         </div>
-        ${
-          hasPred
-            ? `
+        ${hasPred
+      ? `
           <div class="mc-scoreline-divider"></div>
           <div class="mc-scoreline-points">
             <span class="mc-scoreline-pts ${ptsTier}">${points ?? 0} pts</span>
           </div>
         `
-            : ""
-        }
+      : ""
+    }
       </div>`
     : `<div class="mc-vs">VS</div>`;
 
@@ -2541,16 +2560,15 @@ function renderPredictionCard(match, idx) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team1)}</div>
           <div class="mc-name">${escapeHtml(match.team1)}</div>
-      ${
-        hasRes
-          ? ``
-          : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+      ${hasRes
+      ? ``
+      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred1) ? pred.pred1 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="1"
             oninput="handleScoreChange('${match.matchId}')">`
-      }
+    }
         </div>
 
         <div class="mc-middle">
@@ -2560,32 +2578,30 @@ function renderPredictionCard(match, idx) {
         <div class="mc-team">
           <div class="team-mark">${getFlagImg(match.team2)}</div>
           <div class="mc-name">${escapeHtml(match.team2)}</div>
-        ${
-          hasRes
-            ? ``
-            : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
+        ${hasRes
+      ? ``
+      : `<input class="score-input ${locked ? "" : "editable"}" type="number" min="0" max="20"
             inputmode="numeric" placeholder="-"
             value="${Number.isInteger(pred.pred2) ? pred.pred2 : ""}"
             ${locked || isSaving ? "disabled" : ""}
             data-matchid="${match.matchId}" data-team="2"
             oninput="handleScoreChange('${match.matchId}')">`
-        }
+    }
         </div>
       </div>
 
       ${statusLineHtml ? `<div class="mc-footer">${statusLineHtml}</div>` : ""}
 
       <!-- ★ Add loading overlay -->
-      ${
-        isSaving
-          ? `
+      ${isSaving
+      ? `
         <div class="mc-loading-overlay">
           <span class="spinner"></span>
           <span>Saving…</span>
         </div>
       `
-          : ""
-      }
+      : ""
+    }
     </article>
   `;
 }
@@ -2726,8 +2742,8 @@ function renderGroupTable(groupName, standings) {
         </thead>
         <tbody>
           ${sorted
-            .map(
-              (row) => `
+      .map(
+        (row) => `
             <tr>
               <td class="team-rank">${row.position}</td>
               <td data-label="Team">${getFlagImg(row.team_name)} ${escapeHtml(row.team_name)}</td>
@@ -2739,8 +2755,8 @@ function renderGroupTable(groupName, standings) {
               <td><strong>${row.points ?? 0}</strong></td>
             </tr>
           `,
-            )
-            .join("")}
+      )
+      .join("")}
         </tbody>
       </table>
     </div>
@@ -2807,8 +2823,8 @@ function renderThirdPlaceTable() {
         </thead>
         <tbody>
           ${rows
-            .map(
-              (row, index) => `
+      .map(
+        (row, index) => `
               <tr class="${row.qualifies ? "" : "eliminated"} ${index === cutoffIndex ? "cutoff-row" : ""}">
                 <td data-label="#">${row.rank}</td>
                 <td data-label="Team">${getFlagImg(row.team_name)}${escapeHtml(row.team_name)}</td>
@@ -2820,8 +2836,8 @@ function renderThirdPlaceTable() {
                 <td data-label="Status">${row.qualifies ? "Qualifies" : "Out"}</td>
               </tr>
             `,
-            )
-            .join("")}
+      )
+      .join("")}
         </tbody>
       </table>
       <div class="third-place-legend">
@@ -3010,14 +3026,14 @@ function openMatchDrawer(matchId) {
   const points =
     hasRes && hasPred
       ? calculateMatchPoints(
-          pred.pred1,
-          pred.pred2,
-          result.score1,
-          result.score2,
-          null,
-          pred.pen_winner,
-          result.penalty_winner,
-        )
+        pred.pred1,
+        pred.pred2,
+        result.score1,
+        result.score2,
+        null,
+        pred.pen_winner,
+        result.penalty_winner,
+      )
       : null;
 
   const ptsCls =
@@ -3146,14 +3162,14 @@ function renderResults() {
       const points =
         hasPrediction(pred) && hasResult(result)
           ? calculateMatchPoints(
-              pred.pred1,
-              pred.pred2,
-              result.score1,
-              result.score2,
-              fixture.stage,
-              pred.pen_winner,
-              result.penalty_winner,
-            )
+            pred.pred1,
+            pred.pred2,
+            result.score1,
+            result.score2,
+            fixture.stage,
+            pred.pen_winner,
+            result.penalty_winner,
+          )
           : null;
 
       const predPensTeam = getPenaltyWinnerTeam(fixture, pred?.pen_winner);
@@ -3366,20 +3382,18 @@ function renderBracket() {
           <div class="flow-match-slot">
             ${renderConnector(rounds.length)}
             <div class="bracket-final">
-              ${
-                finalMatch
-                  ? renderBracketMatch(finalMatch)
-                  : `<div class="bracket-placeholder">TBD</div>`
-              }
+              ${finalMatch
+      ? renderBracketMatch(finalMatch)
+      : `<div class="bracket-placeholder">TBD</div>`
+    }
             </div>
           </div>
           <div class="bracket-third">
             <div class="bracket-round-label small">3rd Place</div>
-            ${
-              thirdMatch
-                ? renderBracketMatch(thirdMatch)
-                : `<div class="bracket-placeholder">TBD</div>`
-            }
+            ${thirdMatch
+      ? renderBracketMatch(thirdMatch)
+      : `<div class="bracket-placeholder">TBD</div>`
+    }
           </div>
         </div>
       </div>
@@ -3829,15 +3843,15 @@ function renderPenaltyWinnerAudit() {
   });
   container.innerHTML = needsReview.length
     ? needsReview
-        .map(
-          (f) => `
+      .map(
+        (f) => `
         <div class="admin-pen-row">
           <span>${escapeHtml(f.team1)} ${STATE.results[f.matchId].score1}-${STATE.results[f.matchId].score2} ${escapeHtml(f.team2)} (match ${f.matchId})</span>
           <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team1')">${escapeHtml(f.team1)} won pens</button>
           <button onclick="setPenaltyWinnerAdmin('${f.matchId}','team2')">${escapeHtml(f.team2)} won pens</button>
         </div>`,
-        )
-        .join("")
+      )
+      .join("")
     : "<p>No knockout draws missing a penalty winner.</p>";
 }
 
@@ -4017,8 +4031,8 @@ function renderAccountRequests() {
   return `
     <div class="request-list">
       ${pending
-        .map(
-          (request) => `
+      .map(
+        (request) => `
             <article class="request-card">
               <div>
                 <strong>${escapeHtml(request.displayName || request.username)}</strong>
@@ -4031,8 +4045,8 @@ function renderAccountRequests() {
               </div>
             </article>
           `,
-        )
-        .join("")}
+      )
+      .join("")}
     </div>
   `;
 }
@@ -5028,38 +5042,36 @@ function renderHomeExtraTiles() {
     hotColdEl.innerHTML = `
       <h3 class="race-title">🔥 Streaks</h3>
       <div class="streaks-columns">
-        ${
-          hotStreaks.length
-            ? `
+        ${hotStreaks.length
+        ? `
           <div class="streaks-list">
             <div class="streak-section-title">Scoring streaks</div>
             ${hotStreaks
-              .map((s) => {
-                const name = getShortName(getUserDisplayName(s.username));
-                return `<div class="streak-row hot">🔥 <strong>${escapeHtml(
-                  name,
-                )}</strong> ${s.streak} in a row</div>`;
-              })
-              .join("")}
+          .map((s) => {
+            const name = getShortName(getUserDisplayName(s.username));
+            return `<div class="streak-row hot">🔥 <strong>${escapeHtml(
+              name,
+            )}</strong> ${s.streak} in a row</div>`;
+          })
+          .join("")}
           </div>`
-            : ""
-        }
-        ${
-          coldStreaks.length
-            ? `
+        : ""
+      }
+        ${coldStreaks.length
+        ? `
           <div class="streaks-list">
             <div class="streak-section-title">Cold streaks</div>
             ${coldStreaks
-              .map((s) => {
-                const name = getShortName(getUserDisplayName(s.username));
-                return `<div class="streak-row cold">🥶 <strong>${escapeHtml(
-                  name,
-                )}</strong> ${s.streak} missed in a row</div>`;
-              })
-              .join("")}
+          .map((s) => {
+            const name = getShortName(getUserDisplayName(s.username));
+            return `<div class="streak-row cold">🥶 <strong>${escapeHtml(
+              name,
+            )}</strong> ${s.streak} missed in a row</div>`;
+          })
+          .join("")}
           </div>`
-            : ""
-        }
+        : ""
+      }
       </div>
       `;
   }
@@ -5075,11 +5087,10 @@ function renderHomeExtraTiles() {
       const sweating = [...deltas.entries()].filter(([, v]) => v === 0);
       sweatingEl.innerHTML = `
         <h3 class="race-title">😬 Live Sweat</h3>
-        <div class="sweating-good">✅ ${inTheMoney.length} on track (top: ${
-          inTheMoney
-            .slice(0, 3)
-            .map(([u]) => escapeHtml(getUserDisplayName(u)))
-            .join(", ") || "—"
+        <div class="sweating-good">✅ ${inTheMoney.length} on track (top: ${inTheMoney
+          .slice(0, 3)
+          .map(([u]) => escapeHtml(getUserDisplayName(u)))
+          .join(", ") || "—"
         })</div>
         <div class="sweating-bad">😬 ${sweating.length} sweating it out</div>
       `;
@@ -6466,8 +6477,8 @@ function computeAwards(players, matchStats, fixtures) {
     const scored = Math.round(
       (1 -
         cleanSheet.perGame.filter((g) => g.pts === 0).length /
-          cleanSheet.perGame.length) *
-        100,
+        cleanSheet.perGame.length) *
+      100,
     );
     awards.push(
       A({
@@ -6899,11 +6910,10 @@ function renderTournamentReport() {
       <div class="tr-hero" style="${champion ? `background:linear-gradient(135deg,${getTeamColor(champion)}44 0%,var(--card-bg) 50%,${getTeamSecondary(champion)}22 100%)` : ""}">
         <div class="tr-hero-eyebrow">GGO Prediction League · ${done} Matches Played</div>
         <div class="tr-hero-wc">FIFA WORLD CUP 2026</div>
-        ${
-          champion
-            ? `<div class="tr-hero-champ-label">🏆 World Champion</div><div class="tr-hero-champ">${getFlagImg(champion)}<span>${escapeHtml(champion)}</span></div>`
-            : `<div class="tr-hero-champ-label">Tournament in Progress...</div>`
-        }
+        ${champion
+        ? `<div class="tr-hero-champ-label">🏆 World Champion</div><div class="tr-hero-champ">${getFlagImg(champion)}<span>${escapeHtml(champion)}</span></div>`
+        : `<div class="tr-hero-champ-label">Tournament in Progress...</div>`
+      }
         <div class="tr-hero-meta">
           <span title="Matches played">⚽ ${done} games</span>
           <span title="Goals scored in tournament">💥 ${totalGoals} goals</span>
@@ -6927,8 +6937,8 @@ function renderTournamentReport() {
       <h2 class="tr-section-title">🥇 The Podium</h2>
       <div class="tr-podium">
         ${podiumOrder
-          .map(
-            (p, i) => `
+      .map(
+        (p, i) => `
           <div class="tr-podium-slot ${podiumCls[i]}">
             <div class="tr-podium-avatar">${getInitials(p.displayName)}</div>
             <div class="tr-podium-name">${escapeHtml(p.displayName)}</div>
@@ -6936,8 +6946,8 @@ function renderTournamentReport() {
             <div class="tr-podium-sub">${exactOf(p)} exact · ${p.correctOutcomes || 0} correct</div>
             <div class="tr-podium-block"><span>${podiumMedal[i]}</span><span>#${p.rank || i + 1}</span></div>
           </div>`,
-          )
-          .join("")}
+      )
+      .join("")}
       </div>
     </section>`
     : "";
@@ -6952,27 +6962,27 @@ function renderTournamentReport() {
           <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Exact</th><th>Correct</th><th>%</th><th>Avg</th><th>Predicted</th><th>Missed</th></tr></thead>
           <tbody>
             ${players
-              .map((p, idx) => {
-                const rank = p.rank || idx + 1;
-                const sc = p.scored || p.perGame.length;
-                const pct =
-                  sc > 0
-                    ? Math.round(((p.correctOutcomes || 0) / sc) * 100)
-                    : 0;
-                const missed = Math.max(
-                  0,
-                  done - (p.predicted || p.perGame.length),
-                );
-                const avgPts = sc > 0 ? (p.totalPoints / sc).toFixed(1) : "-";
-                const rc =
-                  rank === 1
-                    ? "tr-rank-gold"
-                    : rank === 2
-                      ? "tr-rank-silver"
-                      : rank === 3
-                        ? "tr-rank-bronze"
-                        : "";
-                return `<tr class="${p.username === SESSION.username ? "tr-row-me" : ""}">
+      .map((p, idx) => {
+        const rank = p.rank || idx + 1;
+        const sc = p.scored || p.perGame.length;
+        const pct =
+          sc > 0
+            ? Math.round(((p.correctOutcomes || 0) / sc) * 100)
+            : 0;
+        const missed = Math.max(
+          0,
+          done - (p.predicted || p.perGame.length),
+        );
+        const avgPts = sc > 0 ? (p.totalPoints / sc).toFixed(1) : "-";
+        const rc =
+          rank === 1
+            ? "tr-rank-gold"
+            : rank === 2
+              ? "tr-rank-silver"
+              : rank === 3
+                ? "tr-rank-bronze"
+                : "";
+        return `<tr class="${p.username === SESSION.username ? "tr-row-me" : ""}">
                 <td><span class="tr-rank-badge ${rc}">${rank}</span></td>
                 <td><div class="tr-player-cell"><span class="tr-avatar">${getInitials(p.displayName)}</span>${escapeHtml(p.displayName)}</div></td>
                 <td><strong>${p.totalPoints}</strong></td>
@@ -6983,8 +6993,8 @@ function renderTournamentReport() {
                 <td>${p.predicted || p.perGame.length}</td>
                 <td class="${missed > 10 ? "tr-missed-hi" : ""}">${missed}</td>
               </tr>`;
-              })
-              .join("")}
+      })
+      .join("")}
           </tbody>
         </table>
       </div>
@@ -7005,24 +7015,22 @@ function renderTournamentReport() {
     ? `
     <section class="tr-section tr-section-awards">
       <h2 class="tr-section-title">🏅 Awards Ceremony</h2>
-      ${
-        achievementAwards.length
-          ? `
+      ${achievementAwards.length
+      ? `
         <div class="tr-awards-group-label tr-label-achievement">🌟 Honours Board</div>
         <div class="tr-awards-grid tr-awards-achievement">
           ${achievementAwards.map(renderAwardCard).join("")}
         </div>`
-          : ""
-      }
-      ${
-        quirkyAwards.length
-          ? `
+      : ""
+    }
+      ${quirkyAwards.length
+      ? `
         <div class="tr-awards-group-label tr-label-quirky">💀 Characters of the Tournament</div>
         <div class="tr-awards-grid tr-awards-quirky">
           ${quirkyAwards.map(renderAwardCard).join("")}
         </div>`
-          : ""
-      }
+      : ""
+    }
     </section>`
     : "";
 
@@ -7039,21 +7047,21 @@ function renderTournamentReport() {
       </div>
       <div class="tr-stage-chart">
         ${players
-          .map(
-            (p) => `
+      .map(
+        (p) => `
           <div class="tr-stage-row">
             <div class="tr-stage-name">${escapeHtml(getShortName(p.displayName))}</div>
             <div class="tr-stage-bars">
               ${STAGE_KEYS.map((sk) => {
-                const pts = p.perStage[sk]?.pts || 0;
-                if (!pts) return "";
-                return `<div class="tr-stage-bar" style="width:${Math.round((pts / maxPts) * 100)}%;background:${STAGE_CLR[sk]}" title="${STAGE_DISP[sk]}: ${pts} pts"></div>`;
-              }).join("")}
+          const pts = p.perStage[sk]?.pts || 0;
+          if (!pts) return "";
+          return `<div class="tr-stage-bar" style="width:${Math.round((pts / maxPts) * 100)}%;background:${STAGE_CLR[sk]}" title="${STAGE_DISP[sk]}: ${pts} pts"></div>`;
+        }).join("")}
             </div>
             <div class="tr-stage-total">${p.totalPoints}</div>
           </div>`,
-          )
-          .join("")}
+      )
+      .join("")}
       </div>
     </section>`
     : "";
@@ -7065,28 +7073,28 @@ function renderTournamentReport() {
       <h2 class="tr-section-title">🎭 Player Scorecards</h2>
       <div class="tr-scorecards">
         ${players
-          .map((p) => {
-            const isMe = p.username === SESSION.username;
-            const sc = p.scored || p.perGame.length;
-            const pct =
-              sc > 0 ? Math.round(((p.correctOutcomes || 0) / sc) * 100) : 0;
-            const best = p.perGame.length
-              ? [...p.perGame].sort((a, b) => b.pts - a.pts)[0]
-              : null;
-            const worstMiss = p.perGame
-              .filter((g) => g.pts === 0)
-              .sort(() => 0)[0];
-            const myAwards = awards.filter((a) => a.username === p.username);
-            const rank = p.rank || 999;
-            const rc =
-              rank === 1
-                ? "tr-rank-gold"
-                : rank === 2
-                  ? "tr-rank-silver"
-                  : rank === 3
-                    ? "tr-rank-bronze"
-                    : "";
-            return `
+      .map((p) => {
+        const isMe = p.username === SESSION.username;
+        const sc = p.scored || p.perGame.length;
+        const pct =
+          sc > 0 ? Math.round(((p.correctOutcomes || 0) / sc) * 100) : 0;
+        const best = p.perGame.length
+          ? [...p.perGame].sort((a, b) => b.pts - a.pts)[0]
+          : null;
+        const worstMiss = p.perGame
+          .filter((g) => g.pts === 0)
+          .sort(() => 0)[0];
+        const myAwards = awards.filter((a) => a.username === p.username);
+        const rank = p.rank || 999;
+        const rc =
+          rank === 1
+            ? "tr-rank-gold"
+            : rank === 2
+              ? "tr-rank-silver"
+              : rank === 3
+                ? "tr-rank-bronze"
+                : "";
+        return `
             <div class="tr-scorecard${isMe ? " tr-scorecard-me" : ""}" id="sc-${CSS.escape ? CSS.escape(p.username) : p.username}">
               <div class="tr-sc-head" onclick="this.closest('.tr-scorecard').classList.toggle('tr-sc-open')">
                 <span class="tr-rank-badge ${rc}">${rank}</span>
@@ -7112,22 +7120,22 @@ function renderTournamentReport() {
                 ${worstMiss ? `<div class="tr-sc-hl tr-sc-worst">💀 Miss: <strong>${escapeHtml(resolveSlot(worstMiss.fixture.team1) || worstMiss.fixture.team1)} vs ${escapeHtml(resolveSlot(worstMiss.fixture.team2) || worstMiss.fixture.team2)}</strong> — predicted ${worstMiss.pred1}-${worstMiss.pred2}, actual ${worstMiss.result.score1}-${worstMiss.result.score2}</div>` : ""}
                 <div class="tr-sc-stages">
                   ${STAGE_KEYS.filter((sk) => p.perStage[sk])
-                    .map((sk) => {
-                      const d = p.perStage[sk];
-                      const w = Math.round((d.pts / maxPts) * 100);
-                      return `<div class="tr-sc-stage-row">
+            .map((sk) => {
+              const d = p.perStage[sk];
+              const w = Math.round((d.pts / maxPts) * 100);
+              return `<div class="tr-sc-stage-row">
                       <span class="tr-sc-sname">${STAGE_DISP[sk]}</span>
                       <div class="tr-sc-sbar-track"><div class="tr-sc-sbar" style="width:${w}%;background:${STAGE_CLR[sk]}"></div></div>
                       <span class="tr-sc-spts">${d.pts}pts</span>
                       <span class="tr-sc-sexact">${d.exact}✓</span>
                     </div>`;
-                    })
-                    .join("")}
+            })
+            .join("")}
                 </div>
               </div>
             </div>`;
-          })
-          .join("")}
+      })
+      .join("")}
       </div>
     </section>`
     : "";
@@ -7139,15 +7147,15 @@ function renderTournamentReport() {
       <h2 class="tr-section-title">🤯 Moments of the Tournament</h2>
       <div class="tr-highlights">
         ${highlights
-          .map(
-            (h) => `
+      .map(
+        (h) => `
           <div class="tr-hl-card">
             <div class="tr-hl-icon">${h.icon}</div>
             <div class="tr-hl-label">${escapeHtml(h.label)}</div>
             <div class="tr-hl-text">${escapeHtml(h.text)}</div>
           </div>`,
-          )
-          .join("")}
+      )
+      .join("")}
       </div>
     </section>`
     : "";
@@ -7162,29 +7170,29 @@ function renderTournamentReport() {
           <thead><tr><th>Stage</th><th>Match</th><th>Score</th><th>Top Pick</th><th>Exact</th><th>Correct</th></tr></thead>
           <tbody>
             ${[...finishedFixtures]
-              .reverse()
-              .map((f) => {
-                const ms = matchStats[f.matchId];
-                if (!ms) return "";
-                const r = ms.result;
-                const t1 = resolveSlot(f.team1) || f.team1,
-                  t2 = resolveSlot(f.team2) || f.team2;
-                const stage = String(f.stage || "group").toLowerCase();
-                const stageLbl = STAGE_LABELS[stage] || stage;
-                const correctCount = ms.preds.filter(
-                  (p) =>
-                    calculateMatchPoints(
-                      p.pred1,
-                      p.pred2,
-                      r.score1,
-                      r.score2,
-                      stage,
-                      p.pen_winner,
-                      r.penalty_winner,
-                    ) > 0,
-                ).length;
-                const noPreds = ms.totalPredicted === 0 || ms.excluded;
-                return `<tr class="tr-game-row${noPreds ? " tr-game-no-preds" : ""}" onclick="openMatchDrawer('${f.matchId}')" style="cursor:pointer" title="${noPreds ? "No predictions — app not yet live" : ""}">
+      .reverse()
+      .map((f) => {
+        const ms = matchStats[f.matchId];
+        if (!ms) return "";
+        const r = ms.result;
+        const t1 = resolveSlot(f.team1) || f.team1,
+          t2 = resolveSlot(f.team2) || f.team2;
+        const stage = String(f.stage || "group").toLowerCase();
+        const stageLbl = STAGE_LABELS[stage] || stage;
+        const correctCount = ms.preds.filter(
+          (p) =>
+            calculateMatchPoints(
+              p.pred1,
+              p.pred2,
+              r.score1,
+              r.score2,
+              stage,
+              p.pen_winner,
+              r.penalty_winner,
+            ) > 0,
+        ).length;
+        const noPreds = ms.totalPredicted === 0 || ms.excluded;
+        return `<tr class="tr-game-row${noPreds ? " tr-game-no-preds" : ""}" onclick="openMatchDrawer('${f.matchId}')" style="cursor:pointer" title="${noPreds ? "No predictions — app not yet live" : ""}">
                 <td><span class="tr-stage-chip tr-chip-${stage}">${escapeHtml(stageLbl)}</span></td>
                 <td>${getFlagImg(t1)} ${escapeHtml(t1)} vs ${getFlagImg(t2)} ${escapeHtml(t2)}${noPreds ? '<span class="tr-no-pred-badge" title="No predictions recorded">no preds</span>' : ""}</td>
                 <td><strong>${r.score1}–${r.score2}</strong>${r.penalty_winner ? " 🅿" : r.status === "AET" ? " AET" : ""}</td>
@@ -7192,8 +7200,8 @@ function renderTournamentReport() {
                 <td>${ms.exactCount > 0 ? `<span class="tr-exact-badge">${ms.exactCount}</span>` : noPreds ? '<span style="opacity:.3">—</span>' : "0"}</td>
                 <td>${noPreds ? '<span style="opacity:.3">—</span>' : correctCount}</td>
               </tr>`;
-              })
-              .join("")}
+      })
+      .join("")}
           </tbody>
         </table>
       </div>
@@ -7225,17 +7233,5 @@ function renderTournamentReport() {
     const myCard = document.getElementById(`sc-${SESSION.username}`);
     if (myCard) myCard.classList.add("tr-sc-open");
   }
-
-  // ──────────────────────────────────────────────────────────────────────
-  //  HELPER: Get team name from the global MATCH_DATA map
-  // ──────────────────────────────────────────────────────────────────────
-  function resolveSlot(rawKey) {
-    if (!rawKey) return rawKey || "";
-    const key = String(rawKey).toUpperCase();
-    return (
-      (MATCH_DATA.teams || {})[key] ||
-      (MATCH_DATA.teamsByKey || {})[key] ||
-      rawKey
-    );
-  }
 }
+setupReportScrollSeenTracking();
