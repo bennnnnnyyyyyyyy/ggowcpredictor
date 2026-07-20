@@ -568,6 +568,7 @@ where p.username = 'ben_arthur';
 
 - Set Spain as the confirmed World Champion in the browser app and reused that value in the bracket champion panel and tournament report hero.
 - Added a shared `exactOf(player)` helper so `renderTournamentReport()` no longer references a helper scoped only inside award calculation.
+- Restored the report stage breakdown constants and max bar denominator so the Report tab does not stop on `STAGE_CLR` or `maxPts`.
 - Included the report renderer in the post-sync active-view refresh path so the Report tab updates after background data loads.
 - Styled the champion panel flag/name layout for the confirmed winner state.
 

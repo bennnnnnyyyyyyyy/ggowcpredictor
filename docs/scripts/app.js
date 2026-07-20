@@ -6848,7 +6848,35 @@ function renderTournamentReport() {
   const achievementAwards = awards.filter((a) => a.type === "achievement");
   const quirkyAwards = awards.filter((a) => a.type === "quirky");
 
-  const STAGE_KEYS = ["group_md1", "group_md2", "group_md3", "r32", "r16"];
+  const STAGE_KEYS = ["group_md1", "group_md2", "group_md3", "r32", "r16", "qf", "sf", "third", "final"];
+  const STAGE_DISP = {
+    group_md1: "MD1",
+    group_md2: "MD2",
+    group_md3: "MD3",
+    r32: "R32",
+    r16: "R16",
+    qf: "QF",
+    sf: "SF",
+    third: "3rd",
+    final: "Final",
+  };
+  const STAGE_CLR = {
+    group_md1: "#4a9eff",
+    group_md2: "#38bdf8",
+    group_md3: "#10b981",
+    r32: "#9b7fd4",
+    r16: "#a855f7",
+    qf: "#ec4899",
+    sf: "#f59e0b",
+    third: "#22c55e",
+    final: "#f7c948",
+  };
+  const maxPts = Math.max(
+    1,
+    ...players.flatMap((player) =>
+      STAGE_KEYS.map((stageKey) => player.perStage[stageKey]?.pts || 0),
+    ),
+  );
 
   // ── Hero banner ──────────────────────────────────────────────────────
   const heroHtml = (() => {
