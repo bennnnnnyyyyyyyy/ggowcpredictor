@@ -2962,14 +2962,24 @@ function openMatchDrawer(matchId) {
   if (!overlay || !drawer || !inner) return;
 
   // ── Scoreline ──
-  const team1Flag = getFlagImg(fixture.team1);
-  const team2Flag = getFlagImg(fixture.team2);
+  const displayFixture = {
+    ...fixture,
+    team1: isBracketReference(fixture.team1)
+      ? resolveSlot(fixture.team1) || fixture.team1
+      : fixture.team1,
+    team2: isBracketReference(fixture.team2)
+      ? resolveSlot(fixture.team2) || fixture.team2
+      : fixture.team2,
+  };
+
+  const team1Flag = getFlagImg(displayFixture.team1);
+  const team2Flag = getFlagImg(displayFixture.team2);
   const hasRes = result && hasResult(result);
   const isLive = result && isLiveStatus(result.status);
   const isFinal = result && isFinalStatus(result.status);
 
   const drawerActualPensTeam = getPenaltyWinnerTeam(
-    fixture,
+    displayFixture,
     result?.penalty_winner,
   );
   const scoreText = hasRes ? `${result.score1} – ${result.score2}` : "– vs –";
@@ -3047,7 +3057,7 @@ function openMatchDrawer(matchId) {
             ? "pts-partial"
             : "pts-zero";
 
-  const drawerPredPensTeam = getPenaltyWinnerTeam(fixture, pred?.pen_winner);
+  const drawerPredPensTeam = getPenaltyWinnerTeam(displayFixture, pred?.pen_winner);
   const predScoreHtml = hasPred
     ? `<div class="drawer-pred-score">${pred.pred1} – ${pred.pred2}${drawerPredPensTeam ? ` <span class="drawer-pred-pens">(pens: ${escapeHtml(drawerPredPensTeam)})</span>` : ""}</div>`
     : `<div class="drawer-pred-score no-pred">No prediction</div>`;
@@ -3078,7 +3088,7 @@ function openMatchDrawer(matchId) {
     <div class="drawer-scoreline">
       <div class="drawer-team">
         <div class="drawer-team-badge">${team1Flag}</div>
-        <div class="drawer-team-name">${escapeHtml(fixture.team1)}</div>
+        <div class="drawer-team-name">${escapeHtml(displayFixture.team1)}</div>
       </div>
       <div class="drawer-score-block">
         <div class="drawer-score ${isLive ? "live-score" : ""}">${escapeHtml(scoreText)}</div>
@@ -3090,7 +3100,7 @@ function openMatchDrawer(matchId) {
       </div>
       <div class="drawer-team">
         <div class="drawer-team-badge">${team2Flag}</div>
-        <div class="drawer-team-name">${escapeHtml(fixture.team2)}</div>
+        <div class="drawer-team-name">${escapeHtml(displayFixture.team2)}</div>
       </div>
     </div>
  
@@ -6329,7 +6339,7 @@ function computeAwards(players, matchStats, fixtures) {
       }),
     );
 
-  // ⚽ Group Stage God — most group stage points
+  // ⚽ Group Stage King — most group stage points
   const gsKey = (p) =>
     ["group_md1", "group_md2", "group_md3"].reduce(
       (s, k) => s + (p.perStage[k]?.pts || 0),
@@ -6340,7 +6350,7 @@ function computeAwards(players, matchStats, fixtures) {
     awards.push(
       A({
         icon: "⚽",
-        name: "Group Stage God",
+        name: "Group Stage King",
         desc: "Dominated group stage predictions",
         winner: gsGod.displayName,
         stat: `${gsKey(gsGod)} group pts`,
@@ -6952,54 +6962,6 @@ function renderTournamentReport() {
     </section>`
     : "";
 
-  // ── Section 3: Full Leaderboard ───────────────────────────────
-  const lbHtml = players.length
-    ? `
-    <section class="tr-section">
-      <h2 class="tr-section-title">📊 Final Standings</h2>
-      <div class="tr-table-wrap">
-        <table class="tr-lb-table">
-          <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Exact</th><th>Correct</th><th>%</th><th>Avg</th><th>Predicted</th><th>Missed</th></tr></thead>
-          <tbody>
-            ${players
-      .map((p, idx) => {
-        const rank = p.rank || idx + 1;
-        const sc = p.scored || p.perGame.length;
-        const pct =
-          sc > 0
-            ? Math.round(((p.correctOutcomes || 0) / sc) * 100)
-            : 0;
-        const missed = Math.max(
-          0,
-          done - (p.predicted || p.perGame.length),
-        );
-        const avgPts = sc > 0 ? (p.totalPoints / sc).toFixed(1) : "-";
-        const rc =
-          rank === 1
-            ? "tr-rank-gold"
-            : rank === 2
-              ? "tr-rank-silver"
-              : rank === 3
-                ? "tr-rank-bronze"
-                : "";
-        return `<tr class="${p.username === SESSION.username ? "tr-row-me" : ""}">
-                <td><span class="tr-rank-badge ${rc}">${rank}</span></td>
-                <td><div class="tr-player-cell"><span class="tr-avatar">${getInitials(p.displayName)}</span>${escapeHtml(p.displayName)}</div></td>
-                <td><strong>${p.totalPoints}</strong></td>
-                <td>${exactOf(p)}</td>
-                <td>${p.correctOutcomes || 0}</td>
-                <td><span class="${pct >= 60 ? "tr-pct-hi" : pct >= 40 ? "tr-pct-mid" : "tr-pct-lo"}">${pct}%</span></td>
-                <td class="tr-avg">${avgPts}</td>
-                <td>${p.predicted || p.perGame.length}</td>
-                <td class="${missed > 10 ? "tr-missed-hi" : ""}">${missed}</td>
-              </tr>`;
-      })
-      .join("")}
-          </tbody>
-        </table>
-      </div>
-    </section>`
-    : "";
 
   // ── Section 4: Awards ─────────────────────────────────────────
   const renderAwardCard = (a) => `
@@ -7212,11 +7174,8 @@ function renderTournamentReport() {
   const chap = (label) => `<div class="tr-chapter">${label}</div>`;
 
   container.innerHTML = [
-    notFinishedBanner,
     heroHtml,
     podiumHtml,
-    chap("📊 The Numbers"),
-    lbHtml,
     stageHtml,
     chap("🏅 Awards"),
     awardsHtml,

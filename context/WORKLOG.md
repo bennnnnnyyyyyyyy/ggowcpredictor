@@ -575,3 +575,15 @@ where p.username = 'ben_arthur';
 ### Verification
 
 - Ran `node --check docs/scripts/app.js` successfully.
+
+## 2026-07-20 - Match drawer flags and plain flag styling
+
+### What changed
+
+- Resolved knockout placeholder teams in the match drawer before rendering names, flags, and penalty-winner labels, so third-place/final report rows show real teams instead of `L101`/`L102`.
+- Removed the shared flag image border so flags render plainly and consistently across report, bracket, standings, and match views.
+- Bumped docs app asset versions to force browsers to load the updated JS and CSS.
+
+### Verification
+
+- Ran `node --check docs/scripts/app.js` successfully.
