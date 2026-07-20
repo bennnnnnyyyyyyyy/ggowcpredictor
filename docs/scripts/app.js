@@ -1674,6 +1674,7 @@ async function requestSync() {
     results: renderResults,
     bracket: renderBracket,
     admin: renderAdmin,
+    report: renderTournamentReport,
   };
   const vid = activeViewId();
   if (renderers[vid]) {
@@ -1705,6 +1706,7 @@ async function requestSync() {
           })}`;
   }
 
+  updateChampionSection();
   updateAdminBadge();
   if (syncBtn) syncBtn.classList.remove("loading");
   checkChampionPick();
@@ -3179,6 +3181,7 @@ function renderResults() {
     .join("");
 }
 function renderBracket() {
+  updateChampionSection();
   const bracket = document.getElementById("bracket");
   if (!bracket) return;
 
@@ -3980,6 +3983,7 @@ function renderAdmin() {
   // Penalty winner audit
   renderPenaltyWinnerAudit();
 
+  updateChampionSection();
   updateAdminBadge();
 }
 
@@ -6047,6 +6051,16 @@ const EXCLUDED_MATCH_TEAMS = [
   ["mexico", "south africa"],
   ["south korea", "czech republic"],
 ];
+const CONFIRMED_WORLD_CHAMPION = "Spain";
+
+function exactOf(player) {
+  return (
+    player?.exactScores ||
+    player?.exactCount ||
+    player?.perGame?.filter((game) => game.isExact).length ||
+    0
+  );
+}
 function isExcludedMatch(fixture) {
   const t1 = (resolveSlot(fixture.team1) || fixture.team1 || "").toLowerCase();
   const t2 = (resolveSlot(fixture.team2) || fixture.team2 || "").toLowerCase();
@@ -6066,6 +6080,8 @@ function isTournamentFinished() {
 }
 
 function getTournamentChampion() {
+  if (CONFIRMED_WORLD_CHAMPION) return CONFIRMED_WORLD_CHAMPION;
+
   const final = (STATE.fixtures || []).find(
     (f) => String(f.stage || "").toLowerCase() === "final",
   );
@@ -6086,6 +6102,19 @@ function getTournamentChampion() {
   return null;
 }
 
+function updateChampionSection() {
+  const section = document.getElementById("champion-section");
+  const nameEl = section?.querySelector(".champion-name");
+  const trophyEl = section?.querySelector(".champion-trophy");
+  if (!section || !nameEl) return;
+
+  const champion = getTournamentChampion();
+  nameEl.innerHTML = champion
+    ? `${getFlagImg(champion)}<span>${escapeHtml(champion)}</span>`
+    : "TBD";
+  section.classList.toggle("has-champion", Boolean(champion));
+  if (trophyEl) trophyEl.textContent = champion ? "WC" : "WC";
+}
 function computeTournamentReport() {
   const allPredsList = Object.values(STATE.allPredictions || {});
   const finishedFixtures = (STATE.fixtures || [])
@@ -6238,9 +6267,6 @@ function computeAwards(players, matchStats, fixtures) {
   const awards = [];
   if (!players.length) return awards;
   const srt = (arr, fn) => [...arr].sort(fn);
-
-  const exactOf = (p) =>
-    p.exactScores || p.perGame.filter((g) => g.isExact).length;
 
   // Achievement awards — positive, skill-based
   const A = (obj) => ({ ...obj, type: "achievement" });

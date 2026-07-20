@@ -562,3 +562,15 @@ where p.username = 'ben_arthur';
 ### Verification
 
 - Verified syntax and layout consistency across scripts and style sheets.
+## 2026-07-20 - Spain champion and report load fix
+
+### What changed
+
+- Set Spain as the confirmed World Champion in the browser app and reused that value in the bracket champion panel and tournament report hero.
+- Added a shared `exactOf(player)` helper so `renderTournamentReport()` no longer references a helper scoped only inside award calculation.
+- Included the report renderer in the post-sync active-view refresh path so the Report tab updates after background data loads.
+- Styled the champion panel flag/name layout for the confirmed winner state.
+
+### Verification
+
+- Ran `node --check docs/scripts/app.js` successfully.
