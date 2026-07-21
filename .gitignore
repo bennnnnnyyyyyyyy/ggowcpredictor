@@ -1,15 +1,13 @@
 scripts/_check_*.js
-.agents/
 .gemini/
 .vscode/
-
 .env
 .env.local
 .dev.vars
 .idea/
 #node
 node_modules/
-
+.agents/
 # Secrets & Credentials
 *-adminsdk-*.json
 ggowcpredictor-firebase-adminsdk-fbsvc-76aa1b4e46.json
@@ -23,7 +21,7 @@ wrangler-*.log
 live.html
 ggowcpredictor db  (1).xlsx
 
-.agents/
+
 *.log
 *.har
 
