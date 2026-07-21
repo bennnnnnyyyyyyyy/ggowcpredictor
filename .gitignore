@@ -23,7 +23,7 @@ wrangler-*.log
 live.html
 ggowcpredictor db  (1).xlsx
 
-
+.agents/
 *.log
 *.har
 
