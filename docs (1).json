@@ -1,0 +1,72 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "GGO WC 2026 Predictor",
+  "description": "Internal FIFA World Cup 2026 prediction game for Gulf Global Outsourcing employees.",
+  "colors": {
+    "primary": "#0F6B3A",
+    "light": "#2FBE72",
+    "dark": "#0A4A28"
+  },
+  "favicon": "/favicon.png",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "index",
+              "setup"
+            ]
+          },
+          {
+            "group": "Product",
+            "pages": [
+              "scoring",
+              "standings",
+              "feature-ideas"
+            ]
+          },
+          {
+            "group": "Engineering",
+            "pages": [
+              "architecture",
+              "supabase-setup",
+              "error-reduction"
+            ]
+          },
+          {
+            "group": "Project Management",
+            "pages": [
+              "plan"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Changelog",
+        "groups": [
+          {
+            "group": "Changelog",
+            "pages": [
+              "changelog"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Repo",
+        "href": "https://github.com/bennnnnnyyyyyyyy/ggowcpredictor"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {}
+  }
+}

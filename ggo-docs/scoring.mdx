@@ -1,0 +1,53 @@
+---
+title: "Scoring"
+description: "Canonical scoring rules, stage multipliers, and comparison edge cases."
+---
+
+<Warning>
+The legacy 3-point "close call" consolation rule was cancelled and must **not** be referenced in
+active docs or runtime behavior. If you see a 3-point branch anywhere in `profile.js`, `app.js`,
+or the Worker, it's a bug — see the [Fix Plan](/plan).
+</Warning>
+
+## Base points
+
+| Outcome | Points |
+| :--- | :--- |
+| Exact score | **15** |
+| Correct outcome + goal difference within 1 | **8** |
+| Correct outcome only | **5** |
+| Wrong outcome | **0** |
+
+## Stage multipliers (knockout)
+
+| Round | Multiplier |
+| :--- | :--- |
+| Round of 32 | ×2 |
+| Round of 16 | ×2.5 |
+| Quarterfinal | ×3 |
+| Semifinal / third-place | ×4 |
+| Final | ×5 |
+
+Group-stage matches use the base points with no multiplier.
+
+## Penalty shootouts
+
+- `penalty_winner` is stored as `"team1"` or `"team2"` (lowercase). All comparisons must use
+  `.toLowerCase()` defensively — this was a recurring bug source.
+- `derivePenaltyWinner(item, flipped)` auto-computes `penalty_winner` from the API's penalty score
+  data (`home_penalty_score` / `away_penalty_score` → `homePenalty` / `awayPenalty`), so future
+  shootouts resolve without a manual SQL patch.
+- `resolveSlot()` and the scoring helpers on both the client (`app.js`) and backend
+  (`live-results.js`) must apply the same case-insensitive comparison, or bracket advancement and
+  scoring can disagree.
+
+## Known data-model gotcha
+
+The API `id` field does not always equal the internal `matchId` for knockout games. Always join
+through `apiFixtureId` — never assume the two are equal. See [Architecture → `fixtures`](/architecture#fixtures) for the field mapping chain.
+
+<Info>
+A separate "mini tourney" scoring variant (knockout-only, ¼ points, activating after the group
+stage) has been referenced in project history but isn't part of the current canonical rule set
+above. Confirm its status before documenting it as active.
+</Info>

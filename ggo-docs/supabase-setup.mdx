@@ -1,0 +1,21 @@
+---
+title: "Supabase Setup"
+description: "Supabase backup tables, migration, and fallback behavior."
+---
+
+<Note>
+`docs/SUPABASE_SETUP.md` wasn't in the files I was given, so this page is a stub. Paste the source
+file back to me to fill in table creation SQL, RLS policies, and the Firestore migration steps.
+</Note>
+
+## What's confirmed from other docs
+
+- Supabase is the primary datastore for users, fixtures, predictions, results, leaderboard, and
+  official group standings — see [Architecture](/architecture) for the canonical schema of each
+  table.
+- Firestore remains a legacy backup/fallback data source; removing the remaining Firestore
+  read/write calls from `app.js` and the worker is an open item on the [Fix Plan](/plan).
+- The Apps Script backend tries Firebase first, falls back to Supabase, and includes a one-shot
+  Firestore-to-Supabase migration path.
+- Supabase RLS policies were part of prior hardening work — see the [Changelog](/changelog) for
+  related entries, and confirm current policy state before relying on this page.

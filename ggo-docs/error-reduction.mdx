@@ -1,0 +1,26 @@
+---
+title: "Error Reduction"
+description: "Rules to follow before editing code."
+---
+
+<Note>
+`docs/ERROR_REDUCTION.md` wasn't in the files I was given, so this page is a stub. Paste the
+source file back to me to fill in the actual checklist.
+</Note>
+
+## Recurring failure patterns worth codifying here
+
+Based on the [Changelog](/changelog) and [Fix Plan](/plan), these are the mistakes that have
+actually caused bugs in this codebase — good candidates for a real pre-edit checklist:
+
+- **`penalty_winner` casing** — always compare with `.toLowerCase()`; several bugs came from
+  case-sensitive comparisons in `app.js`, `profile.js`, or `live-results.js`.
+- **`matchId` vs. `apiFixtureId`** — never assume the live-API `id` equals the internal `matchId`
+  for knockout games; join through `fixtures.apiFixtureId`.
+- **Source order matters** — Supabase, Worker, and Firestore reads have all drifted out of sync at
+  different points (see the 2026-06-22 entries in the changelog); pick one canonical read order per
+  view and keep it consistent between the main app and the profile page.
+- **`node --check` before shipping** — most worklog entries that touch `app.js` verify with
+  `node --check scripts/app.js` (or `docs/scripts/app.js`) before calling the change done.
+- **Don't reintroduce the 3-point scoring branch** — it was deliberately removed; see
+  [Scoring](/scoring).

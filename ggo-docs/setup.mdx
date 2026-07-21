@@ -1,0 +1,40 @@
+---
+title: "Setup"
+description: "Admin setup: Firebase, seeding, API key, triggers."
+---
+
+<Note>
+The full `docs/SETUP.md` wasn't in the files I was given — this page only has what's recoverable
+from `README.md` and `PROJECT_BRIEF.md`. Paste `docs/SETUP.md` back to me and I'll fill in the rest
+(Firebase project setup, fixture seeding steps, API key provisioning, and trigger configuration).
+</Note>
+
+## Environment constraints
+
+The admin machine for this project has no `cmd`, no admin rights, and nothing added to `PATH`.
+Prefer PowerShell built-ins and existing local files — do not assume global CLIs are installed.
+
+## External services needed
+
+- Firebase Firestore project: `ggowcpredictor`
+- API-Football key from API-Sports, stored only in Apps Script or another trusted backend
+- Google Apps Script / `clasp` deployment for scheduled score sync
+
+## Live results worker
+
+```bash
+npm install
+set FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+npm run live-sync
+```
+
+See [Introduction → Live results worker](/index#live-results-worker) for the full environment
+variable reference.
+
+## Known IDs
+
+| Item | Value |
+| :--- | :--- |
+| Apps Script deployment ID | `AKfycbwk6Xx2K9Y043hGFKCkMcIYfphV3mL3-qkNkR7yIyDEabPUqzNvseHmVwxCmmY6QN6L` |
+| Apps Script project ID (`.clasp.json`) | `1Lx-q30o3CFcM7_h6OiuoiPNgRzaZE2SK_WnKkPFoBplS8W4ckWWa0B_0` |
+| Firestore region | `me-central1` |

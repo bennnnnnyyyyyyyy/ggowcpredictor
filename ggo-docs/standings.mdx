@@ -1,0 +1,21 @@
+---
+title: "Standings"
+description: "Official group tables and the Standings tab."
+---
+
+<Note>
+`docs/STANDINGS.md` wasn't in the files I was given, so this page is a stub built from mentions in
+`ARCHITECTURE.md` and `WORKLOG.md`. Paste the source file back to me to fill this in properly.
+</Note>
+
+## What's confirmed from other docs
+
+- Official group standings are synced from `worldcup26.ir/get/groups` into the Supabase
+  `group_standings` table every 15 minutes by the Cloudflare Worker. See
+  [Architecture → `group_standings`](/architecture#group-standings) for the schema.
+- The frontend only **renders** rows from `group_standings` — it does not calculate ranks, points,
+  or goal difference itself.
+- A dedicated **Standings** tab in the main nav (added 2026-06-19) shows the official group tables,
+  which previously lived only inside the Predictions page.
+- The knockout bracket resolves slots from `group_standings` plus prior results; unresolved slots
+  render as `TBD` until their inputs are confirmed.

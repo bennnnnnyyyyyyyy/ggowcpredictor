@@ -1,0 +1,140 @@
+---
+title: "Changelog"
+description: "Chronological work log for the GGO WC 2026 Predictor."
+---
+
+<Note>
+This page is generated from `WORKLOG.md`. The source file has more entries between 2026-06-11 and
+2026-06-19 than are reproduced here — paste the missing section back to me and I'll fill in the
+gap.
+</Note>
+
+<Update label="2026-07-20" description="Match drawer flags and plain flag styling">
+- Resolved knockout placeholder teams in the match drawer before rendering names, flags, and penalty-winner labels, so third-place/final report rows show real teams instead of `L101`/`L102`.
+- Removed the shared flag image border so flags render plainly and consistently across report, bracket, standings, and match views.
+- Bumped docs app asset versions to force browsers to load the updated JS and CSS.
+
+**Verification:** Ran `node --check docs/scripts/app.js` successfully.
+</Update>
+
+<Update label="2026-07-20" description="Spain champion and report load fix">
+- Set Spain as the confirmed World Champion in the browser app and reused that value in the bracket champion panel and tournament report hero.
+- Added a shared `exactOf(player)` helper so `renderTournamentReport()` no longer references a helper scoped only inside award calculation.
+- Restored the report stage breakdown constants and max bar denominator so the Report tab does not stop on `STAGE_CLR` or `maxPts`.
+- Included the report renderer in the post-sync active-view refresh path so the Report tab updates after background data loads.
+- Styled the champion panel flag/name layout for the confirmed winner state.
+
+**Verification:** Ran `node --check docs/scripts/app.js` successfully.
+</Update>
+
+<Update label="2026-07-16" description="Home page performance refactor">
+**What changed**
+- Staged data loading in `requestSync()` — split the 7 parallel fetches into two stages. Stage 1 loads only `loadGameData()` + `loadPredictions()` (fastest path); the loading screen dismisses and home renders immediately after Stage 1. Stage 2 loads results, leaderboard, standings, all predictions, and account requests in the background.
+- Stale-while-revalidate in `showApp()` — on login/page load, `STATE` is hydrated from localStorage cache (`ggo_wc_predictions_*` and `ggo_wc_predictions_all`) before any network request fires, so the home page renders with last-known data instantly.
+- Skeleton loading cards — `renderHome()` now injects shimmer skeleton cards (`renderSkeletonCards()`) when `STATE.fixtures` is empty, replacing the plain "Loading…" empty state. Cards fade in staggered.
+- Deferred expensive tiles — `renderHomeExtraTiles()` and `renderRaceToTop()` are now wrapped in `setTimeout(fn, 0)` inside `renderHome()`, letting match cards paint to the DOM before streak/race computations run.
+- `getUserStreaks()` O(n³) → O(n) — replaced the inner `allPreds.find()` call (O(n) per fixture per user) with a pre-built `Map<"username_matchId" → pred>` for O(1) lookup. For 20 users × 128 fixtures this eliminates ~2.5M iterations per render. Added a result cache keyed on prediction/result/fixture counts, invalidated by `requestSync()` after Stage 2 completes.
+- Skeleton tile placeholders — empty `.home-tile` elements now show a shimmer via a CSS `::before` pseudo-element while tiles are deferred.
+
+**Why:** The home page was noticeably slow after all 128 fixtures were added — initial load blocked on all 7 fetches, `getUserStreaks` was O(n³), and every tab switch triggered a full synchronous re-render including streak computation.
+</Update>
+
+<Update label="2026-07-15" description="Next Lock flags cache fix and leaderboard contender/gold highlighting">
+- Fixed the Next Lock and Live Game flags caching bug by making the update check self-healing (re-populates flags if target elements are empty) and resetting cached IDs on home view re-render.
+- Added dynamic striking distance calculation (5 points × stage multiplier) to the home leaderboard. Players within this points threshold of the leader get visual contender flair (pulsing fire emoji, orange gap text, left border, tooltip).
+- Added gold row highlight, border, and inset shadow styling to the first-place row on the home leaderboard to maintain hierarchy over contenders.
+
+**Verification:** Verified syntax and layout consistency across scripts and stylesheets.
+</Update>
+
+<Update label="2026-06-26" description="Bracket mobile tabs and round visibility fix">
+- Reworked the bracket tab handler so one round group is active at a time on mobile.
+- Switched the mobile bracket wrapper to a scrollable layout instead of a centered scaled board.
+- Kept the default tab order anchored on Round of 32 so the opening knockout round is visible first.
+
+**Verification:** Ran `node --check webpage/scripts/app.js`.
+
+**Note:** This is meant to make the round tabs behave like a mobile view switcher rather than a clipped static tree.
+</Update>
+
+<Update label="2026-06-26" description="Bracket card refresh and resolver display">
+- Updated the knockout bracket cards to show kickoff date, venue/stadium, score, and winner/loser state.
+- Tightened bracket spacing and widened the cards so the tree is less zoomed out on desktop.
+- Wired `renderBracketTabs()` into the bracket render path so the mobile round tabs initialize again.
+- Kept slot resolution driven by `group_standings`; unresolved bracket slots still render as `TBD`.
+
+**Verification:** Ran `node --check webpage/scripts/app.js`.
+
+**Note:** The bracket now resolves confirmed participants at render time instead of requiring a separate UI autofill step.
+</Update>
+
+<Update label="2026-06-25" description="Prediction ordering newest-first">
+- Sorted the main predictions page date groups from newest to oldest.
+- Sorted the profile predictions date groups from newest to oldest so today shows first.
+- Kept the existing within-day card order intact.
+
+**Why:** Both views now match the requested newest-first browsing order, with today's fixtures counted as the newest bucket.
+</Update>
+
+<Update label="2026-06-24" description="Browser sync endpoint fallback fix">
+- Filtered API and database result payloads through one score-only helper so scheduled placeholder rows do not count as synced results.
+- Documented the existing Worker-style route fallback (`/sync`, `/fixtures`, `/leaderboard`) and legacy Apps Script query actions (`?action=sync`, `?action=fixtures`, `?action=leaderboard`).
+- Preserved only scored results already returned by the full sync pass so refresh does not throw away a good `/sync` payload before loading results.
+- Removed duplicate/conflicting match-card CSS rules for venue detail and scoreline status/points styling.
+
+**Why:** Local Worker URLs such as `127.0.0.1:8787` expose route paths, while older Apps Script deployments use query actions — the docs now match that client behavior. Placeholder result rows can otherwise make the Results tab look synced while no actual score exists yet.
+</Update>
+
+<Update label="2026-06-23" description="Rules tab first-login onboarding">
+- Switched first-time logins away from the Rules modal popup and into the Rules tab itself.
+- Added an inline first-login banner at the top of the Rules tab so new users still get a clear onboarding cue without a modal interruption.
+- Kept the one-time-per-user storage check so onboarding only appears on the first login.
+
+**Why:** The rules content is already available as a dedicated tab, so onboarding reads better as part of the page instead of a blocking popup, while keeping the first-login experience visible without interrupting the rest of the app shell.
+</Update>
+
+<Update label="2026-06-22" description="Remove legacy 3-point scoring, and leaderboard/profile source-order fixes">
+- Removed the pre-cutoff 3-point consolation branch from the Cloudflare Worker scoring helper, and the matching legacy branch from the client-side prediction/profile scoring helpers. Current scoring stays exact = 15, correct outcome + GD within 1 = 8, correct outcome only = 5, wrong outcome = 0.
+- Switched the profile page to load Supabase first, then fall back to the Worker and Firestore — fixes a case where a profile was missing a saved prediction the main app already had.
+- Switched the main app leaderboard loader to prefer Supabase before the Worker endpoint, keeping the leaderboard view aligned with the profile page when the Worker leaderboard is stale.
+
+**Why:** The runtime rules now match the intended current scoring policy everywhere, avoiding confusing mixed totals between the worker, profile view, and client fallback paths; and both data paths now agree on source order.
+</Update>
+
+<Update label="2026-06-19" description="Mobile leaderboard, iPhone Safari safe-area, Supabase column alignment, Standings tab split">
+- Removed the rank badge from the compact mobile leaderboard card layout and rebalanced the grid so player names get more horizontal space.
+- Added `viewport-fit=cover` to `index.html` and switched to `100dvh` in `style.css` so mobile Safari respects the device safe area; added bottom padding so standings cards stay clear of the Safari toolbar.
+- Updated `workers/live-results.js` so leaderboard upserts write the existing `scored` column instead of `resolvedPredictions`, removing a Supabase schema-cache write failure.
+- Added a dedicated `Standings` nav button and moved official group tables into a standalone view powered by the existing `renderGroupStandings()` renderer; split docs into overview, scoring, and standings.
+
+**Why:** Cleans up several independent mobile-rendering and data-alignment bugs surfaced by real device screenshots and a Supabase schema mismatch.
+</Update>
+
+<Update label="2026-06-13" description="Post-merge login recovery">
+- Repaired a merge-broken syntax error in `scripts/app.js` that prevented the browser script from loading and blocked login.
+- Removed an unreachable duplicate return in `isLocked(match)` while preserving the 1-minute pre-kickoff lock rule.
+- Kept `hasResult(result)` aligned with current app behavior by requiring numeric scores plus a live/final status.
+
+**Verification:** Ran `node --check scripts/app.js` successfully; searched for leftover merge markers and found none.
+</Update>
+
+<Update label="2026-06-11" description="Full audit, canonical docs, and project visualizer">
+- Ran a deep technical audit across all source files (`app.js`, `style.css`, `src/main.js`, `src/leaderboard.js`, `src/fixtures.js`, `src/firebase.js`) — identified 1 P0 bug, 6 P1 bugs, 6 P2 issues, 2 P3 polish items.
+- Created `docs/SCORING.md`, `docs/ARCHITECTURE.md`, `docs/SETUP.md`, and `docs/project-tracker.html` (self-contained interactive dashboard).
+- Locked the scoring system: 15 exact / 8 correct + GD ≤ 1 / 5 correct outcome / 0 miss × round multipliers (×1/1/2/3/4/5).
+- Confirmed game flow: players predict all 104 matches (group + knockout); predicted bracket auto-advances. Mini tourney activates post-group-stage with ¼ points.
+
+**Key decisions:** matchId must be a consistent string throughout all layers; mini tourney is a separate knockout-only leaderboard activating after 2026-06-27.
+
+**Blockers open at the time:** `savePrediction` P0 crash (locked branch referenced undefined vars); `main.js` `ReferenceError` (`FIREBASE_CONFIG` vs `firebaseConfig`); matchId mismatch between fixtures (sequential int) and API-Football results (API fixture ID); `seedFixturesFromJSON` reading from the wrong Drive location.
+</Update>
+
+<Update label="2026-06-10" description="Flags, lock timing, and game data API">
+- Added country flags sourced from `2026/worldcup.teams.json`, rendered in prediction cards, results, standings, and bracket views.
+- Kept prediction inputs disabled inside the 15-minute lock window, with a 30-second UI refresh so lock state updates without a hard reload.
+- Switched the browser app to prefer the configured Game Data API URL for `?action=sync`, `?action=fixtures`, and `?action=leaderboard`, with local/Firestore fallback; renamed the settings label from `Apps Script / Firebase URL` to `Game Data API URL`.
+
+**Verification:** Ran `node --check scripts/app.js`; served the app from a temporary static server and confirmed `index.html` and `2026/worldcup.teams.json` both returned `200`.
+
+**Notes:** The app still falls back to Firestore/local JSON if the configured API URL is empty or unreachable.
+</Update>

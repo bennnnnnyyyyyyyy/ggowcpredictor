@@ -1,0 +1,77 @@
+---
+title: "Introduction"
+description: "Internal FIFA World Cup 2026 prediction game for Gulf Global Outsourcing employees."
+---
+
+## Goal
+
+Employees log in with a username and secret code, predict individual match scores, see official
+group tables synced from Supabase, and compete on a shared leaderboard. Real results and official
+group standings are synced automatically from trusted football data sources — an admin does not
+manually enter match results.
+
+## Current architecture at a glance
+
+- `index.html` — the static app shell
+- `style.css` — the visual system
+- `scripts/app.js` — the browser app logic loaded by `index.html`
+- `src/` — Google Apps Script backend code deployed by `clasp` (run-time client backup, **not** the browser entrypoint — this naming trips people up)
+- `2026/worldcup.json` and related files — local fixture seed data from openfootball
+- **Supabase** — primary datastore for users, fixtures, predictions, results, leaderboard, and official group standings
+- **Cloudflare Worker** (`workers/live-results.js`) — trusted backend for score syncing, group standings syncing, and leaderboard maintenance
+- **Firestore** — legacy backup/fallback data source for older flows (being phased out, see [Architecture](/architecture))
+
+<Card title="Read the full architecture" icon="diagram-project" href="/architecture">
+  System diagram, data load priority, and canonical database schemas.
+</Card>
+
+## Status snapshot
+
+<Info>
+Last known status: audit score 10/20 ("Acceptable — significant work needed"). See the
+[Fix Plan](/plan) for open items and the [Changelog](/changelog) for the latest shipped work.
+</Info>
+
+**Working:** Login, fixture loading, country flags, prediction inputs, Supabase-backed official
+group standings, third-place qualifier table, knockout bracket autofill, lock at kickoff,
+Worker/Apps Script sync endpoint fallback, score-only result filtering, homepage dashboard.
+
+**Responsive UI:** Header controls, filters, match cards, leaderboard/group tables, third-place
+table, bracket, and homepage dashboard reflow cleanly on phones; the bracket view scales to the
+available desktop width.
+
+**Rules tab:** Dedicated **Rules** tab in the main nav shows the App Features overview, scoring
+rules, and guidelines. New logins land on this tab with an inline welcome banner instead of a
+popup.
+
+**Home tab:** Homepage with today's fixtures, common prediction clusters, a win-split bar, and a
+suggestions inbox that ignores admin requests.
+
+## Live results worker
+
+Apps Script stays in place for fixture seeding, but live scores/results run through the Node
+worker:
+
+```bash
+npm install
+set FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+npm run live-sync
+```
+
+<AccordionGroup>
+  <Accordion title="Environment variables">
+    - `FIREBASE_PROJECT_ID` — defaults to `ggowcpredictor`
+    - `worldcup26.ir` — primary live-source used by the worker
+    - `ZAFRONIX_URL` — overrides the live results endpoint
+    - `LIVESCORE_API_KEY` / `LIVESCORE_API_SECRET` — enable the backup live source
+    - `ZAFRONIX_API_KEY` — enables the secondary fallback source
+    - `SEED_TOKEN` — protects manual sync endpoints such as `/seed`, `/sync-scores`, and `/admin/sync-standings`
+    - `LIVE_SYNC_CRON` — defaults to `*/5 * * * *`
+    - `LIVE_SYNC_RUN_ON_START=false` — skips the first immediate sync
+    - `LIVE_SYNC_DRY_RUN=true` — logs matches without writing Firestore
+  </Accordion>
+  <Accordion title="Alternate credentials">
+    If `GOOGLE_APPLICATION_CREDENTIALS` is already configured, the worker can use ADC instead of a
+    JSON service account.
+  </Accordion>
+</AccordionGroup>
